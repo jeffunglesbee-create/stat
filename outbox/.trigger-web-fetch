@@ -1,4 +1,4 @@
-url=https://careers-hca.icims.com/sitemap.xml
+url=https://career4.successfactors.com/career?company=bswh&career_ns=job_listing_summary&resultType=XML
 accept=text/xml,*/*
 extract=raw
-max_bytes=4000
+max_bytes=5000
