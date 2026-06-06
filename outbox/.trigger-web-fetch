@@ -1,3 +1,5 @@
-url=https://hiring.cafe/?q=epic+analyst&environment=remote
-extract=next_data
-max_bytes=40000
+url=https://msmc.wd12.myworkdayjobs.com/wday/cxs/msmc/msmc_careers/jobs
+accept=application/json
+user_agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+extract=json
+max_bytes=8000
