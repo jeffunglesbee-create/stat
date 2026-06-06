@@ -76,13 +76,58 @@ Next session reads it before touching anything.
 
 ## Rule 5 — DO NOT ASSUME
 
+Two distinct meanings. Both are hard rules.
+
+**5a — Data integrity (product)**
 Every displayed value traces to a verifiable source.
 Every alert traces to a job confirmed live at the ATS at alert time.
 Nothing fabricated, nothing guessed.
 
-Applies equally to back-end code: never assume a function is called
-in the right order, assume a store is populated, or assume a UI event
-is wired. Verify in the code. If uncertain, add a smoke assertion.
+**5b — Engineering discipline (build and debug)**
+Never assume a system is working because it was built. Never assume
+a feature is wired because it was coded. Never assume a DO is polling
+because it bootstrapped. Never assume a UI label reflects live state
+because it looks like it does.
+
+Verify in the code. Verify in the running system. If the evidence
+says working, it is working — do not assume broken. If the evidence
+says broken, find the specific line before forming a theory.
+
+This session produced two violations:
+- "Active DOs: 8" was read as evidence of polling failure when it
+  was evidence of polling success. Assumed broken without verifying.
+- "remote/hybrid, no keyword match" was read as an active filter
+  report when it was a hardcoded string. The label was lying;
+  the assumption was that it was telling the truth.
+
+When in doubt: read the code. Then read the running output.
+Conclusions follow evidence — they do not precede it.
+
+---
+
+## Rule 12 — DO NOT INVENT
+
+Never fabricate data, behavior, or code paths that have not been
+confirmed to exist.
+
+Applies to:
+- Salary values: every number traces to BLS, LCA, or a live peer
+  source. No estimated ranges, no rounded guesses.
+- Job data: every field on a displayed job card traces to what
+  the ATS actually returned. No inferred titles, no filled-in
+  locations, no assumed salaries.
+- Code behavior: never describe what a function does without reading
+  it. Never claim an endpoint exists without verifying it in index.js.
+  Never say a DO is polling without evidence from lastRun or logs.
+- Debug diagnosis: never construct a plausible root cause from
+  partial signal. Read the actual execution path first.
+
+The cost of inventing is always higher than the cost of checking.
+A fabricated salary erodes trust in every number. A fabricated
+root cause sends a debug session in the wrong direction and
+leaves the real bug in place.
+
+If the answer is not known, say so. Then look it up.
 
 ---
 
