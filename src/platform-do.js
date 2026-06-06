@@ -36,6 +36,7 @@ import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './n
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import { getPollingInterval, KV, GHOST } from './config.js';
+import { applyMarylandScore } from './maryland.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Base class — all platform DOs extend this
@@ -150,6 +151,12 @@ class PlatformDO {
 
           job.matchedKeyword = match.matchedKw;
           job._matchGroup    = adjustedMatch.label;
+
+          // Maryland eligibility scoring
+          // companyMeta = the company config object (has mdApproved if tagged)
+          const mdSuppressed = applyMarylandScore(job, company);
+          if (mdSuppressed) continue; // explicit MD exclusion in description
+
           newMatches.push({ job, match: adjustedMatch });
         }
 

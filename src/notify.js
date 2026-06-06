@@ -158,6 +158,17 @@ export function buildEmailHtml(newMatches) {
       const color = job.fitScore >= 8 ? '#16a34a' : job.fitScore >= 6 ? '#d97706' : '#dc2626';
       return `<div style="color:${color};font-size:12px;margin-top:4px;font-weight:600">Fit: ${job.fitScore}/10 — ${job.fitVerdict || ''}<span style="color:#64748b;font-weight:400"> · ${job.fitReasoning || ''}</span></div>`;
     })();
+    const mdRow = (() => {
+      if (!job.mdBadge) return '';
+      const color = job.mdBadge.includes('likely')   ? '#1a6b6b'
+                  : job.mdBadge.includes('possible') ? '#6b5200'
+                  : '#8b2a2a';
+      const bg    = job.mdBadge.includes('likely')   ? '#e8f4f4'
+                  : job.mdBadge.includes('possible') ? '#faf5e8'
+                  : '#f9eded';
+      const detail = job.mdSignals?.length ? ` · ${job.mdSignals.join(', ')}` : '';
+      return `<div style="color:${color};background:${bg};font-size:11px;margin-top:4px;padding:2px 8px;border-radius:3px;display:inline-block">${job.mdBadge}${detail}</div>`;
+    })();
     const ghost = ghostLabel(job);
     const sal   = job.salary ? `<span style="color:#16a34a;font-weight:600">${job.salary}</span>` : '';
     const envBadge = job.environment
@@ -197,6 +208,7 @@ export function buildEmailHtml(newMatches) {
           <div style="margin-bottom:6px">${envBadge}</div>
           ${salaryDisplay}
           ${fitRow}
+          ${mdRow}
           ${ghostRow}${daysRow}${livenessRow}
           <a href="${job.url}" style="display:inline-block;background:#111;color:#fff;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;margin-top:8px">Apply Now →</a>
         </td>
@@ -250,9 +262,10 @@ export async function dispatchAlerts(env, newMatches) {
     const ghostLine = ghost ? `\n${ghost}` : '';
     const unverLine = job.liveness === 'unknown' ? '\n⚡ URL unconfirmed — verify before applying' : '';
     const fitLine = job.fitScore != null ? `\nFit: ${job.fitScore}/10 — ${job.fitVerdict || ''}` : '';
+    const mdLine  = job.mdBadge ? `\n${job.mdBadge}` : '';
     await sendPushover(env, {
       title:    `🚨 STAT P1: ${match.label}`,
-      message:  `${job.title}\n${job.company}${job.location ? ' · ' + job.location : ''}${env2}${sal}${fitLine}${ghostLine}${unverLine}`,
+      message:  `${job.title}\n${job.company}${job.location ? ' · ' + job.location : ''}${env2}${sal}${fitLine}${mdLine}${ghostLine}${unverLine}`,
       url:      job.url,
       urlTitle: 'Apply Now',
       priority: 1,

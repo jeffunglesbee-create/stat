@@ -29,6 +29,7 @@ import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './n
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import { BATCH_WATCHLIST, BATCH_POLLER, KV, GHOST } from './config.js';
+import { applyMarylandScore } from './maryland.js';
 
 export class BatchPollerDO {
   constructor(state, env) {
@@ -117,6 +118,10 @@ export class BatchPollerDO {
 
           job.matchedKeyword = match.matchedKw;
           job._matchGroup    = adjustedMatch.label;
+
+          const mdSuppressed = applyMarylandScore(job, company);
+          if (mdSuppressed) continue;
+
           newMatches.push({ job, match: adjustedMatch });
         }
 

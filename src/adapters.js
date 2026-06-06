@@ -66,6 +66,7 @@ function makeJob(fields) {
     ghostFlag,    // null | 'warn' | 'suppress'
     matchedKeyword: null, // set by matcher
     atsSource:    fields.atsSource ?? 'unknown',
+    description:  fields.description ?? '', // body text where available (GH/Lever/Ashby)
   };
 }
 
@@ -95,6 +96,7 @@ export async function fetchGreenhouse(company) {
       url:         j.absolute_url ?? `https://boards.greenhouse.io/${company.token}/jobs/${j.id}`,
       postedAt:    j.updated_at ?? null,
       atsSource:   'greenhouse',
+      description: j.content ?? '', // returned when ?content=true
     }));
   } catch { return []; }
 }
@@ -116,6 +118,7 @@ export async function fetchLever(company) {
       title:       j.text,
       company:     company.name,
       location:    j.categories?.location ?? j.categories?.allLocations?.[0] ?? '',
+      description: j.description?.content ?? j.descriptionBody?.content ?? '',
       environment: j.categories?.commitment?.toLowerCase().includes('remote') ? 'remote'
                    : j.categories?.location?.toLowerCase().includes('remote') ? 'remote'
                    : '',
@@ -145,6 +148,7 @@ export async function fetchAshby(company) {
       company:     company.name,
       location:    j.location ?? '',
       environment: j.workplaceType?.toLowerCase() ?? '',
+      description: j.jobDescription?.descriptionHtml ?? j.jobDescription?.description ?? '',
       salary:      j.compensation?.summaryComponents?.[0]
                    ? `${j.compensation.summaryComponents[0].label}: ${j.compensation.summaryComponents[0].value}`
                    : null,
