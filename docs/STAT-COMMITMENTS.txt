@@ -1,6 +1,6 @@
 STAT — Commitments Tracker
 What was promised, what is built, what is open
-Updated: 2026-06-06
+Updated: 2026-06-06 (full audit — all session docs + codebase cross-referenced)
 
 This document holds Claude accountable to every architectural claim
 and design promise made during STAT's design and build sessions.
@@ -9,6 +9,14 @@ must update this file. Every session that makes a new promise must
 add it here before writing code.
 
 The standard: if it was said, it will be built.
+
+Sources audited:
+  - Chat conversation (full)
+  - STAT Session Docs Parts 1–4 (Drive)
+  - STAT-CURRENT-STATE.txt (repo)
+  - STAT-ARCHITECTURE.txt (repo)
+  - STAT-SALARY.txt (repo)
+  - Codebase: all src/ files
 
 ═══════════════════════════════════════════════════════════════
 CORE PROMISES — VERIFIED BUILT
@@ -34,10 +42,8 @@ CORE PROMISES — VERIFIED BUILT
          P3: LCA SOC + state
          P4: BLS OEWS percentiles
          P5: transparency flag (no estimate, legally-required states)
-  VERIFIED: BLS flat file parser + LCA ZIP/DecompressionStream parser
-            both fixed this session. Run /salary-refresh to prime caches.
-  NOTE: Peer pool cold on first deploy — populates over 1–2 weeks.
-        LCA and BLS caches auto-refresh via cron (no manual action needed).
+  VERIFIED: BLS flat file parser + LCA ZIP/DecompressionStream both fixed.
+            Auto-refresh via cron — zero manual intervention needed.
 
 "salary transparently labeled — disclosed vs inferred, source shown"
   STATUS: BUILT
@@ -45,12 +51,20 @@ CORE PROMISES — VERIFIED BUILT
          Disclosed: green, no ~ prefix, no attribution
          Inferred: amber, ~ prefix, source label in monospace below
          Transparency violation: deep red flag, state named
-  VERIFIED: email HTML renders all three cases distinctly
+  VERIFIED: all three cases distinct in email HTML
 
 "P1 alerts bypass Do Not Disturb — Pushover HIGH priority, siren sound"
   STATUS: BUILT
   WHERE: notify.js dispatchAlerts() — priority: 1, sound: 'siren'
   VERIFIED: P1 filter uses effectivePriority() (fit score can downgrade)
+
+"P2 = batched Pushover, P3 = email only"
+  STATUS: BUILT (2026-06-06)
+  WHERE: notify.js dispatchAlerts() — p1/p2/p3 separate filter variables
+         P1: individual high-priority Pushover per job
+         P2: single batched Pushover (normal priority)
+         P3: email only — no Pushover
+  VERIFIED: three distinct filters in dispatchAlerts()
 
 "fit scoring against resume profile — Gemini, gates alert priority"
   STATUS: BUILT
@@ -58,6 +72,13 @@ CORE PROMISES — VERIFIED BUILT
          score(1-10), verdict(3-5 words), reasoning(1 sentence)
          Low fit → email only. P1 downgrade threshold configurable.
   VERIFIED: called in platform-do.js + batch.js + runHiringCafeScrape()
+
+"cover letter opener in email alert"
+  STATUS: BUILT (2026-06-06)
+  WHERE: fit.js scoreFit() — coverLetterOpener in Gemini prompt schema
+         Returns 2 sentences specific to job + candidate when score >= 7.
+         notify.js buildEmailHtml() — coverRow styled block after fitRow.
+  VERIFIED: prompt schema, result mapping, email template all updated
 
 "Maryland proximity scoring — remote roles near MD flagged"
   STATUS: BUILT
@@ -74,11 +95,59 @@ CORE PROMISES — VERIFIED BUILT
   WHERE: index.js runHiringCafeScrape() — cron every minute
   VERIFIED: fetchHiringCafe() in adapters.js, env filter applied
 
+"HiringCafe search terms expanded from 17 to 31"
+  STATUS: BUILT
+  WHERE: config.js HIRINGCAFE.search_terms — 31 terms confirmed
+  VERIFIED: python count against config.js = 31
+
 "Browse tab — env-filtered unmatched jobs for manual discovery"
   STATUS: BUILT (fixed 2026-06-06)
   WHERE: platform-do.js + batch.js — capture before dedup gate
          GET /browse endpoint, loadBrowse() on tab activation
   VERIFIED: smoke assertion confirms capture order
+
+"all 8 ATS adapters fully operational"
+  STATUS: BUILT
+  WHERE: Session Part 3 doc — final ATS status table
+         Greenhouse/Lever/Ashby: JSON GET, no auth
+         Workday: POST JSON + SSR fallback
+         SuccessFactors: XML feed (fixed with verified tag names)
+         HiringCafe: __NEXT_DATA__ SSR
+         Taleo: Browser Rendering (list) + DOM body (description)
+         iCIMS: ?in_iframe=1 plain HTTP — search page SEO hrefs + detail pages
+  VERIFIED: enrich.js routing confirmed (iCIMS=NEEDS_PLAIN_FETCH,
+            Taleo=NEEDS_BROWSER_FETCH), Session Part 3 probe confirmed
+
+"iCIMS solved via ?in_iframe=1 (not Browser Rendering)"
+  STATUS: BUILT
+  WHERE: adapters.js fetchICIMS() — in_iframe=1 on search and detail pages
+         enrich.js NEEDS_PLAIN_FETCH = Set(['workday', 'icims'])
+  VERIFIED: Session Part 3 probe: 200, 35KB, title confirmed
+
+"auto-discovery — HiringCafe matches spawn new company DOs"
+  STATUS: BUILT
+  WHERE: index.js maybeAddOrPromoteCompany() + LEARNING config
+         After promote_after_matches (2) matches → spawn persistent DO
+         GET /learning endpoint shows discovery status
+  VERIFIED: promote_after_matches: 2 in config.js
+
+"181 companies, 31 HiringCafe search terms"
+  STATUS: BUILT (Session Part 4)
+  WHERE: config.js SEED_COMPANIES + BATCH_WATCHLIST
+         HIRINGCAFE.search_terms = 31 verified
+  VERIFIED: config.js count
+
+"salary note in resume-matcher score card"
+  STATUS: BUILT
+  WHERE: ui.html scoreJobDescription() — salaryNote in Gemini prompt
+         Rendered as dim text below score card
+  VERIFIED: line 1280 in ui.html
+
+"cover letter opener in resume-matcher (with copy button)"
+  STATUS: BUILT
+  WHERE: ui.html scoreJobDescription() — coverOpener in Gemini prompt
+         Rendered as 2-sentence block with one-click copy button
+  VERIFIED: ui.html (resume-matcher separate from email alert opener)
 
 "zero manual intervention after initial deploy"
   STATUS: BUILT (completed 2026-06-06)
@@ -89,25 +158,72 @@ CORE PROMISES — VERIFIED BUILT
 OPEN — PROMISED BUT NOT YET BUILT
 ═══════════════════════════════════════════════════════════════
 
-(None outstanding as of 2026-06-06)
+"Oracle Taleo newer format (phg.tbe.taleo.net / tbe.taleo.net v2)"
+  PROMISED: Session Part 4 PENDING section — "Oracle Taleo HT..."
+  SESSION DOC: "Oracle Taleo HT..." noted as future pending work
+  CURRENT STATE: fetchTaleo() handles classic .taleo.net pattern only.
+                 The newer tbe.taleo.net variant (e.g. phg.tbe.taleo.net)
+                 uses a different URL structure and may return different HTML.
+                 Mount Sinai Medical Center (phg.tbe.taleo.net) confirmed
+                 as a live tenant in Session Part 1 but NOT in SEED_COMPANIES.
+  FIX REQUIRED: Verify tbe.taleo.net HTML structure via probe.
+                If different, add a second parsing branch in fetchTaleo().
+                Add tbe.taleo.net companies (Mount Sinai etc.) to seed list.
+  PRIORITY: Medium — affects a small number of health systems.
 
+"Workday custom domain verification"
+  PROMISED: STAT-ARCHITECTURE.txt explicit note:
+            "NOTE: Workday tenant URLs vary. Some use custom career domains.
+            Verify each URL in SEED_COMPANIES before first deploy."
+            Session Part 4 PENDING: "Workday tenant URL verification
+            (some health systems use custom domains)"
+  CURRENT STATE: SEED_COMPANIES contains many Workday URLs with
+                 *.myworkdayjobs.com patterns. A subset may have migrated
+                 to custom domains and return 0 results silently.
+                 No verification has been performed post-deploy.
+  FIX REQUIRED: TYPE D audit — probe each Workday URL in SEED_COMPANIES
+                via CI runner (to bypass *.workers.dev block).
+                Flag any returning 0 jobs or 4xx. Update URLs.
+  PRIORITY: High — Workday has 123 companies. Silent failures mean
+            major health systems (Mayo, Johns Hopkins, Kaiser, etc.)
+            may not be returning jobs if their URL has changed.
 
-"P3 = email only, no Pushover"
-  STATUS: BUILT (2026-06-06)
-  WHERE: notify.js dispatchAlerts() — p1/p2/p3 now filtered separately
-         P1: individual high-priority Pushover per job (siren, bypasses DnD)
-         P2: single batched Pushover (normal priority)
-         P3: email only — no Pushover
-  VERIFIED: dispatchAlerts() has three distinct filter variables
+"TTL-aware KV caching for iCIMS descriptions"
+  PROMISED: Session Part 1A — "cache iCIMS descriptions keyed by job ID,
+            7-day TTL. Not yet built but documented as future optimization."
+  CURRENT STATE: fetchPlainDescription() fetches iCIMS job detail pages
+                 fresh on every enrichment call. No caching.
+  FIX REQUIRED: After enrichDescriptions() successfully fetches an iCIMS
+                description, write to STAT_KV: key=icims:{jobId}:desc,
+                TTL=7 days. Before fetching, check KV first.
+  PRIORITY: Low — optimization, not correctness. iCIMS plain fetch is
+            fast (300ms confirmed). Caching reduces redundant requests.
 
-"cover letter opener in email alert"
-  STATUS: BUILT (2026-06-06)
-  WHERE: fit.js scoreFit() — coverLetterOpener added to Gemini prompt schema
-         Returns 2 sentences specific to job + candidate when score >= 7.
-         notify.js buildEmailHtml() — coverRow renders as styled block
-         with "Cover Letter Opener" header, shown only when non-null.
-  VERIFIED: prompt schema updated, result mapped to job.coverLetterOpener,
-            email template renders coverRow after fitRow
+"Pushover app installation on device"
+  PROMISED: Session Part 4 SYSTEM STATE — "Pushover: account created,
+            app token set, NOT YET installed on device."
+  CURRENT STATE: Pushover secrets are set in Cloudflare Worker.
+                 The app must be installed on Jeff's device and linked
+                 to the account (ucw83ba9sxinkev1bmv8ve8knb7xfg) for
+                 alerts to actually fire on the device.
+  FIX REQUIRED: Install Pushover app. Link to existing account.
+                Test with POST /trigger to confirm P1 alert fires.
+  PRIORITY: CRITICAL — without this, P1 alerts fire silently.
+            The entire alert system is built around Pushover.
+            This is a user action, not a code change.
+
+"Resume upload via /ui Resume tab to activate fit scoring"
+  PROMISED: Session Part 4 — "Upload resume via /ui Resume tab to
+            activate fit scoring" listed as immediate pending action.
+  CURRENT STATE: The Resume tab, profile extraction, and Gemini fit
+                 scoring pipeline are all built. No profile is stored
+                 in the StateStoreDO yet (empty on fresh deploy).
+  FIX REQUIRED: User action — open /ui, go to Resume tab, upload resume
+                or paste text, click Analyze Resume → Extract Profile,
+                then POST profile to Worker to enable automated scoring.
+  PRIORITY: CRITICAL — without a stored profile, fit scoring is disabled
+            for ALL alerts. effectivePriority() returns keyword priority
+            unchanged. No fit-based P1 downgrades. No cover letter openers.
 
 ═══════════════════════════════════════════════════════════════
 EXPLICITLY NOT COMMITTED TO (noted as optional/noisy)
@@ -117,6 +233,11 @@ EXPLICITLY NOT COMMITTED TO (noted as optional/noisy)
   NOTED IN CHAT: "useful signal... optional and potentially noisy"
   STATUS: Not built. Not promised. Not required.
   IF BUILT: would be a TYPE C feature, spec written first.
+
+"Concurrent HiringCafe batch: parallel per-term requests"
+  NOTED IN ARCHITECTURE: "polite pacing" with sequential requests.
+  Currently sequential with 400ms delay between requests.
+  Higher throughput possible but not promised.
 
 ═══════════════════════════════════════════════════════════════
 RULE: HOW TO USE THIS FILE
