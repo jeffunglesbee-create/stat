@@ -1,0 +1,14 @@
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/trigger  [20260606T163116Z]
+=== Request body ===
+{"url":"https://httpbin.org/ip","method":"GET"}
+
+=== Custom headers ===
+(none)
+
+=== Response (status + body, first 4000 chars) ===
+{
+  "ok": true,
+  "newMatches": 0,
+  "time": "2026-06-06T16:31:58.384Z"
+}
+HTTP_STATUS:200
