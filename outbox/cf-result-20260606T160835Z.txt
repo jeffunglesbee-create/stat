@@ -1,0 +1,11 @@
+=== CF API Probe [20260606T160835Z] ===
+Request: GET https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/workers/subdomain
+
+{
+    "result": {
+        "subdomain": "jeffunglesbee"
+    },
+    "success": true,
+    "errors": [],
+    "messages": []
+}
