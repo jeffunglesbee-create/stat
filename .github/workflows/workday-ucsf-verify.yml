@@ -1,0 +1,178 @@
+# .github/workflows/workday-ucsf-verify.yml
+#
+# STAT — Workday/BrassRing UCSF End-to-End Verification
+#
+# UCSF Health was mis-configured to sjobs.brassring.com (wrong ATS).
+# Corrected to ucsf.wd5.myworkdayjobs.com/en-US/Search (assumed Workday).
+#
+# This probe verifies:
+#   1. Is sjobs.brassring.com still serving UCSF jobs? (was it wrong to change?)
+#   2. Is ucsf.wd5.myworkdayjobs.com real and returning jobs?
+#   3. What is the correct Workday path slug for UCSF?
+#   4. Does the /wday/cxs/ucsf/{slug}/jobs POST API return jobs?
+#
+# Run: GitHub Actions → STAT — Workday/BrassRing UCSF Verify → Run workflow
+# Results: outbox/workday-ucsf-verify-{ts}.txt [skip ci]
+
+name: STAT — Workday/BrassRing UCSF Verify
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe UCSF career sites
+        run: |
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/workday-ucsf-verify-${TS}.txt"
+          mkdir -p outbox
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          probe_get() {
+            local LABEL="$1"
+            local URL="$2"
+            echo "" >> "$OUT"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$OUT"
+            echo "TEST: $LABEL" >> "$OUT"
+            echo "URL:  $URL" >> "$OUT"
+            RESP=$(curl -s --max-time 15 -L \
+              -w "\n__STATUS__%{http_code}__FINAL__%{url_effective}" \
+              -H "User-Agent: $UA" \
+              -H "Accept: text/html,application/xhtml+xml,application/json,*/*;q=0.8" \
+              "$URL" 2>&1)
+            STATUS=$(echo "$RESP" | grep -o '__STATUS__[0-9]*' | grep -o '[0-9]*')
+            FINAL_URL=$(echo "$RESP" | grep -o '__FINAL__.*' | sed 's/__FINAL__//')
+            BODY=$(echo "$RESP" | sed 's/__STATUS__.*$//')
+            echo "HTTP: $STATUS | Final URL: $FINAL_URL" >> "$OUT"
+            echo "Body (first 2000):" >> "$OUT"
+            echo "$BODY" | head -c 2000 >> "$OUT"
+            echo "" >> "$OUT"
+          }
+
+          probe_post_json() {
+            local LABEL="$1"
+            local URL="$2"
+            local BODY="$3"
+            echo "" >> "$OUT"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$OUT"
+            echo "TEST: $LABEL" >> "$OUT"
+            echo "URL:  $URL" >> "$OUT"
+            RESP=$(curl -s --max-time 15 -L \
+              -w "\n__STATUS__%{http_code}" \
+              -X POST \
+              -H "User-Agent: $UA" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d "$BODY" \
+              "$URL" 2>&1)
+            STATUS=$(echo "$RESP" | grep -o '__STATUS__[0-9]*' | grep -o '[0-9]*')
+            RBODY=$(echo "$RESP" | sed 's/__STATUS__.*$//')
+            echo "HTTP: $STATUS" >> "$OUT"
+            # Count job postings in response
+            JOB_COUNT=$(echo "$RBODY" | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              jobs = d.get('jobPostings', d.get('jobs', []))
+              print(f'jobPostings count: {len(jobs)}')
+              if jobs:
+                  print('First job title:', jobs[0].get('title','?'))
+                  print('First job path:', jobs[0].get('externalPath','?'))
+          except Exception as e:
+              print(f'JSON parse error: {e}')
+          " 2>&1)
+            echo "$JOB_COUNT" >> "$OUT"
+            echo "Body (first 1000):" >> "$OUT"
+            echo "$RBODY" | head -c 1000 >> "$OUT"
+            echo "" >> "$OUT"
+          }
+
+          echo "STAT — Workday/BrassRing UCSF End-to-End Verification" > "$OUT"
+          echo "Run: $TS" >> "$OUT"
+          echo "" >> "$OUT"
+          echo "QUESTION: Is UCSF on BrassRing, Workday, or both?" >> "$OUT"
+          echo "QUESTION: What is the correct Workday path slug for UCSF?" >> "$OUT"
+
+          # ── TEST 1: Original BrassRing URL — still serving UCSF? ──────────
+          echo "" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "SECTION 1: BrassRing — original UCSF URL" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+
+          probe_get "BrassRing UCSF (partnerid=6495, siteid=5861)" \
+            "https://sjobs.brassring.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=6495&siteid=5861"
+
+          # ── TEST 2: UCSF Workday — does the domain resolve? ───────────────
+          echo "" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "SECTION 2: Workday — UCSF domain + path slugs" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+
+          probe_get "Workday UCSF /en-US/Search (our current config)" \
+            "https://ucsf.wd5.myworkdayjobs.com/en-US/Search"
+
+          probe_get "Workday UCSF /en-US/UCSF_External (common pattern)" \
+            "https://ucsf.wd5.myworkdayjobs.com/en-US/UCSF_External"
+
+          probe_get "Workday UCSF root (discover redirect path)" \
+            "https://ucsf.wd5.myworkdayjobs.com/"
+
+          # ── TEST 3: Workday JSON API — probe with derived path slugs ──────
+          echo "" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "SECTION 3: Workday /wday/cxs/ JSON API" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+
+          API_BODY='{"appliedFacets":{},"limit":20,"offset":0,"searchText":""}'
+
+          probe_post_json "API: /wday/cxs/ucsf/Search/jobs" \
+            "https://ucsf.wd5.myworkdayjobs.com/wday/cxs/ucsf/Search/jobs" \
+            "$API_BODY"
+
+          probe_post_json "API: /wday/cxs/ucsf/UCSF_External/jobs" \
+            "https://ucsf.wd5.myworkdayjobs.com/wday/cxs/ucsf/UCSF_External/jobs" \
+            "$API_BODY"
+
+          # ── TEST 4: careers.ucsf.edu — what does the careers homepage say? ─
+          echo "" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "SECTION 4: UCSF Careers homepage" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+
+          probe_get "careers.ucsf.edu (official careers page)" \
+            "https://careers.ucsf.edu"
+
+          echo "" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "INTERPRETATION GUIDE" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "BrassRing 200 + UCSF content: UCSF still on BrassRing → revert config" >> "$OUT"
+          echo "BrassRing 404/redirect away: UCSF migrated from BrassRing" >> "$OUT"
+          echo "Workday 200 + job titles: UCSF is on Workday → config is correct" >> "$OUT"
+          echo "API JSON with jobPostings: use that path slug in config" >> "$OUT"
+          echo "careers.ucsf.edu redirects to *.myworkdayjobs.com: confirmed Workday" >> "$OUT"
+          echo "careers.ucsf.edu redirects to sjobs.brassring.com: still BrassRing" >> "$OUT"
+
+          echo "OUT=$OUT" >> $GITHUB_ENV
+          cat "$OUT"
+
+      - name: Push results
+        run: |
+          git config user.email "stat-probe@stat"
+          git config user.name "STAT-Workday-Verify"
+          git add "$OUT"
+          git diff --cached --quiet && echo "Nothing to commit" && exit 0
+          git commit -m "workday-ucsf-verify results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break
+            sleep $((i * 5))
+          done
+        env:
+          OUT: ${{ env.OUT }}
