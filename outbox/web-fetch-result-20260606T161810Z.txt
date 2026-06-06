@@ -1,0 +1,31 @@
+=== Web Fetch Probe [20260606T161810Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/br-test?url=https%3A%2F%2Ftuhs.taleo.net%2Fcareersection%2Ftuhs_ex%2Fjobdetail.ftl%3Fjob%3DTEMPH0000004%26lang%3Den&ats=taleo
+Extract mode: json
+
+HTTP Status: 200
+Body length: 1884 chars
+
+=== JSON response ===
+{
+    "ok": true,
+    "ats": "taleo",
+    "url": "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=TEMPH0000004&lang=en",
+    "elapsed_ms": 3753,
+    "title": "Temple University Health System Careers",
+    "og_description": "Temple University Health System career center provides a listing of current open positions at    Temple University Hospital,    Fox Chase Cancer Center,    Jeanes Hospital, and ReadyCare urgent care centers.    We invite you to join our dedicated team of healthcare providers.",
+    "job_links": [
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=TEMPH0000004&lang=en#mainContent",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=TEMPH0000004&lang=en#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=TEMPH0000004&lang=en#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=TEMPH0000004&lang=en#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=TEMPH0000004&lang=en#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=TEMPH0000004&lang=en#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=TEMPH0000004&lang=en#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=TEMPH0000004&lang=en#"
+    ],
+    "job_card_count": 0,
+    "dom_text_excerpt": "Go to the main content section.\nTemple Health\n|\nCareers\n\nWelcome. You are not signed in.|My Account Options\nMy Job Cart|\nSign In\n\nJob Search\nMy Jobpage\nBasic Search\n|\nAdvanced Search\n|\nBeginning of the main content section.\n\u00a0\nBack to prior page\n\u00a0\nThe job is no longer available.\n\u00a0\nThe job description you are trying to view is no longer available.\n\u00a0\n\n\n\nTerms of Use\n|\nPatient Rights\n|\nPrivacy and Non-Discrimination Notices\n|\nTUHS Vendor Policies & Procedures\nIf you have difficulty signing in, click",
+    "job_container_text": ""
+}
+
+=== End ===
