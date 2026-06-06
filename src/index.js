@@ -635,9 +635,10 @@ async function handleFetch(request, env) {
     let errors = 0;
 
     // Load global seen set so we know what's already matched
+    // NOTE: migrated from STAT_KV to StateStoreDO (store.js migration 2026-06-06)
     let globalSeen;
     try {
-      const raw = await env.STAT_KV.get(KV.seen_jobs);
+      const raw = await storeGet(getStatStore(env), 'seen_ids');
       globalSeen = raw ? new Set(JSON.parse(raw)) : new Set();
     } catch (e) { console.warn('[STAT backfill] globalSeen load failed (dedup may be incomplete):', e.message); globalSeen = new Set(); }
 
