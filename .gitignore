@@ -5,8 +5,3 @@ dist/
 .env
 .dev.vars
 
-# Probe trigger files — written by sandbox, consumed by CI, not needed in history
-outbox/.trigger-cf-api
-outbox/.trigger-post-probe
-outbox/.post-probe-body.json
-outbox/.post-probe-headers
