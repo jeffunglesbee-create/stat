@@ -1,0 +1,110 @@
+=== Web Fetch Probe [20260606T152947Z] ===
+URL: https://career4.successfactors.com/career?company=SFHUP&career_ns=job_listing_summary&resultType=XML
+Extract mode: raw
+
+HTTP Status: 200
+Body length: 8027540 chars
+
+=== Response body (first 15000 bytes) ===
+<?xml version="1.0" encoding="UTF-8"?>
+<Job-Listing>
+
+<Job>
+<JobTitle><![CDATA[Acupuncturist Per Diem]]></JobTitle>
+<Job-Description><![CDATA[<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt"><strong><u>Johns Hopkins All Children’s Hospital</u></strong></span></p>
+<p style="margin:0.0in;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt">Johns Hopkins All Children's Hospital is a premier clinical and academic health system, providing expert pediatric care for infants, children, and teens with some of the most challenging medical problems. Ranked in multiple specialties by U.S. News &amp; World Report, we provide access to innovative treatments and therapies. With more than half of the 259 beds in our teaching hospital devoted to intensive care level services, we are the regional pediatric referral center for Florida's West Coast. Physicians and community hospitals count on us to care for critically ill patients and perform complex surgical procedures. </span></p>
+<p style="margin:0.0in;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"> </p>
+<p style="margin:0.0in;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt"><strong>Job Summary:</strong> </span><br><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt"><strong>The Acupuncturist at Johns Hopkins All Children’s Hospital</strong> provides quality clinical care to patients in an outpatient care setting as part of a multidisciplinary team. This role is responsible for assessing patients, developing and providing acupuncture treatments, documenting care accurately, and supporting each patient’s overall treatment plan. The Acupuncturist uses evidence-based practices and approved acupuncture techniques, including needles, cups, ear balls, seeds, pellets, acupressure, shiatsu, and tuina, as appropriate. This position also educates patients on wellness practices such as stretching, exercise, nutrition, breathing, relaxation, and the healing process. The ideal candidate is a licensed Acupuncturist who is committed to safe, compassionate, patient-centered care and able to work collaboratively with providers, caregivers, and clinical staff at Johns Hopkins All Children’s Hospital.</span></p>
+<p style="margin:0.0in;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"> </p>
+<p><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt"><strong>QUALIFICATIONS</strong><strong>:</strong></span></p>
+<p><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt"> - Master’s degree in Acupuncture, Chinese Medicine, or Oriental Medicine from an American program accredited</span><br><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt">by the Council of Colleges of Acupuncture and Oriental Medicine (CCAOM), or approved foreign equivalent</span><br><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt">relevant experience</span></p>
+<p><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt"> - Licensed by the Florida Board of Acupuncture to practice acupuncture in Florida</span><br><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt">Current AHA BLS certification</span></p>
+<p><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt"> - Maintain continuing education as required by the Board of Acupuncture to maintain one’s license and national</span><br><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt">board certification.</span></p>
+<p> </p>
+<p><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt"><strong>WHAT AWAITS YOU:</strong><br>Medical, Dental, Vision<br>403B Savings Plan<br>Paid Time off &amp; Paid Holidays<br>Employee and Dependent Tuition Benefits<br>Health &amp; Wellness programs and more!</span></p><p> </p>
+<p><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt"><strong>Salary Range:</strong> Minimum [[CustSalaryMin]]/hour - Maximum [[CustSalaryMax]]/hour. Compensation will be commensurate with equity and experience for roles of similar scope and responsibility. In cases where the range is displayed as a $0 amount, salary discussions will occur during candidate screening calls, before any subsequent compensation discussion is held between the candidate and any hiring authority.</span></p>
+<p><span style="font-size:14.0pt;font-family:verdana, geneva, sans-serif">The Hospital reserves the right to modify employee schedules as needed.</span></p>
+<p> </p>
+<p><span style="font-size:14.0pt;font-family:verdana, geneva, sans-serif">We are committed to creating a welcoming and inclusive environment, where we embrace and celebrate our differences, where all employees feel valued, contribute to our mission of serving the community, and engage in equitable healthcare delivery and workforce practices.</span></p>
+<p> </p>
+<p><span style="font-size:14.0pt;font-family:verdana, geneva, sans-serif">Johns Hopkins Health System and its affiliates are an Equal Opportunity employer. All qualified applicants will receive consideration for employment without regard to race, color, religion, sex, sexual orientation, gender identity and expression, age, national origin, mental or physical disability, genetic information, veteran status, or any other status protected by federal, state, or local law.</span></p>
+<p> </p>
+<p><span style="font-size:14.0pt;font-family:verdana, geneva, sans-serif">Johns Hopkins Health System and its affiliates are drug-free workplace employers.</span></p>
+<p> </p>
+<p> </p>
+<p> </p>]]></Job-Description>
+<ReqId>669439</ReqId>
+<filter1>
+<label>Job Category</label>
+<value>Rehab</value>
+</filter1>
+<filter2>
+<label>Affiliate</label>
+<value>Johns Hopkins All Children&#39;s Hospital</value>
+</filter2>
+<filter3>
+<label>Shift</label>
+<value>Day Shift</value>
+</filter3>
+<filter10>
+<label>Job Status</label>
+<value>Casual / On Call</value>
+</filter10>
+<filter7>
+<label>Location</label>
+<value>St. Petersburg, FL</value>
+</filter7>
+<filter8>
+<label>Work Setting</label>
+<value>On-site: 90-100% of hours worked on-site</value>
+</filter8>
+</Job>
+
+<Job>
+<JobTitle><![CDATA[Administrative Coordinator]]></JobTitle>
+<Job-Description><![CDATA[<p> </p>
+<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif"><br>Johns Hopkins is a world-renowned leader in patient care, serving the greater Baltimore community and patients from across the globe.  Our friendly and knowledgeable staff teams provide support throughout our many specialty departments and centers, from primary visits to emergency care.</span></p>
+<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">      </span></p>
+<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><strong><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif"> What Awaits You?</span></strong></p>
+<ul style="margin-top:0.0in;margin-bottom:0.0in" type="disc">
+<li style="margin-top:0.0in;margin-right:0.0in;margin-bottom:8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Career growth and development</span></li>
+<li style="margin-top:0.0in;margin-right:0.0in;margin-bottom:8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Tuition Assistance </span></li>
+<li style="margin-top:0.0in;margin-right:0.0in;margin-bottom:8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Diverse and collaborative working environment</span></li>
+<li style="margin-top:0.0in;margin-right:0.0in;margin-bottom:8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Affordable and comprehensive benefits package</span></li>
+</ul>
+<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"> </p>
+<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Our competitive <strong>Benefit Package</strong> is designed to support the well-being and financial security of our employees. You can explore the details of our benefits offering by visiting the following link: <a>https://jhh.mybenefitsjhhs.com/</a></span></p>
+<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"> </p>
+<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><strong><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Job Summary:</span></strong></p>
+<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"> </p>
+<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Responsibility for managing and coordinating a variety of department projects, activities, reports, schedules, the collection and management of data for projects, and work in progress. Develops office procedures to ensure efficient and timely operations. Provide administrative support and perform general office management duties necessary for the efficient operation of an office or program.</span></p>
+<ul style="margin-top:0.0in;margin-bottom:0.0in" type="disc">
+<li style="margin-top:0.0in;margin-right:0.0in;margin-bottom:8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Collects and organizes specified data from various sources, including departmental heads, subject matter experts, budgetary documentation, and other relevant resources.</span></li>
+<li style="margin-top:0.0in;margin-right:0.0in;margin-bottom:8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Performs clerical duties including typing, filing, and completion of simple forms.                                                                                               </span></li>
+<li style="margin-top:0.0in;margin-right:0.0in;margin-bottom:8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Operates office machines, including copiers, scanners, phone and voicemail systems, personal computers, and other standard office equipment.</span></li>
+<li style="margin-top:0.0in;margin-right:0.0in;margin-bottom:8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">May serve as the office receptionist, greeting visitors and applicants.</span></li>
+<li style="margin-top:0.0in;margin-right:0.0in;margin-bottom:8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Answers phones, directs calls to appropriate individuals, and prepares messages.</span></li>
+</ul>
+<p style="margin:0.0in 0.0in 8.0pt;line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif"><br><strong>Education:</strong></span></p>
+<ul>
+<li style="line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">High school diploma</span></li>
+</ul>
+<p style="line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif"> <strong>Work Experience:</strong></span></p>
+<ul>
+<li style="line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Admin Coordinator I: 2 years of experience</span></li>
+<li style="line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Admin Coordinator II: 3 years of experience</span></li>
+</ul>
+<p style="line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><strong><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Shift</span></strong><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">:</span></p>
+<ul>
+<li style="line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"><span style="font-size:14.0pt;line-height:115%;font-family:Verdana, sans-serif">Full Time 40 Hours Per Week, 8:00 am – 4:30 pm</span></li>
+</ul>
+<p style="line-height:115%;font-size:12.0pt;font-family:Aptos, sans-serif"> </p><p> </p>
+<p><span style="font-family:verdana, geneva, sans-serif;font-size:14.0pt">Salary Range: Minimum 18.87/hour - Maximum 31.15/hour. Compensation will be commensurate with equity and experience for roles of similar scope and responsibility.</span></p>
+<p><span style="font-size:14.0pt;font-family:verdana, geneva, sans-serif">In cases where the range is displayed as a $0 amount, salary discussions will occur during candidate screening calls, before any subsequent compensation discussion is held between the candidate and any hiring authority.</span></p>
+<p> </p>
+<p><span style="font-size:14.0pt;font-family:verdana, geneva, sans-serif">JHM prioritizes the health and well-being of every employee. Come be healthy at Hopkins! </span></p>
+<p> </p>
+<p><span style="font-size:14.0pt;font-family:verdana, geneva, sans-serif">Diversity and Inclusion are Johns Hopkins Medicine Core Values. We are committed to creating a welcoming and inclusive environment, where we embrace and celebrate our differences, where all employees feel valued, contribute to our mission of serving the community, and engage in equitable healthcare delivery and workforce practices.</span></p>
+<p> </p>
+<p><span style="font-size:14.0pt;font-family:verdana, geneva, sans-serif">Johns Hopkins Health System and its affiliates are an 
+=== End ===
