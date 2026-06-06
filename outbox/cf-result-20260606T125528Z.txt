@@ -1,0 +1,201 @@
+=== CF API Probe [20260606T125528Z] ===
+Request: GET https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/workers/scripts
+
+{
+    "result": [
+        {
+            "created_on": "2026-05-15T16:24:58.246089Z",
+            "modified_on": "2026-06-05T21:42:43.249208Z",
+            "id": "field-claude-proxy",
+            "tag": "00cc7cbc858f47d38493363539443070",
+            "tags": [],
+            "deployment_id": "",
+            "tail_consumers": null,
+            "logpush": false,
+            "has_assets": false,
+            "has_modules": true,
+            "etag": "a7b0193e1397c509d0130031ada919e32dbfeec1e00efc5f2d8fd4faec369aed",
+            "handlers": [
+                "fetch"
+            ],
+            "last_deployed_from": "wrangler",
+            "compatibility_date": "2026-05-18",
+            "usage_model": "standard",
+            "routes": null
+        },
+        {
+            "created_on": "2026-05-16T18:55:08.58953Z",
+            "modified_on": "2026-06-05T21:42:39.760162Z",
+            "id": "field-deploy",
+            "tag": "fd2d728344ec4da2bdb10f3b43fcd63a",
+            "tags": [],
+            "deployment_id": "",
+            "tail_consumers": null,
+            "logpush": false,
+            "has_assets": false,
+            "has_modules": true,
+            "etag": "a26573369c9a5e6566e2ea5acbd40e0b980a1aa9f535f5a2f75a1e3c52ee9f15",
+            "handlers": [
+                "fetch"
+            ],
+            "last_deployed_from": "wrangler",
+            "compatibility_date": "2026-05-18",
+            "usage_model": "standard",
+            "routes": null
+        },
+        {
+            "created_on": "2026-05-16T17:58:58.213975Z",
+            "modified_on": "2026-05-16T17:58:58.961624Z",
+            "id": "field-proxy-nba",
+            "tag": "b163c5d7f0344759bb0c08ed51908abc",
+            "tags": null,
+            "deployment_id": "",
+            "tail_consumers": null,
+            "logpush": false,
+            "observability": {
+                "enabled": true,
+                "head_sampling_rate": 1,
+                "logs": {
+                    "enabled": true,
+                    "head_sampling_rate": 1,
+                    "persist": true,
+                    "invocation_logs": true
+                },
+                "traces": {
+                    "enabled": false,
+                    "persist": true,
+                    "head_sampling_rate": 1
+                }
+            },
+            "has_assets": false,
+            "has_modules": true,
+            "etag": "153bb77414ad50f2a4541a22e9fe18504a8e68c224957b7bc0be2e4c69785d80",
+            "handlers": [
+                "fetch"
+            ],
+            "last_deployed_from": "dash_template",
+            "compatibility_date": "2026-05-16",
+            "usage_model": "standard",
+            "routes": null
+        },
+        {
+            "created_on": "2026-05-17T02:23:04.278077Z",
+            "modified_on": "2026-06-05T21:42:34.205535Z",
+            "id": "field-relay-nba",
+            "tag": "c7873a6cf1574489a9755ed8da702a71",
+            "tags": [],
+            "deployment_id": "",
+            "tail_consumers": null,
+            "logpush": false,
+            "has_assets": false,
+            "has_modules": true,
+            "etag": "52473e9a366948ddc59bc0fb4d3d7facad65572983b8dfa29826fa97595d2c6f",
+            "handlers": [
+                "scheduled",
+                "fetch",
+                "queue"
+            ],
+            "named_handlers": [
+                {
+                    "name": "GameDO",
+                    "handlers": [
+                        "class"
+                    ]
+                }
+            ],
+            "last_deployed_from": "wrangler",
+            "migration_tag": "v1-game-do",
+            "compatibility_date": "2026-05-16",
+            "compatibility_flags": [
+                "global_fetch_strictly_public"
+            ],
+            "usage_model": "standard",
+            "routes": null
+        },
+        {
+            "created_on": "2026-05-14T10:42:23.832069Z",
+            "modified_on": "2026-06-06T12:50:52.148364Z",
+            "id": "jubilant-bassoon",
+            "tag": "779aef2a55144dac87a7ecf6a087f52c",
+            "tags": [],
+            "deployment_id": "",
+            "tail_consumers": null,
+            "logpush": false,
+            "has_assets": true,
+            "has_modules": false,
+            "etag": "",
+            "handlers": [
+                "fetch"
+            ],
+            "last_deployed_from": "",
+            "compatibility_date": "2026-05-23",
+            "compatibility_flags": [
+                "nodejs_compat"
+            ],
+            "usage_model": "standard",
+            "routes": null
+        },
+        {
+            "created_on": "2026-05-14T05:09:12.718188Z",
+            "modified_on": "2026-05-14T05:09:18.13591Z",
+            "id": "misty-dream-c3f6",
+            "tag": "f6108854f67c4339b55ab6793865d651",
+            "tags": null,
+            "deployment_id": "",
+            "tail_consumers": null,
+            "logpush": false,
+            "has_assets": true,
+            "has_modules": false,
+            "etag": "",
+            "handlers": [
+                "fetch"
+            ],
+            "last_deployed_from": "",
+            "compatibility_date": "2026-05-14",
+            "usage_model": "standard",
+            "routes": null
+        },
+        {
+            "created_on": "2026-06-06T06:35:20.727535Z",
+            "modified_on": "2026-06-06T07:33:45.521356Z",
+            "id": "stat-job-watcher",
+            "tag": "e02b616b5ce242c2a36eece1eb315423",
+            "tags": [],
+            "deployment_id": "",
+            "tail_consumers": null,
+            "logpush": false,
+            "has_assets": false,
+            "has_modules": true,
+            "etag": "36a1e11d24da5460bc8acb414e2176e2311db4991f5555c91b284f749ae74f25",
+            "handlers": [
+                "scheduled",
+                "fetch"
+            ],
+            "named_handlers": [
+                {
+                    "name": "CompanyWatcherDO",
+                    "handlers": [
+                        "class"
+                    ]
+                },
+                {
+                    "name": "SalaryInferenceDO",
+                    "handlers": [
+                        "class"
+                    ]
+                }
+            ],
+            "last_deployed_from": "wrangler",
+            "migration_tag": "v1",
+            "compatibility_date": "2024-09-23",
+            "compatibility_flags": [
+                "nodejs_compat"
+            ],
+            "usage_model": "standard",
+            "routes": null
+        }
+    ],
+    "success": true,
+    "errors": [],
+    "messages": []
+}
