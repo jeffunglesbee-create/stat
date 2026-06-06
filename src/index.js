@@ -747,7 +747,7 @@ Extract the candidate profile as JSON with EXACTLY these fields (use empty array
   "targetRoles": ["appropriate job titles"],
   "environments": ["remote","hybrid","onsite"],
   "matchStrengths": ["3 strongest selling points"],
-  "potentialGaps": ["2-3 areas that may be missing"]
+  "potentialGaps": ["2-3 genuine gaps — be domain-aware: Epic analyst/coordinator/specialist roles ARE hospital IT roles by definition; supporting a health system IS direct hospital IT experience; do not flag these as gaps. Only flag real gaps like: missing Epic certification for a role that requires it, no experience with a specific module the role needs, or genuinely missing skills the target roles demand."]
 }
 Return ONLY the JSON object, no markdown, no explanation.`;
 

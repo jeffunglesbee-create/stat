@@ -39,9 +39,20 @@ function toGeminiBody(systemPrompt, userMsg) {
 export async function scoreFit(job, profile, geminiKey) {
   if (!profile || !geminiKey || !FIT_SCORING.enabled) return null;
 
-  const systemPrompt = `You are a hiring expert scoring job fit for a candidate.
+  const systemPrompt = `You are a hiring expert scoring job fit for a candidate in healthcare IT / Epic EHR roles.
 Given a candidate profile and a job posting summary, score how well the candidate fits.
 Be concise and rigorous. Respond ONLY with valid JSON, no markdown.
+
+Domain context (apply this when scoring):
+- Epic analyst / coordinator / specialist / consultant roles ARE hospital IT roles by definition.
+  Do not penalize a candidate for "lacking hospital IT experience" if they have Epic module experience.
+- Supporting a health system, hospital, or clinic in an IT capacity IS direct hospital IT experience.
+  These are not different things.
+- Health system support, Epic build, workflow optimization, and go-live support all count as
+  clinical IT experience. Do not flag them as gaps.
+- Only flag genuine gaps: a required Epic module the candidate has not worked in,
+  a certification explicitly required that the candidate lacks, or a clearly missing
+  technical skill the job requires.
 
 JSON schema:
 {
