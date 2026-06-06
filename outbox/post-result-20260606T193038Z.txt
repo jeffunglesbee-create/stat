@@ -1,0 +1,14 @@
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/bootstrap  [20260606T193038Z]
+=== Request body ===
+{}
+
+=== Custom headers ===
+(none)
+
+=== Response (status + body, first 4000 chars) ===
+{
+  "ok": true,
+  "spawned": 0,
+  "total": 142
+}
+HTTP_STATUS:200
