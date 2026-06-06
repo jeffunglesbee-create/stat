@@ -1,0 +1,215 @@
+=== Web Fetch Probe [20260606T152633Z] ===
+URL: https://career4.successfactors.com/sitemal.xml?company=SFHUP
+Extract mode: raw
+
+HTTP Status: 404
+Body length: 43815 chars
+
+=== Response body (first 10000 bytes) ===
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://ui5.sap.com; font-src 'self' https://ui5.sap.com; img-src 'self' https://ui5.sap.com data:; connect-src 'self';">
+    <title>Error 404 Page Not Found - SAP SuccessFactors</title>
+    <style>
+      @font-face {
+        font-family: "72";
+        font-style: normal;
+        font-weight: 400, 700;
+        src: local("72"), url("https://ui5.sap.com/resources/sap/ui/core/themes/sap_belize/fonts/72-Regular.woff2") format("woff2"),
+          url("https://ui5.sap.com/resources/sap/ui/core/themes/sap_belize/fonts/72-Regular.woff") format("woff");
+      }
+
+      html{
+        font-size: 16px;
+      }
+
+      body{
+        background-color: #fff;
+        color: rgb(29,45,62);
+        font-family: "72","72full",Arial,Helvetica,sans-serif;
+        margin: 0;
+      }
+
+      .shbar{
+        align-items: center;
+        box-shadow: 0rem 0.125rem 0.125rem rgba(85, 107, 130, 0.1), inset 0rem -0.0625rem 0rem rgba(85, 107, 130, 0.2);
+        box-sizing: border-box;
+        background-attachment: fixed;
+        background-color: #fff;
+        background-size: cover;
+        position: fixed;
+        font-size: 1rem;
+        height: 3.25rem;
+        top: 0;
+        width: 100%;
+        padding: 0.15rem 0.875rem 0.15rem 3rem;
+      }
+
+      .shbarbegin{
+        align-items: center;
+        box-sizing: border-box;
+        color: rgb(29,45,62);
+        display: flex;
+        font-size: 1rem;
+        height: 3.25rem;
+        max-width: 75%;
+        min-width: 0.0625rem;
+        vertical-align: top;
+      }
+
+      .companyLogo{
+        width: 3rem;
+        height: auto;
+        forced-color-adjust: none;
+        overflow-clip-margin: content-box;
+        overflow-x: clip;
+        overflow-y: clip;
+      }
+
+      .companyNameSpot{
+        align-content: stretch;
+        align-items: center;
+        box-sizing: border-box;
+        color: rgb(29,45,62);
+        display: flex;
+        flex-direction: row;
+        flex-grow: 1;
+        flex-shrink: 1;
+        flex-wrap: nowrap;
+        font-family: "72-bold", "72-boldfull", "72","72full",Arial,Helvetica,sans-serif;
+        font-size: 1rem;
+        justify-content: flex-start;
+        max-width: 100%;
+        min-width: 0.0625rem;
+        padding-left: 0.5rem;
+        text-size-adjust: 100%;
+      }
+
+      .companyNameSpot2{
+        align-self: auto;
+        color:rgb(29,45,62);
+        display: block;
+        font-family: "72-bold", "72-boldfull", "72","72full",Arial,Helvetica,sans-serif;
+        font-size: 1rem;
+        max-width: 100%;
+        min-height: auto;
+        min-width: 2.8125rem;
+        order: 0;
+        position: relative;
+        text-size-adjust: 100%;
+      }
+
+      .companyName{
+        color:rgb(29,45,62);
+        background-color: #fff;
+        font-family: "72-bold", "72-boldfull", "72","72full",Arial,Helvetica,sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        unicode-bidi: isolate;
+      }
+
+      .bold{
+        font-family: "72-bold", "72-boldfull", "72","72full",Arial,Helvetica,sans-serif;
+        font-weight: bold;
+      }
+
+      .container{
+        align-items: center;
+        background-color: #fff; 
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: calc(100vh - 3.25rem);
+        padding: 2rem;
+      }
+
+      .errorImage{
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .errorMessage{
+        line-height: 1.5;
+        text-align: center;
+      }
+
+      .errorHeader{
+        display: block;
+        font-family: "72-bold", "72-boldfull", "72","72full",Arial,Helvetica,sans-serif;
+        font-size: 2rem;
+        text-align: center;
+        color: rgb(29,45,62);
+        margin-bottom: 1rem;
+        max-width: 25rem;
+      }
+
+      .errorText{
+        display: block;
+        margin-bottom: 0.5rem;
+        max-width:25rem;
+        text-align: center;
+      }
+
+      .med-illustration {
+          display: none;
+      }
+
+      @media (max-width: 681px) {
+        .med-illustration {
+          display: flex;
+        }
+        .large-illustration {
+          display: none;
+        }
+        .errorHeader{
+          font-size: 1.5rem;
+        }
+        .errorImage{
+          margin-top: 1rem;
+          margin-bottom: 1rem;
+        }
+        .errorText{
+          font-size: 0.875rem;
+        }
+      }
+    </style>
+</head>
+<body class="sapUiBody" id="content">
+  <div class="shbar">
+    <div class="shbarbegin">
+      <a class="logoAtt">
+        <img class="companyLogo" src="https://ui5.sap.com/resources/sap/ushell/themes/base/img/SAPLogo.svg"/>
+      </a>
+      <div class="companyNameSpot">
+        <div class="companyNameSpot2">
+          <a class="companyName"><strong>SuccessFactors</strong></a>
+        </div>
+      </div>
+    </div>
+  </div>
+<div class="container">
+  <div class="errorImage large-illustration">
+    <svg width="320" height="240" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M305.547 20H14.4533C12.5559 19.9983 10.6768 20.3705 8.92329 21.0954C7.16981 21.8203 5.57638 22.8836 4.23409 24.2247C2.8918 25.5657 1.82697 27.1582 1.10045 28.911C0.373942 30.6638 -8.08861e-07 32.5426 0 34.44V205.547C0 209.38 1.52275 213.056 4.23328 215.767C6.9438 218.477 10.6201 220 14.4533 220H305.547C309.38 220 313.056 218.477 315.767 215.767C318.477 213.056 320 209.38 320 205.547V34.44C320 32.5426 319.626 30.6638 318.9 28.911C318.173 27.1582 317.108 25.5657 315.766 24.2247C314.424 22.8836 312.83 21.8203 311.077 21.0954C309.323 20.3705 307.444 19.9983 305.547 20Z"
+        fill="#EBF8FF" />
+      <path
+        d="M9.87941 120.001H145.81C146.553 119.99 147.275 120.244 147.847 120.718C148.42 121.192 148.805 121.855 148.935 122.588L165.466 208.32C165.57 208.785 165.568 209.268 165.459 209.732C165.349 210.196 165.136 210.629 164.834 210.998C164.533 211.367 164.152 211.662 163.72 211.861C163.288 212.06 162.816 212.157 162.341 212.145H27.9723C27.2407 212.144 26.5316 211.891 25.9631 211.429C25.3946 210.966 25.0009 210.323 24.8474 209.605L6.75456 123.874C6.64149 123.406 6.63759 122.917 6.74312 122.447C6.84865 121.977 7.06079 121.537 7.36307 121.163C7.66536 120.788 8.04956 120.488 8.48598 120.287C8.92239 120.085 9.39925 119.988 9.87941 120.001ZM23.3162 142.892L33.6908 199.9C33.8139 200.639 34.1967 201.31 34.77 201.79C35.3432 202.27 36.0689 202.529 36.8156 202.518H130.405C130.877 202.529 131.345 202.432 131.774 202.235C132.203 202.038 132.583 201.746 132.883 201.381C133.184 201.016 133.398 200.587 133.51 200.127C133.622 199.667 133.629 199.187 133.53 198.724L129.78 178.953H144.435C144.907 178.948 145.371 178.839 145.796 178.634C146.221 178.429 146.595 178.133 146.893 177.766C147.191 177.4 147.406 176.972 147.521 176.514C147.636 176.055 147.65 175.576 147.56 175.112L139.529 132.325C139.389 131.592 139.002 130.931 138.433 130.451C137.864 129.971 137.148 129.703 136.405 129.691H96.4065C95.9368 129.696 95.474 129.805 95.0506 130.009C94.6272 130.213 94.2535 130.508 93.9557 130.873C93.6579 131.237 93.4432 131.663 93.3268 132.12C93.2104 132.576 93.195 133.053 93.2816 133.516L94.3753 139.349L26.5192 139.114C26.0425 139.091 25.567 139.179 25.1292 139.37C24.6915 139.561 24.3031 139.85 23.9938 140.214C23.6846 140.579 23.4627 141.01 23.3453 141.474C23.2278 141.939 23.2179 142.424 23.3162 142.892Z"
+        fill="#D1EFFF" />
+      <path
+        d="M206.667 212.145H64.7049L68.6735 217.805C69.1496 218.484 69.7815 219.037 70.5157 219.419C71.2499 219.801 72.0649 220 72.892 220H28.2379C27.4091 220 26.6143 219.67 26.0283 219.082C25.4423 218.493 25.1131 217.696 25.1131 216.864V215.437C25.1131 214.606 25.4423 213.808 26.0283 213.22C26.6143 212.632 27.4091 212.302 28.2379 212.302H206.667V212.145Z"
+        fill="#B8E6FF" />
+      <path
+        d="M68.6734 217.805L64.7049 212.145H206.667V217.225C206.667 217.961 206.375 218.667 205.857 219.187C205.338 219.708 204.635 220 203.901 220H72.892C72.0649 220 71.2499 219.801 70.5157 219.419C69.7814 219.037 69.1496 218.484 68.6734 217.805Z"
+        fill="#B8E6FF" />
+      <path
+        d="M119.624 139.443L94.2972 139.349L93.2035 133.516C93.1168 133.053 93.1323 132.576 93.2487 132.12C93.3652 131.663 93.5798 131.237 93.8776 130.873C94.1754 130.508 94.5491 130.213 94.9725 130.009C95.3959 129.805 95.8586 129.696 96.3284 129.691H136.326C137.07 129.703 137.786 129.971 138.355 130.451C138.924 130.931 139.311 131.592 139.451 132.325L147.482 175.112C147.571 175.576 147.558 176.055 147.443 176.514C147.327 176.972 147.113 177.4 146.815 177.766C146.517 178.133 146.142 178.429 145.718 178.634C145.293 178.839 144.829 178.948 144.357 178.953H129.702L122.686 142.046C122.562 141.32 122.187 140.662 121.627 140.186C121.067 139.71 120.358 139.447 119.624 139.443Z"
+        fill="#B8E6FF" />
+      <path
+        d="M96.7033 162.036C96.5746 161.916 96.472 161.77 96.4018 161.608C96.3316 161.446 96.2954 161.272 96.2954 161.095C96.2954 160.919 96.3316 160.744 96.4018 160.582C96.472 160.42 96.5746 160.275 96.7033 160.154C96.8244 160.027 96.9699 159.926 97.131 159.857C97.2921 159.788 97.4655 159.752 97.6408 159.752C97.816 159.752 97.9894 159.788 98.1505 159.857C98.3117 159.926 98.4572 160.027 98.5782 160.154L101.703 163.29L104.828 160.154C105.081 159.929 105.411 159.808 105.749 159.818C106.088 159.828 106.41 159.968 106.649 160.208C106.889 160.449 107.028 160.772 107.038 161.111C107.048 161.451 106.928 161.782 106.703 162.036L103.578 165.172L106.703 168.308C106.838 168.428 
+=== End ===
