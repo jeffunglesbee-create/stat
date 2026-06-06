@@ -1,0 +1,482 @@
+=== Web Fetch Probe [20260606T144020Z] ===
+URL: https://hiring.cafe/?q=clinical+informatics&environment=remote
+Extract mode: next_data
+
+HTTP Status: 200
+Body length: 1243495 chars
+
+=== __NEXT_DATA__ extraction ===
+{
+  "props": {
+    "pageProps": {
+      "ssrHits": [
+        {
+          "id": "successfactors___com___tractorsup___1397456400",
+          "board_token": "com_tractorsup",
+          "source": "successfactors",
+          "apply_url": "https://www.tractorsupply.careers/job/Smithville-Team-Leader-TN-37166/1397456400/",
+          "source_and_board_token": "successfactors_com_tractorsup",
+          "job_information": {
+            "title": "Team Leader (Smithville, TN, US, 37166)",
+            "job_title_raw": "Team Leader (Smithville, TN, US, 37166)",
+            "viewedByUsers": [
+              "9ObeEH0cXUSt3u0KGmXTE8mUO6w2"
+            ],
+            "hiddenFromUsers": [
+              "9ObeEH0cXUSt3u0KGmXTE8mUO6w2"
+            ]
+          },
+          "v5_processed_job_data": {
+            "core_job_title": "Team Leader",
+            "requirements_summary": "Retail supervisory role assisting managers, leading teams, executing merchandising, operating equipment (forklift, baler), handling cash/POS, lifting up to 50 lbs, valid driver\u2019s license, 18+, HS diploma preferred, basic computer skills.",
+            "technical_tools": [
+              "computer",
+              "cash register",
+              "point-of-sale system",
+              "dolly",
+              "handtruck",
+              "pallet jack",
+              "forklift",
+              "baler"
+            ],
+            "licenses_or_certifications": [
+              "propane",
+              "forklift",
+              "baler"
+            ],
+            "associates_degree_requirement": "Not Mentioned",
+            "associates_degree_fields_of_study": [],
+            "bachelors_degree_requirement": "Not Mentioned",
+            "bachelors_degree_fields_of_study": [],
+            "masters_degree_requirement": "Not Mentioned",
+            "masters_degree_fields_of_study": [],
+            "doctorate_degree_requirement": "Not Mentioned",
+            "doctorate_degree_fields_of_study": [],
+            "licenses_or_certifications_not_mentioned": false,
+            "min_industry_and_role_yoe": null,
+            "401k_matching": false,
+            "is_min_industry_and_role_yoe_not_mentioned": null,
+            "min_management_and_leadership_yoe": null,
+            "is_min_management_and_leadership_yoe_not_mentioned": true,
+            "job_category": "Sales",
+            "role_activities": [
+              "leading team",
+              "serving customers",
+              "operating equipment"
+            ],
+            "commitment": [
+              "Full Time"
+            ],
+            "role_type": "People Manager",
+            "seniority_level": "Mid Level",
+            "workplace_countries": [
+              "US"
+            ],
+            "boundless_workplace_states": [],
+            "boundless_workplace_countries": [],
+            "boundless_workplace_continents": [],
+            "workplace_continents": [
+              "North America"
+            ],
+            "workplace_states": [
+              "Tennessee, US"
+            ],
+            "workplace_cities": [
+              "Smithville, Tennessee, US"
+            ],
+            "workplace_counties": [
+              "DeKalb County, Tennessee, US"
+            ],
+            "workplace_type": "Onsite",
+            "workplace_physical_environment": "Customer-Facing",
+            "oral_communication_level": "High",
+            "physical_labor_intensity": "High",
+            "physical_position": "Standing",
+            "computer_usage": "Medium",
+            "cognitive_demand": "Medium",
+            "air_travel_requirement": "None",
+            "land_travel_requirement": "Minimal",
+            "morning_shift_work": "Optional",
+            "evening_shift_work": "Optional",
+            "overnight_work": "Optional",
+            "formatted_workplace_location": "Smithville, Tennessee, United States",
+            "on_call_requirement": "None",
+            "weekend_availability_required": true,
+            "holiday_availability_required": false,
+            "generous_paid_time_off": false,
+            "four_day_work_week": false,
+            "overtime_required": true,
+            "is_workplace_worldwide_ok": false,
+            "language_requirements": [
+              "English"
+            ],
+            "num_language_requirements": 1,
+            "number_of_workplace_cities": 1,
+            "number_of_workplace_counties": 1,
+            "number_of_workplace_states": 1,
+            "number_of_workplace_countries": 1,
+            "number_of_workplace_continents": 1,
+            "yearly_max_compensation": null,
+            "yearly_min_compensation": null,
+            "monthly_max_compensation": null,
+            "monthly_min_compensation": null,
+            "weekly_max_compensation": null,
+            "weekly_min_compensation": null,
+            "hourly_max_compensation": null,
+            "hourly_min_compensation": null,
+            "bi-weekly_min_compensation": null,
+            "bi-weekly_max_compensation": null,
+            "daily_min_compensation": null,
+            "daily_max_compensation": null,
+            "estimated_publish_date": "2026-06-06T13:57:27.730Z",
+            "estimated_publish_date_millis": 1780754247730,
+            "fair_chance": false,
+            "visa_sponsorship": false,
+            "relocation_assistance": false,
+            "military_veterans": false,
+            "tuition_reimbursement": true,
+            "retirement_plan": false,
+            "generous_parental_leave": true,
+            "is_high_school_required": false,
+            "is_driver_license_required": true,
+            "is_compensation_transparent": false,
+            "listed_compensation_currency": "USD",
+            "listed_compensation_frequency": "Hourly",
+            "security_clearance": "None",
+            "position_employer_type": "Internal Position",
+            "company_name": null,
+            "company_website": "tractorsupply.careers",
+            "company_sector_and_industry": "Retail and Wholesale",
+            "company_activities": [
+              "store operations",
+              "farm supply"
+            ],
+            "company_tagline": "A retail company operating stores that sell farm, ranch, pet, and home products."
+          },
+          "enriched_company_data": {
+            "enriched_at": "2026-03-12T02:36:53.313Z",
+            "status": "VALID_COMPANY",
+            "name": "Tractor Supply Company",
+            "homepage_uri": "tractorsupply.com",
+            "hq_country": "US",
+            "parent_company": null,
+            "subsidiaries": [
+              "Petsense",
+              "Allivet",
+              "Orscheln Farm & Home"
+            ],
+            "industries": [
+              "Retail",
+              "Agriculture"
+            ],
+            "activities": [
+              "Farm equipment retail",
+              "Pet supply sales",
+              "Livestock feed distribution",
+              "Home improvement retail",
+              "Garden supply sales"
+            ],
+            "nb_employees": 52000,
+            "year_founded": 1938,
+            "tagline": "Retailer of supplies for rural lifestyle and farming needs",
+            "organization_type": "Public",
+            "latest_funding_investors": null,
+            "latest_funding_type": null,
+            "latest_funding_year": null,
+            "latest_funding_amount": null,
+            "stock_exchange": "Nasdaq",
+            "stock_symbol": "TSCO"
+          },
+          "_geoloc": [
+            {
+              "lat": 35.9576,
+              "lon": -86.1233
+            }
+          ],
+          "requisition_id": "qs8v6nzfby47er6h",
+          "collapse_key": "cca969d3e8912f4cd05f103e9de972e99a20cd60c8cebeaba7d5fe0caac82f25",
+          "is_expired": false,
+          "objectID": "successfactors___com___tractorsup___1397456400"
+        },
+        {
+          "id": "successfactors___com___tractorsup___1397437200",
+          "board_token": "com_tractorsup",
+          "source": "successfactors",
+          "apply_url": "https://www.tractorsupply.careers/job/Maumelle-Distribution-Center-Administrative-Assistant-AR-72113/1397437200/",
+          "source_and_board_token": "successfactors_com_tractorsup",
+          "job_information": {
+            "title": "Distribution Center Administrative Assistant (Maumelle, AR, US, 72113)",
+            "job_title_raw": "Distribution Center Administrative Assistant (Maumelle, AR, US, 72113)",
+            "viewedByUsers": [
+              "9ObeEH0cXUSt3u0KGmXTE8mUO6w2"
+            ]
+          },
+          "v5_processed_job_data": {
+            "core_job_title": "Administrative Assistant",
+            "requirements_summary": "Minimum 1 year experience; provides administrative and clerical support to distribution center and GM, handles phone calls, organizes records, manages inventory ordering, coordinates vendors, and supports projects.",
+            "technical_tools": [
+              "Microsoft Office"
+            ],
+            "licenses_or_certifications": [],
+            "associates_degree_requirement": "Preferred",
+            "associates_degree_fields_of_study": [
+              "Business"
+            ],
+            "bachelors_degree_requirement": "Not Mentioned",
+            "bachelors_degree_fields_of_study": [],
+            "masters_degree_requirement": "Not Mentioned",
+            "masters_degree_fields_of_study": [],
+            "doctorate_degree_requirement": "Not Mentioned",
+            "doctorate_degree_fields_of_study": [],
+            "licenses_or_certifications_not_mentioned": true,
+            "min_industry_and_role_yoe": 1,
+            "401k_matching": false,
+            "is_min_industry_and_role_yoe_not_mentioned": false,
+            "min_management_and_leadership_yoe": null,
+            "is_min_management_and_leadership_yoe_not_mentioned": true,
+            "job_category": "Administrative & Clerical Support",
+            "role_activities": [
+              "providing support",
+              "organizing records",
+              "managing inventory"
+            ],
+            "commitment": [
+              "Full Time"
+            ],
+            "role_type": "Individual Contributor",
+            "seniority_level": "Entry Level",
+            "workplace_countries": [
+              "US"
+            ],
+            "boundless_workplace_states": [],
+            "boundless_workplace_countries": [],
+            "boundless_workplace_continents": [],
+            "workplace_continents": [
+              "North America"
+            ],
+            "workplace_states": [
+              "Arkansas, US"
+            ],
+            "workplace_cities": [
+              "Maumelle, Arkansas, US"
+            ],
+            "workplace_counties": [
+              "Pulaski County, Arkansas, US"
+            ],
+            "workplace_type": "Onsite",
+            "workplace_physical_environment": "Industrial",
+            "oral_communication_level": "Medium",
+            "physical_labor_intensity": "Medium",
+            "physical_position": "Standing",
+            "computer_usage": "High",
+            "cognitive_demand": "Medium",
+            "air_travel_requirement": "None",
+            "land_travel_requirement": "None",
+            "morning_shift_work": "Not Indicated",
+            "evening_shift_work": "Not Indicated",
+            "overnight_work": "Not Indicated",
+            "formatted_workplace_location": "Maumelle, Arkansas, United States",
+            "on_call_requirement": "None",
+            "weekend_availability_required": false,
+            "holiday_availability_required": false,
+            "generous_paid_time_off": false,
+            "four_day_work_week": false,
+            "overtime_required": false,
+            "is_workplace_worldwide_ok": false,
+            "language_requirements": [
+              "English"
+            ],
+            "num_language_requirements": 1,
+            "number_of_workplace_cities": 1,
+            "number_of_workplace_counties": 1,
+            "number_of_workplace_states": 1,
+            "number_of_workplace_countries": 1,
+            "number_of_workplace_continents": 1,
+            "yearly_max_compensation": null,
+            "yearly_min_compensation": null,
+            "monthly_max_compensation": null,
+            "monthly_min_compensation": null,
+            "weekly_max_compensation": null,
+            "weekly_min_compensation": null,
+            "hourly_max_compensation": null,
+            "hourly_min_compensation": null,
+            "bi-weekly_min_compensation": null,
+            "bi-weekly_max_compensation": null,
+            "daily_min_compensation": null,
+            "daily_max_compensation": null,
+            "estimated_publish_date": "2026-06-06T00:20:34.336Z",
+            "estimated_publish_date_millis": 1780705234336,
+            "fair_chance": false,
+            "visa_sponsorship": false,
+            "relocation_assistance": false,
+            "military_veterans": false,
+            "tuition_reimbursement": true,
+            "retirement_plan": false,
+            "generous_parental_leave": false,
+            "is_high_school_required": true,
+            "is_driver_license_required": false,
+            "is_compensation_transparent": false,
+            "listed_compensation_currency": "USD",
+            "listed_compensation_frequency": "Yearly",
+            "security_clearance": "None",
+            "position_employer_type": "Internal Position",
+            "company_name": "Tractor Supply",
+            "company_website": "tractorsupply.careers",
+            "company_sector_and_industry": "Retail and Wholesale",
+            "company_activities": [
+              "retail distribution",
+              "warehouse operations"
+            ],
+            "company_tagline": "A retail company operating distribution centers and specialty stores, offering comprehensive employee benefits."
+          },
+          "enriched_company_data": {
+            "enriched_at": "2026-03-12T02:36:53.313Z",
+            "status": "VALID_COMPANY",
+            "name": "Tractor Supply Company",
+            "homepage_uri": "tractorsupply.com",
+            "hq_country": "US",
+            "parent_company": null,
+            "subsidiaries": [
+              "Petsense",
+              "Allivet",
+              "Orscheln Farm & Home"
+            ],
+            "industries": [
+              "Retail",
+              "Agriculture"
+            ],
+            "activities": [
+              "Farm equipment retail",
+              "Pet supply sales",
+              "Livestock feed distribution",
+              "Home improvement retail",
+              "Garden supply sales"
+            ],
+            "nb_employees": 52000,
+            "year_founded": 1938,
+            "tagline": "Retailer of supplies for rural lifestyle and farming needs",
+            "organization_type": "Public",
+            "latest_funding_investors": null,
+            "latest_funding_type": null,
+            "latest_funding_year": null,
+            "latest_funding_amount": null,
+            "stock_exchange": "Nasdaq",
+            "stock_symbol": "TSCO"
+          },
+          "_geoloc": [
+            {
+              "lat": 34.8628,
+              "lon": -92.4013
+            }
+          ],
+          "requisition_id": "7ccsrzg2xfc8fs5v",
+          "collapse_key": "cca969d3e8912f4cd05f103e9de972e99a20cd60c8cebeaba7d5fe0caac82f25",
+          "is_expired": false,
+          "objectID": "successfactors___com___tractorsup___1397437200"
+        },
+        {
+          "id": "successfactors___com___tractorsup___1397432100",
+          "board_token": "com_tractorsup",
+          "source": "successfactors",
+          "apply_url": "https://www.tractorsupply.careers/job/Monument-Assistant-Manager-CO-80132/1397432100/",
+          "source_and_board_token": "successfactors_com_tractorsup",
+          "job_information": {
+            "title": "Assistant Manager (Monument, CO, US, 80132)",
+            "job_title_raw": "Assistant Manager (Monument, CO, US, 80132)"
+          },
+          "v5_processed_job_data": {
+            "core_job_title": "Assistant Manager",
+            "requirements_summary": "Previous retail leadership experience required; high school diploma or equivalent; valid driver\u2019s license; ability to lift up to 50 lbs, operate forklifts/MHE and store equipment; perform cash handling, scheduling, hiring, training, and varied shift work including nights and weekends.",
+            "technical_tools": [
+              "computer",
+              "cash register",
+              "point-of-sale system",
+              "forklift",
+              "baler",
+              "dolly",
+              "handtruck",
+              "pallet jack",
+              "MHE"
+            ],
+            "licenses_or_certifications": [],
+            "associates_degree_requirement": "Not Mentioned",
+            "associates_degree_fields_of_study": [],
+            "bachelors_degree_requirement": "Preferred",
+            "bachelors_degree_fields_of_study": [
+              "Business Administration"
+            ],
+            "masters_degree_requirement": "Not Mentioned",
+            "masters_degree_fields_of_study": [],
+            "doctorate_degree_requirement": "Not Mentioned",
+            "doctorate_degree_fields_of_study": [],
+            "licenses_or_certifications_not_mentioned": true,
+            "min_industry_and_role_yoe": null,
+            "401k_matching": false,
+            "is_min_industry_and_role_yoe_not_mentioned": null,
+            "min_management_and_leadership_yoe": null,
+            "is_min_management_and_leadership_yoe_not_mentioned": true,
+            "job_category": "Sales",
+            "role_activities": [
+              "leading team",
+              "managing operations",
+              "serving customers"
+            ],
+            "commitment": [
+              "Full Time"
+            ],
+            "role_type": "People Manager",
+            "seniority_level": "Mid Level",
+            "workplace_countries": [
+              "US"
+            ],
+            "boundless_workplace_states": [],
+            "boundless_workplace_countries": [],
+            "boundless_workplace_continents": [],
+            "workplace_continents": [
+              "North America"
+            ],
+            "workplace_states": [
+              "Colorado, US"
+            ],
+            "workplace_cities": [
+              "Monument, Colorado, US"
+            ],
+            "workplace_counties": [
+              "El Paso County, Colorado, US"
+            ],
+            "workplace_type": "Onsite",
+            "workplace_physical_environment": "Customer-Facing",
+            "oral_communication_level": "High",
+            "physical_labor_intensity": "High",
+            "physical_position": "Standing",
+            "computer_usage": "Medium",
+            "cognitive_demand": "Medium",
+            "air_travel_requirement": "None",
+            "land_travel_requirement": "Minimal",
+            "morning_shift_work": "Required",
+            "evening_shift_work": "Required",
+            "overnight_work": "Required",
+            "formatted_workplace_location": "Monument, Colorado, United States",
+            "on_call_requirement": "None",
+            "weekend_availability_required": true,
+            "holiday_availability_required": false,
+            "generous_paid_time_off": false,
+            "four_day_work_week": false,
+            "overtime_required": true,
+            "is_workplace_worldwide_ok": false,
+            "language_requirements": [
+              "English"
+            ],
+            "num_language_requirements": 1,
+            "number_of_workplace_cities": 1,
+            "number_of_workplace_counties": 1,
+            "number_of_workplace_states": 1,
+            "number_of_workplace_countries": 1,
+            "number_of_workplace_continents": 1,
+            "yearly_max_compensation": null,
+            "yearly_min_compensation": null,
+            "monthly_max_compensation": null,
+            "monthly_min_compensation": null,
+            "weekly_max_compensation": null,
+
+=== End ===
