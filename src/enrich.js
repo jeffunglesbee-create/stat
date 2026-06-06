@@ -28,10 +28,13 @@
 import puppeteer from '@cloudflare/puppeteer';
 
 // ATS platforms needing plain HTML og:description fetch
-const NEEDS_PLAIN_FETCH = new Set(['workday']);
+// iCIMS verified 2026-06-06: plain fetch() with ?in_iframe=1 works from CF Worker.
+// Moved from NEEDS_BROWSER_FETCH. See session doc Part 2 for full investigation.
+const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims']);
 
-// ATS platforms needing JavaScript execution via Browser Rendering
-const NEEDS_BROWSER_FETCH = new Set(['icims', 'taleo']);
+// ATS platforms needing JavaScript execution via Browser Rendering.
+// Taleo only — iCIMS moved to NEEDS_PLAIN_FETCH (plain fetch + ?in_iframe=1).
+const NEEDS_BROWSER_FETCH = new Set(['taleo']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Plain HTML fetch — server-rendered description (Workday + iCIMS)
