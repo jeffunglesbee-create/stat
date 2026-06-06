@@ -1,0 +1,10 @@
+URL: https://msmc.wd12.myworkdayjobs.com/wday/cxs/msmc/msmc_careers/jobs/JR102337  [20260606T141812Z]
+=== Request body ===
+{}
+
+=== Custom headers ===
+(none)
+
+=== Response (status + body, first 4000 chars) ===
+{"errorCode":"HTTP_405","errorCaseId":"8477D1MQ2FUC7W","httpStatus":405,"message":"","messageParams":{}}
+HTTP_STATUS:405
