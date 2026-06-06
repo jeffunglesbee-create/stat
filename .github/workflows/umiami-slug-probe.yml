@@ -1,0 +1,105 @@
+name: STAT — UMiami Workday Slug Discovery
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find slug
+        shell: bash
+        run: |
+          set +e
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/umiami-slug-${TS}.txt"
+          mkdir -p outbox
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          g() {
+            local L="$1" URL="$2"
+            printf '\n=== %s ===\nURL: %s\n' "$L" "$URL" >> "$OUT"
+            local TF; TF=$(mktemp)
+            local INFO
+            INFO=$(curl -s --max-time 15 -L -o "$TF" \
+              -w "HTTP:%{http_code} FINAL:%{url_effective}" \
+              -H "User-Agent: $UA" \
+              -H "Accept: text/html,application/xhtml+xml,*/*" \
+              -H "Accept-Language: en-US,en;q=0.9" \
+              "$URL" 2>/dev/null)
+            printf '%s\n' "$INFO" >> "$OUT"
+            cat "$TF" | head -c 3000 >> "$OUT"
+            printf '\n' >> "$OUT"
+            rm -f "$TF"
+          }
+
+          p() {
+            local L="$1" URL="$2"
+            printf '\n=== POST: %s ===\nURL: %s\n' "$L" "$URL" >> "$OUT"
+            local TF; TF=$(mktemp)
+            local HC
+            HC=$(curl -s --max-time 15 -L -o "$TF" -w "%{http_code}" \
+              -X POST \
+              -H "User-Agent: $UA" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d '{"appliedFacets":{},"limit":5,"offset":0,"searchText":""}' \
+              "$URL" 2>/dev/null)
+            printf 'HTTP: %s\n' "$HC" >> "$OUT"
+            cat "$TF" | head -c 1500 >> "$OUT"
+            printf '\n' >> "$OUT"
+            rm -f "$TF"
+          }
+
+          printf 'UMiami Workday Slug Discovery — %s\n' "$TS" > "$OUT"
+
+          # The key: follow redirects from /en-US/ — Workday will redirect to real slug
+          printf '\n--- Redirect discovery ---\n' >> "$OUT"
+          g "wd1 /en-US/ redirect" "https://umiamihealth.wd1.myworkdayjobs.com/en-US/"
+          g "wd5 /en-US/ redirect" "https://umiamihealth.wd5.myworkdayjobs.com/en-US/"
+
+          # Try umiamihealth.org/en/careers with full browser headers — may show the redirect target
+          printf '\n--- Official careers page full headers ---\n' >> "$OUT"
+          printf '\n=== umiamihealth.org/en/careers (verbose) ===\n' >> "$OUT"
+          curl -s --max-time 20 -L \
+            -H "User-Agent: $UA" \
+            -H "Accept: text/html,application/xhtml+xml,*/*" \
+            -H "Accept-Language: en-US,en;q=0.9" \
+            -H "Referer: https://www.google.com/" \
+            "https://umiamihealth.org/en/careers" 2>/dev/null | \
+            grep -i 'workday\|myworkdayjobs\|taleo\|icims\|avature\|brassring\|greenhouse\|lever\|href.*career\|window\.location\|redirect' | \
+            head -30 >> "$OUT"
+
+          # Try common UHealth slug patterns
+          printf '\n--- Common slug patterns ---\n' >> "$OUT"
+          for SLUG in UMH_External UHealth_External UMiamiHealth_External UMH_Careers UHealth UMHC_External careers; do
+            p "wd1/$SLUG" "https://umiamihealth.wd1.myworkdayjobs.com/wday/cxs/umiamihealth/${SLUG}/jobs"
+          done
+
+          # Also check University of Miami (academic) Workday — health system may share
+          printf '\n--- UM academic Workday (may share with health) ---\n' >> "$OUT"
+          g "miami.wd1" "https://miami.wd1.myworkdayjobs.com/en-US/"
+          p "miami API UHealth_Careers" \
+            "https://miami.wd1.myworkdayjobs.com/wday/cxs/miami/UHealth_Careers/jobs" \
+            
+          printf '\nDONE\n' >> "$OUT"
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          cat "$OUT"
+          exit 0
+
+      - name: Push results
+        run: |
+          git config user.email "stat@stat" && git config user.name "STAT"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "umiami-slug results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break
+            sleep $((i*5))
+          done
+        env:
+          OUT: ${{ env.OUT }}
