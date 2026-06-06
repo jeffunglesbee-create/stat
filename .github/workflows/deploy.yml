@@ -68,10 +68,14 @@ jobs:
             GEMINI_KEY
             RESEND_API_KEY
             ALERT_EMAIL
+            PUSHOVER_USER_KEY
+            PUSHOVER_APP_TOKEN
         env:
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+          PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
 
       - name: Post-deploy bootstrap reminder
         run: |
