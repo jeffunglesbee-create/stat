@@ -34,24 +34,42 @@ const NEEDS_PLAIN_FETCH = new Set(['workday']);
 const NEEDS_BROWSER_FETCH = new Set(['icims', 'taleo']);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Plain HTML fetch — og:description meta tag (Workday)
-// Confirmed working: msmc.wd12.myworkdayjobs.com returns full description
-// in og:description as server-rendered HTML. ~200ms per fetch.
+// Plain HTML fetch — server-rendered description (Workday + iCIMS)
+//
+// Workday: og:description in server-rendered HTML. ~200ms.
+// iCIMS:   job detail at /jobs/{id}/job?in_iframe=1 returns server-rendered HTML.
+//          The ?in_iframe=1 param bypasses the branded wrapper redirect.
+//          Description is in body text (no og:description on iCIMS detail pages).
+//          Verified 2026-06-06: plain fetch() from CF Worker is not blocked.
 // ─────────────────────────────────────────────────────────────────────────────
 async function fetchPlainDescription(job) {
   if (!job.url) return '';
 
+  // For iCIMS: append ?in_iframe=1 to the job detail URL
+  // This bypasses the branded wrapper redirect and returns the iCIMS portal HTML.
+  let fetchUrl = job.url;
+  if (job.atsSource === 'icims') {
+    // Ensure /job path and add in_iframe=1
+    // URL format: {base}/jobs/{id}/{slug}
+    // Fetch format: {base}/jobs/{id}/job?in_iframe=1
+    const iframeUrl = fetchUrl
+      .replace(/\/jobs\/(\d+)\/[^?]+/, '/jobs/$1/job')
+      .split('?')[0] + '?in_iframe=1';
+    fetchUrl = iframeUrl;
+  }
+
   const controller = new AbortController();
-  const timeout    = setTimeout(() => controller.abort(), 5_000);
+  const timeout    = setTimeout(() => controller.abort(), 8_000);
 
   try {
-    const res = await fetch(job.url, {
+    const res = await fetch(fetchUrl, {
       method: 'GET',
       signal: controller.signal,
       headers: {
         'User-Agent':      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept':          'text/html,application/xhtml+xml,*/*;q=0.9',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control':   'no-cache',
       },
       redirect: 'follow',
     });
@@ -60,7 +78,29 @@ async function fetchPlainDescription(job) {
 
     const html = await res.text();
 
-    // og:description (Workday confirmed)
+    // iCIMS: extract from body text — no og:description on detail pages
+    if (job.atsSource === 'icims') {
+      // Strip scripts/styles, extract visible text
+      const bodyText = html
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&nbsp;/g, ' ').replace(/&#\d+;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Skip navigation header — content starts after "Welcome page" or job title
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      const jobTitle   = titleMatch ? titleMatch[1].split('|')[0].trim() : '';
+      const titleIdx   = jobTitle ? bodyText.indexOf(jobTitle) : -1;
+      const contentStart = titleIdx > 0 ? titleIdx + jobTitle.length : 0;
+      const content    = bodyText.slice(contentStart, contentStart + 4000).trim();
+
+      return content.length > 50 ? content : bodyText.slice(0, 3000);
+    }
+
+    // Workday: og:description in meta tag
     const og = html.match(
       /<meta\s+(?:name|property)="(?:og:description|description)"[^>]*content="([^"]{20,})"[^>]*>/i
     ) || html.match(
@@ -68,7 +108,7 @@ async function fetchPlainDescription(job) {
     );
     if (og) return decodeHtmlEntities(og[1]);
 
-    // JSON-LD schema.org/JobPosting fallback
+    // JSON-LD schema.org/JobPosting fallback (Workday)
     const ld = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
     if (ld) {
       try {

@@ -268,67 +268,82 @@ export async function fetchWorkday(company) {
 // Fallback: HTML search page parse
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchICIMS(company) {
+  // iCIMS two-step plain fetch() adapter.
+  // Verified 2026-06-06: Cloudflare Worker IPs are NOT blocked on plain fetch().
+  // The prior 403/timeout was specific to Browser Rendering (headless Chromium).
+  //
+  // STEP 1 — Search page with ?in_iframe=1
+  //   URL: {tenant}.icims.com/jobs/search?ss=1&searchKeyword=&in_iframe=1
+  //   Returns: iCIMS portal HTML (not the branded wrapper site).
+  //   Contains: job IDs embedded in the page source (42KB, 8+ jobs confirmed).
+  //   Extraction: /jobs/(\d{4,6})/ pattern from raw HTML.
+  //
+  // STEP 2 — Job detail with ?in_iframe=1
+  //   URL: {tenant}.icims.com/jobs/{id}/job?in_iframe=1
+  //   Returns: server-rendered iCIMS job detail HTML (32KB).
+  //   Contains: job title in <title>, description in body text.
+  //   Used by enrich.js for second-pass description fetch.
+  //
+  // Apply URL: {tenant}.icims.com/jobs/{id}/{slug} (no in_iframe — for candidates)
+
   if (!company.url) return [];
 
-  // Derive base from the search URL
-  const base = company.url.replace(/\/jobs\/search.*$/, '');
-
-  // Attempt 1: sitemap.xml — all jobs + lastmod in one request
   try {
-    const sitemapUrl = `${base}/sitemap.xml`;
-    const res = await fetch(sitemapUrl, { headers: { 'User-Agent': UA } });
-    if (res.ok) {
-      const xml = await res.text();
-      // Extract <url> blocks containing /jobs/ paths
-      const urlBlocks = [...xml.matchAll(/<url>([\s\S]*?)<\/url>/g)];
-      const jobs = [];
-      for (const block of urlBlocks) {
-        const locMatch = block[1].match(/<loc>(.*?)<\/loc>/);
-        const lastmodMatch = block[1].match(/<lastmod>(.*?)<\/lastmod>/);
-        if (!locMatch) continue;
-        const loc = locMatch[1];
-        if (!loc.includes('/jobs/')) continue;
-        const lastmod = lastmodMatch?.[1] ?? null;
-        // Extract job ID from URL: /jobs/12345/job-title
-        const idMatch = loc.match(/\/jobs\/(\d+)\//);
-        const id = idMatch?.[1] ?? loc;
-        jobs.push(makeJob({
-          id,
-          title:      '', // fetch individual job for title would be too many requests
-          company:    company.name,
-          location:   '',
-          environment: '',
-          salary:     null,
-          url:        loc,
-          postedAt:   lastmod,
-          atsSource:  'icims',
-        }));
-      }
-      if (jobs.length > 0) return jobs;
-    }
-  } catch { /* fall through */ }
+    // Derive base URL from the configured tenant URL
+    const base = company.url.replace(/\/jobs\/.*$/, '').replace(/\/$/, '');
 
-  // Attempt 2: HTML job search page
-  try {
-    const searchUrl = `${base}/jobs/search?in_iframe=1`;
-    const res = await fetch(searchUrl, { headers: { 'User-Agent': UA } });
+    // STEP 1: fetch search page in_iframe=1 to get current job IDs
+    const searchUrl = base + '/jobs/search?ss=1&searchKeyword=&in_iframe=1';
+    const res = await fetch(searchUrl, {
+      headers: {
+        'User-Agent':      UA,
+        'Accept':          'text/html,application/xhtml+xml,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control':   'no-cache',
+      },
+      redirect: 'follow',
+    });
+
     if (!res.ok) return [];
+
     const html = await res.text();
-    // iCIMS embeds job data in iCIMS_Job elements
-    const jobMatches = [...html.matchAll(/class="iCIMS_JobTitle"[^>]*>([^<]*)<[\s\S]*?href="([^"]+\/jobs\/(\d+)\/[^"]+)"/g)];
-    return jobMatches.map(m => makeJob({
-      id:          m[3],
-      title:       m[1].trim(),
-      company:     company.name,
-      location:    '',
-      environment: '',
-      salary:      null,
-      url:         m[2],
-      postedAt:    null,
-      atsSource:   'icims',
-    }));
+
+    // Extract unique job IDs from /jobs/{id}/ URL patterns in the HTML
+    const idMatches = [...html.matchAll(/\/jobs\/(\d{4,6})\//g)];
+    const jobIds    = [...new Set(idMatches.map(m => m[1]))];
+
+    if (!jobIds.length) return [];
+
+    // Build job objects from IDs
+    // Title/location come from the detail page (enrich.js second pass)
+    // For the list-level object, extract title from the href text if present
+    const hrefPattern = /href="\/jobs\/(\d{4,6})\/([^"?]+)"/g;
+    const slugMap = {};
+    for (const m of html.matchAll(hrefPattern)) {
+      slugMap[m[1]] = m[2]; // id -> slug
+    }
+
+    return jobIds.map(id => {
+      const slug    = slugMap[id] ?? 'job';
+      const applyUrl = base + '/jobs/' + id + '/' + slug;
+
+      return makeJob({
+        id,
+        title:       '',          // populated by enrich.js second-pass
+        company:     company.name,
+        location:    '',          // populated by enrich.js second-pass
+        environment: '',
+        salary:      null,
+        url:         applyUrl,
+        postedAt:    null,
+        atsSource:   'icims',
+        description: '',          // populated by enrich.js second-pass
+      });
+    });
+
   } catch { return []; }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SAP SUCCESSFACTORS
