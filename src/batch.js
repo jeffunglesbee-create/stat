@@ -25,7 +25,7 @@
  */
 
 import { fetchCompanyJobs } from './adapters.js';
-import { getStatStore, storeGet, storeSet, saveRecentMatches } from './store.js';
+import { getStatStore, storeGet, storeSet, saveRecentMatches, saveUnmatchedJobs } from './store.js';
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
@@ -86,7 +86,8 @@ export class BatchPollerDO {
 
     const list  = BATCH_WATCHLIST;
     const chunk = list.slice(cursor, cursor + BATCH_POLLER.companies_per_cycle);
-    const newMatches = [];
+    const newMatches    = [];
+    const unmatchedJobs = [];
     let polledCount = 0;
 
     for (const company of chunk) {
@@ -106,7 +107,7 @@ export class BatchPollerDO {
 
           if (!passesEnvFilter(job)) continue;
           const match = matchJob(job);
-          if (!match) continue;
+          if (!match) { unmatchedJobs.push(job); continue; }
 
           const liveness = await checkJobLiveness(job);
           if (liveness === 'dead') continue;
@@ -182,6 +183,10 @@ export class BatchPollerDO {
       console.log(`[STAT Batch] cursor=${cursor}: ${newMatches.length} matches from ${polledCount} companies`);
       await dispatchAlerts(this.env, newMatches);
       await saveRecentMatches(getStatStore(this.env), newMatches);
+    }
+
+    if (unmatchedJobs.length > 0) {
+      await saveUnmatchedJobs(getStatStore(this.env), unmatchedJobs);
     }
 
     // Reschedule

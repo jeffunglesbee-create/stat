@@ -157,3 +157,47 @@ export async function loadRecentMatches(stub) {
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UNMATCHED JOBS — env-filtered jobs that passed remote/hybrid check
+// but didn't match any keyword. Browsable in the UI without alerting.
+// Rolling 500-entry store. No dedup penalty — stored after env filter,
+// before keyword match. Keyed 'unmatched_jobs' in StateStoreDO.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const UNMATCHED_KEY = 'unmatched_jobs';
+const UNMATCHED_MAX = 500;
+
+/**
+ * Append env-filtered non-matching jobs to the unmatched store.
+ * @param {object} stub   StateStoreDO stub
+ * @param {object[]} jobs Array of normalized job objects
+ */
+export async function saveUnmatchedJobs(stub, jobs) {
+  if (!jobs || jobs.length === 0) return;
+  try {
+    const raw      = await storeGet(stub, UNMATCHED_KEY);
+    const existing = raw ? JSON.parse(raw) : [];
+    const seenAt   = new Date().toISOString();
+    const toAdd    = jobs.map(job => ({ job, seenAt }));
+    const combined = [...toAdd, ...existing];
+    // Dedupe by job.id (keep newest)
+    const seen = new Set();
+    const deduped = combined.filter(({ job }) => {
+      if (seen.has(job.id)) return false;
+      seen.add(job.id);
+      return true;
+    });
+    await storeSet(stub, UNMATCHED_KEY, JSON.stringify(deduped.slice(0, UNMATCHED_MAX)));
+  } catch (e) {
+    console.warn('[STAT store] saveUnmatchedJobs failed:', e.message);
+  }
+}
+
+/** Load unmatched jobs. Returns array of { job, seenAt }. */
+export async function loadUnmatchedJobs(stub) {
+  try {
+    const raw = await storeGet(stub, UNMATCHED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}

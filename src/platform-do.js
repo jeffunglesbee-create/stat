@@ -35,7 +35,7 @@ import {
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
-import { getStatStore, storeGet, storeSet, saveRecentMatches } from './store.js';
+import { getStatStore, storeGet, storeSet, saveRecentMatches, saveUnmatchedJobs } from './store.js';
 import { getPollingInterval, KV, GHOST } from './config.js';
 import { applyMarylandScore } from './maryland.js';
 import { enrichDescriptions } from './enrich.js';
@@ -115,7 +115,8 @@ class PlatformDO {
       globalSeen = raw ? new Set(JSON.parse(raw)) : new Set();
     } catch { globalSeen = new Set(); }
 
-    const newMatches = [];
+    const newMatches    = [];
+    const unmatchedJobs = [];   // env-filtered, not keyword-matched
     let polledCount  = 0;
 
     // Fetch each company — polite delay between requests
@@ -139,7 +140,7 @@ class PlatformDO {
 
           if (!passesEnvFilter(job)) continue;
           const match = matchJob(job);
-          if (!match) continue;
+          if (!match) { unmatchedJobs.push(job); continue; }
 
           const liveness = await checkJobLiveness(job);
           if (liveness === 'dead') continue;
@@ -224,6 +225,11 @@ class PlatformDO {
       await dispatchAlerts(this.env, newMatches);
       // Store matches in rolling job history for GET /jobs
       await saveRecentMatches(getStatStore(this.env), newMatches);
+    }
+
+    // Save env-filtered non-matches for browsing (outside match gate)
+    if (unmatchedJobs.length > 0) {
+      await saveUnmatchedJobs(getStatStore(this.env), unmatchedJobs);
     }
 
     await this._reschedule();

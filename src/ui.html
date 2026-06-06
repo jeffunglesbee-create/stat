@@ -666,6 +666,7 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
   <main class="panel">
     <nav class="tabs">
       <button class="tab" data-tab="matches">Matches</button>
+      <button class="tab" data-tab="browse">Browse</button>
       <button class="tab active" data-tab="companies">Companies</button>
       <button class="tab" data-tab="resume">Resume</button>
       <button class="tab" data-tab="config">Configuration</button>
@@ -686,6 +687,29 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
       </div>
       <div id="match-list">
         <div class="empty"><div class="empty-icon">S</div><p>No matches yet.<br>STAT will populate this as jobs are found.</p></div>
+      </div>
+    </div>
+
+    <!-- Browse — env-filtered, unmatched jobs -->
+    <div class="tab-content" id="tab-browse">
+      <div class="toolbar" style="margin-bottom:12px">
+        <input type="text" class="search-input" id="browse-search" placeholder="Filter by title or company…">
+        <select id="browse-ats" style="padding:6px 10px;border:1px solid var(--rule);border-radius:var(--radius);background:var(--paper);font-size:12px;color:var(--body)">
+          <option value="">All ATS</option>
+          <option value="greenhouse">Greenhouse</option>
+          <option value="lever">Lever</option>
+          <option value="ashby">Ashby</option>
+          <option value="workday">Workday</option>
+          <option value="icims">iCIMS</option>
+          <option value="successfactors">SuccessFactors</option>
+          <option value="taleo">Taleo</option>
+          <option value="hiringcafe">HiringCafe</option>
+        </select>
+        <button class="sbar-btn" id="btn-refresh-browse" style="padding:6px 14px;font-size:11px">Refresh</button>
+      </div>
+      <div id="browse-total" style="font-size:11px;color:var(--dim);margin-bottom:8px"></div>
+      <div id="browse-list">
+        <div class="empty"><div class="empty-icon">S</div><p>No unmatched jobs yet.<br>These appear once STAT polls and env-filters jobs that don't match your keywords.</p></div>
       </div>
     </div>
 
@@ -1079,6 +1103,7 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
   const tabId = 'tab-' + t.dataset.tab;
   document.getElementById(tabId).classList.add('active');
   if (t.dataset.tab === 'matches') loadMatches();
+  if (t.dataset.tab === 'browse') loadBrowse();
   if (t.dataset.tab === 'resume') loadStoredProfile();
 });
 
@@ -1380,6 +1405,69 @@ document.getElementById('btn-score-jd').onclick = async () => {
   }
   btn.textContent = 'Score This Job →'; btn.disabled = false;
 };
+
+
+// ─── Browse (env-filtered, unmatched jobs) ────────────────────────────────────
+async function loadBrowse() {
+  const atsFilter = document.getElementById('browse-ats').value;
+  const q = document.getElementById('browse-search').value.trim();
+  const params = new URLSearchParams({ limit: '200' });
+  if (atsFilter) params.set('ats', atsFilter);
+  if (q) params.set('q', q);
+
+  const { ok, data } = await api('/browse?' + params.toString());
+  if (!ok) return;
+
+  const totalEl = document.getElementById('browse-total');
+  totalEl.textContent = data.count + ' jobs shown' + (data.total > data.count ? ' of ' + data.total + ' stored' : '') + ' — remote/hybrid, no keyword match';
+
+  const el = document.getElementById('browse-list');
+  if (!data.jobs || !data.jobs.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">S</div><p>No unmatched jobs yet.<br>These appear once STAT polls and env-filters jobs that don't match your keywords.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = data.jobs.map(({ job, seenAt }) => {
+    const ats     = job.atsSource || '';
+    const salary  = job.salary ? `<span class="salary-tag">${job.salary}</span>` : '';
+    const env     = job.environment ? `<span class="env-tag">${job.environment}</span>` : '';
+    const ghost   = job.ghostFlag === 'warn' ? `<span class="ghost-warn">⚠️ ${job.daysAgo}d old</span>` : '';
+    const when    = seenAt ? new Date(seenAt).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
+    return `
+<div class="match-card">
+  <div class="match-card-header">
+    <span class="match-card-title">${job.title}</span>
+    <span class="ats-pill ats-${ats}" style="flex-shrink:0">${ats}</span>
+  </div>
+  <div class="match-card-company">${job.company}${job.location ? ' · ' + job.location : ''}${when ? ' · seen ' + when : ''}</div>
+  <div class="match-card-meta">${salary}${env}${ghost}</div>
+  <div class="match-card-actions">
+    <a href="${job.url}" target="_blank" class="apply-btn">View Job →</a>
+    <button class="btn-cancel-form" onclick="browseScoreCard(this, '${job.id.replace(/'/g,"\\'")}', ${JSON.stringify(JSON.stringify(job)).slice(1,-1)})" style="font-size:10px">Score against profile</button>
+  </div>
+</div>`;
+  }).join('');
+}
+
+function browseScoreCard(btn, jobId, jobJson) {
+  // Switch to Resume tab with title+company pre-filled in JD box
+  try {
+    const job = JSON.parse(jobJson);
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+    document.querySelector('[data-tab="resume"]').classList.add('active');
+    document.getElementById('tab-resume').classList.add('active');
+    document.getElementById('jd-text').value = [job.title, job.company, job.location, job.description || ''].filter(Boolean).join('\n\n');
+    toast('Job loaded in Resume tab — click Score This Job');
+  } catch(e) { toast('Could not load job', 'error'); }
+}
+
+document.getElementById('btn-refresh-browse').onclick = loadBrowse;
+document.getElementById('browse-ats').addEventListener('change', loadBrowse);
+document.getElementById('browse-search').addEventListener('input', () => {
+  clearTimeout(window._browseTimer);
+  window._browseTimer = setTimeout(loadBrowse, 350);
+});
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.getElementById('log-t0').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});

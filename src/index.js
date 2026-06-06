@@ -29,7 +29,7 @@ import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
-import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches } from './store.js';
+import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches, loadUnmatchedJobs } from './store.js';
 export { StateStoreDO } from './store.js';
 import UI_HTML from './ui.html';
 
@@ -514,6 +514,32 @@ async function handleFetch(request, env) {
       ok:    true,
       count: filtered.length,
       total: matches.length,
+      jobs:  filtered,
+    });
+  }
+
+  // GET /browse — env-filtered jobs that didn't match any keyword
+  // Useful for manually spotting roles STAT missed. ?ats= ?q= ?limit=
+  if (url.pathname === '/browse' && request.method === 'GET') {
+    const items = await loadUnmatchedJobs(getStatStore(env));
+    let filtered = items;
+
+    const qAts    = url.searchParams.get('ats');
+    const qSearch = url.searchParams.get('q')?.toLowerCase();
+    const qLimit  = parseInt(url.searchParams.get('limit') || '200', 10);
+
+    if (qAts)    filtered = filtered.filter(m => m.job?.atsSource === qAts);
+    if (qSearch) filtered = filtered.filter(m =>
+      (m.job?.title || '').toLowerCase().includes(qSearch) ||
+      (m.job?.company || '').toLowerCase().includes(qSearch)
+    );
+
+    filtered = filtered.slice(0, Math.min(qLimit, 500));
+
+    return json({
+      ok:    true,
+      count: filtered.length,
+      total: items.length,
       jobs:  filtered,
     });
   }
