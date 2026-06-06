@@ -3,6 +3,7 @@
  */
 
 import { WATCH_GROUPS, ENVIRONMENTS, GHOST } from './config.js';
+import { effectivePriority } from './fit.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // KEYWORD MATCHER
@@ -152,6 +153,11 @@ export function buildEmailHtml(newMatches) {
   const priorityBg    = (p) => p === 1 ? '#fef2f2' : p === 2 ? '#fffbeb' : '#f0fdf4';
 
   const rows = newMatches.map(({ job, match }) => {
+    const fitRow = (() => {
+      if (job.fitScore == null) return '';
+      const color = job.fitScore >= 8 ? '#16a34a' : job.fitScore >= 6 ? '#d97706' : '#dc2626';
+      return `<div style="color:${color};font-size:12px;margin-top:4px;font-weight:600">Fit: ${job.fitScore}/10 — ${job.fitVerdict || ''}<span style="color:#64748b;font-weight:400"> · ${job.fitReasoning || ''}</span></div>`;
+    })();
     const ghost = ghostLabel(job);
     const sal   = job.salary ? `<span style="color:#16a34a;font-weight:600">${job.salary}</span>` : '';
     const envBadge = job.environment
@@ -190,6 +196,7 @@ export function buildEmailHtml(newMatches) {
           </div>
           <div style="margin-bottom:6px">${envBadge}</div>
           ${salaryDisplay}
+          ${fitRow}
           ${ghostRow}${daysRow}${livenessRow}
           <a href="${job.url}" style="display:inline-block;background:#111;color:#fff;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;margin-top:8px">Apply Now →</a>
         </td>
@@ -224,11 +231,10 @@ export function buildEmailHtml(newMatches) {
 export async function dispatchAlerts(env, newMatches) {
   if (newMatches.length === 0) return;
 
-  // Sort: P1 first
   newMatches.sort((a, b) => a.match.priority - b.match.priority);
 
-  const p1 = newMatches.filter(m => m.match.priority === 1);
-  const p2p3 = newMatches.filter(m => m.match.priority > 1);
+  const p1    = newMatches.filter(m => effectivePriority(m.match.priority, m.job.fitScore) === 1);
+  const p2p3  = newMatches.filter(m => effectivePriority(m.match.priority, m.job.fitScore) >= 2);
 
   // P1: one push per job — high priority, bypasses quiet hours
   for (const { job, match } of p1) {
@@ -241,9 +247,10 @@ export async function dispatchAlerts(env, newMatches) {
     const ghost = ghostLabel(job);
     const ghostLine = ghost ? `\n${ghost}` : '';
     const unverLine = job.liveness === 'unknown' ? '\n⚡ URL unconfirmed — verify before applying' : '';
+    const fitLine = job.fitScore != null ? `\nFit: ${job.fitScore}/10 — ${job.fitVerdict || ''}` : '';
     await sendPushover(env, {
       title:    `🚨 STAT P1: ${match.label}`,
-      message:  `${job.title}\n${job.company}${job.location ? ' · ' + job.location : ''}${env2}${sal}${ghostLine}${unverLine}`,
+      message:  `${job.title}\n${job.company}${job.location ? ' · ' + job.location : ''}${env2}${sal}${fitLine}${ghostLine}${unverLine}`,
       url:      job.url,
       urlTitle: 'Apply Now',
       priority: 1,
@@ -255,7 +262,8 @@ export async function dispatchAlerts(env, newMatches) {
     const lines = p2p3
       .map(({ job, match }) => {
         const ghost = ghostLabel(job);
-        return `[P${match.priority}] ${job.title} @ ${job.company}${ghost ? ' ' + ghost : ''}`;
+        const fitNote = job.fitScore != null ? ` [${job.fitScore}/10]` : '';
+        return `[P${match.priority}] ${job.title} @ ${job.company}${fitNote}${ghost ? ' ' + ghost : ''}`;
       })
       .join('\n');
     await sendPushover(env, {

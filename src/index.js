@@ -19,10 +19,11 @@
 export { CompanyWatcherDO } from './do.js';
 export { SalaryInferenceDO } from './salary.js';
 
-import { SEED_COMPANIES, KV, HIRINGCAFE, POLL_INTERVALS } from './config.js';
+import { SEED_COMPANIES, KV, HIRINGCAFE, POLL_INTERVALS, LEARNING } from './config.js';
 import { bootstrapSalaryDO } from './salary.js';
 import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
+import { scoreBatch } from './fit.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEEN IDs — global KV helpers
@@ -67,6 +68,18 @@ async function loadDoRegistry(kv) {
 async function saveDoRegistry(kv, registry) {
   await kv.put(KV.do_registry, JSON.stringify(registry));
 }
+
+async function loadProfile(kv) {
+  try { const r = await kv.get(KV.resume_profile); return r ? JSON.parse(r) : null; }
+  catch { return null; }
+}
+async function saveProfile(kv, p) { await kv.put(KV.resume_profile, JSON.stringify(p)); }
+
+async function loadMatchCounts(kv) {
+  try { const r = await kv.get(KV.match_counts); return r ? JSON.parse(r) : {}; }
+  catch { return {}; }
+}
+async function saveMatchCounts(kv, c) { await kv.put(KV.match_counts, JSON.stringify(c)); }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BOOTSTRAP DOs for all companies in the watchlist
@@ -150,13 +163,11 @@ async function runHiringCafeScrape(env) {
         if (!match) continue;
 
         job.matchedKeyword = match.matchedKw;
+        job._matchGroup = match.label;
         newMatches.push({ job, match });
 
-        // If this company isn't in our watchlist, consider adding it
-        // (check by looking for the company domain in the job URL)
-        await maybeAddNewCompany(env, job);
+        await maybeAddOrPromoteCompany(env, job);
       }
-      // Polite delay between requests
       await new Promise(r => setTimeout(r, 400));
     }
   }
@@ -164,6 +175,10 @@ async function runHiringCafeScrape(env) {
   await saveSeenIds(env.STAT_KV, seenIds);
 
   if (newMatches.length > 0) {
+    const profile = await loadProfile(env.STAT_KV);
+    if (profile && env.ANTHROPIC_API_KEY) {
+      await scoreBatch(newMatches, profile, env.ANTHROPIC_API_KEY);
+    }
     console.log(`[STAT HC] ${newMatches.length} new HiringCafe matches`);
     await dispatchAlerts(env, newMatches);
   }
@@ -172,66 +187,75 @@ async function runHiringCafeScrape(env) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AUTO-DISCOVER: when HiringCafe reveals an unknown company, add a DO watch
-// We can infer ATS from the job URL pattern
+// AUTO-DISCOVER + PROMOTE
+// First match: track company in match_counts KV.
+// After LEARNING.promote_after_matches matches: spawn a persistent DO.
+// This makes the watchlist self-building — high-signal employers graduate
+// from wide-net tracking to 30-second direct ATS polling automatically.
 // ─────────────────────────────────────────────────────────────────────────────
-async function maybeAddNewCompany(env, job) {
-  if (!job.url) return;
+async function maybeAddOrPromoteCompany(env, job) {
+  if (!job.url || !job.company) return;
   const companies = await loadCompanyList(env.STAT_KV) ?? [];
   const registry  = await loadDoRegistry(env.STAT_KV);
+  const counts    = await loadMatchCounts(env.STAT_KV);
 
-  // Detect ATS from URL
   let ats = null, token = null;
   try {
-    const u = new URL(job.url);
-    const h = u.hostname;
+    const u = new URL(job.url), h = u.hostname;
     if (h.includes('greenhouse.io') || h.includes('boards.greenhouse')) {
-      ats = 'greenhouse';
-      token = h.split('.')[0]; // e.g. "stripe" from "boards.greenhouse.io/stripe"
+      ats = 'greenhouse'; token = u.pathname.split('/')[1] || h.split('.')[0];
     } else if (h.includes('lever.co')) {
-      ats = 'lever';
-      token = u.pathname.split('/')[1]; // e.g. "lever.co/company/job-id"
+      ats = 'lever'; token = u.pathname.split('/')[1];
     } else if (h.includes('ashbyhq.com')) {
-      ats = 'ashby';
-      token = u.pathname.split('/')[1];
+      ats = 'ashby'; token = u.pathname.split('/')[1];
     } else if (h.includes('myworkdayjobs.com')) {
-      ats = 'workday';
-      token = h.split('.')[0];
+      ats = 'workday'; token = h.split('.')[0];
     } else if (h.includes('icims.com')) {
-      ats = 'icims';
-      token = h.split('.')[0].replace('careers-', '').replace('careers', '');
+      ats = 'icims'; token = h.split('.')[0].replace('careers-', '').replace('careers', '');
     }
   } catch { return; }
-
   if (!ats || !token) return;
-  if (!job.company) return;
 
   const doKey = `${ats}:${token}`;
-  if (registry[doKey]) return; // already watching
+  const now = Date.now();
 
-  // Check if already in company list
+  // Track match count
+  if (!counts[doKey]) counts[doKey] = { count: 0, firstSeen: now, lastSeen: now, name: job.company };
+  counts[doKey].count++;
+  counts[doKey].lastSeen = now;
+  await saveMatchCounts(env.STAT_KV, counts);
+
+  // Already have a DO — nothing more to do
+  if (registry[doKey]) return;
+
+  // Add to company list on first sighting
   const exists = companies.some(c => c.ats === ats && c.token === token);
-  if (exists) return;
+  if (!exists) {
+    companies.push({ name: job.company, ats, token, url: job.url,
+      autoDiscovered: true, firstMatchAt: new Date().toISOString() });
+    await saveCompanyList(env.STAT_KV, companies);
+    console.log(`[STAT] Tracking: ${job.company} (${ats}) — match #1`);
+  }
 
-  // Add new company
-  const newCompany = { name: job.company, ats, token, url: job.url, autoDiscovered: true };
-  companies.push(newCompany);
-  await saveCompanyList(env.STAT_KV, companies);
-
-  // Spawn DO
-  const id = env.COMPANY_WATCHER.idFromName(doKey);
-  const stub = env.COMPANY_WATCHER.get(id);
-  try {
-    await stub.fetch(new Request('https://stat-internal/init', {
-      method: 'POST',
-      body: JSON.stringify(newCompany),
-      headers: { 'Content-Type': 'application/json' },
-    }));
-    registry[doKey] = { name: newCompany.name, ats, autoDiscovered: true, startedAt: new Date().toISOString() };
-    await saveDoRegistry(env.STAT_KV, registry);
-    console.log(`[STAT] Auto-discovered + watching: ${newCompany.name} (${ats})`);
-  } catch (e) {
-    console.error(`[STAT] Auto-discover DO spawn failed for ${newCompany.name}:`, e.message);
+  // Promote to DO if threshold reached
+  const recentCount = counts[doKey].count;
+  if (recentCount >= LEARNING.promote_after_matches) {
+    const company = companies.find(c => c.ats === ats && c.token === token);
+    if (!company) return;
+    const id = env.COMPANY_WATCHER.idFromName(doKey);
+    const stub = env.COMPANY_WATCHER.get(id);
+    try {
+      await stub.fetch(new Request('https://stat-internal/init', {
+        method: 'POST', body: JSON.stringify(company),
+        headers: { 'Content-Type': 'application/json' },
+      }));
+      registry[doKey] = { name: company.name, ats, autoDiscovered: true, promoted: true,
+        promotedAt: new Date().toISOString(), matchCount: recentCount };
+      await saveDoRegistry(env.STAT_KV, registry);
+      console.log(`[STAT] Promoted: ${company.name} (${ats}) after ${recentCount} matches`);
+    } catch (e) {
+      console.error(`[STAT] Promotion failed for ${company.name}:`, e.message);
+    }
   }
 }
 
@@ -258,23 +282,30 @@ async function handleFetch(request, env) {
     const registry = await loadDoRegistry(env.STAT_KV);
     const seenIds  = await loadSeenIds(env.STAT_KV);
     const companies = await loadCompanyList(env.STAT_KV) ?? [];
+    const profile = await loadProfile(env.STAT_KV);
     return json({
       name: 'STAT Job Watcher',
-      version: '1.0.0',
+      version: '2.0.0',
       activeDOs: Object.keys(registry).length,
       watchedCompanies: companies.length,
       seenJobIds: seenIds.size,
+      resumeProfile: profile ? `${profile.name || 'stored'} · ${profile.headline || ''}` : null,
+      fitScoring: profile && env.ANTHROPIC_API_KEY ? 'active' : profile ? 'profile stored — add ANTHROPIC_API_KEY' : 'disabled (no profile stored)',
       endpoints: {
-        'GET /':              'This status overview',
-        'POST /trigger':      'Run HiringCafe scrape now',
-        'POST /bootstrap':    'Spawn DOs for all companies',
-        'GET /companies':     'List all watched companies',
-        'POST /companies':    'Add a company (body: {name,ats,token,url?})',
-        'GET /do/:key/status':  'Status of a specific DO',
-        'GET /salary-status':   'Salary DO: peer pool / LCA / BLS cache status',
-        'POST /salary-refresh': 'Re-fetch BLS OEWS + DOL LCA salary caches',
-        'POST /reset-seen':     'Clear seen job IDs (re-alerts all current jobs)',
-        'POST /reset-all':      'Nuclear reset: clear seen + registry',
+        'GET /':               'This status overview',
+        'POST /trigger':       'Run HiringCafe scrape now',
+        'POST /bootstrap':     'Spawn DOs for all companies',
+        'GET /companies':      'List all watched companies',
+        'POST /companies':     'Add a company (body: {name,ats,token,url?})',
+        'GET /do/:key/status': 'Status of a specific DO',
+        'GET /salary-status':  'Salary DO status',
+        'POST /salary-refresh':'Re-fetch salary caches',
+        'GET /profile':        'Get stored resume profile',
+        'POST /profile':       'Store resume profile (JSON from resume-matcher)',
+        'DELETE /profile':     'Remove stored profile',
+        'GET /learning':       'Auto-discovered companies + promotion status',
+        'POST /reset-seen':    'Clear seen job IDs',
+        'POST /reset-all':     'Nuclear reset',
       },
     });
   }
@@ -359,6 +390,51 @@ async function handleFetch(request, env) {
     const stub = env.COMPANY_WATCHER.get(id);
     const res  = await stub.fetch(new Request('https://stat-internal/status'));
     return res;
+  }
+
+  // GET /profile
+  if (url.pathname === '/profile' && request.method === 'GET') {
+    const profile = await loadProfile(env.STAT_KV);
+    if (!profile) return json({ stored: false });
+    return json({ stored: true, profile });
+  }
+
+  // POST /profile — store resume profile for fit scoring
+  if (url.pathname === '/profile' && request.method === 'POST') {
+    let profile;
+    try { profile = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+    await saveProfile(env.STAT_KV, profile);
+    return json({
+      ok: true, name: profile.name || '(unnamed)',
+      fitScoring: env.ANTHROPIC_API_KEY
+        ? 'active — all future alerts will be scored against this profile'
+        : 'profile stored but ANTHROPIC_API_KEY not set — run: wrangler secret put ANTHROPIC_API_KEY',
+    });
+  }
+
+  // DELETE /profile
+  if (url.pathname === '/profile' && request.method === 'DELETE') {
+    await env.STAT_KV.delete(KV.resume_profile);
+    return json({ ok: true, message: 'Profile removed. Fit scoring disabled.' });
+  }
+
+  // GET /learning — auto-discovered companies + promotion status
+  if (url.pathname === '/learning' && request.method === 'GET') {
+    const counts   = await loadMatchCounts(env.STAT_KV);
+    const registry = await loadDoRegistry(env.STAT_KV);
+    const entries  = Object.entries(counts)
+      .map(([key, v]) => ({
+        key, name: v.name, matchCount: v.count,
+        promoted: !!registry[key]?.promoted,
+        watching: !!registry[key],
+        lastSeen: v.lastSeen ? new Date(v.lastSeen).toISOString() : null,
+      }))
+      .sort((a, b) => b.matchCount - a.matchCount);
+    return json({
+      total: entries.length,
+      promoted: entries.filter(e => e.promoted).length,
+      companies: entries,
+    });
   }
 
   // POST /reset-seen — clear global seen IDs

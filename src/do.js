@@ -13,6 +13,7 @@ import { fetchCompanyJobs } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { POLL_INTERVALS, KV, GHOST } from './config.js';
+import { scoreBatch } from './fit.js';
 
 export class CompanyWatcherDO {
   constructor(state, env) {
@@ -120,8 +121,15 @@ export class CompanyWatcherDO {
         await this._mergeIntoGlobalSeen(newMatches.map(m => m.job.id));
       }
 
-      // 6. Fire alerts
+      // 6. Score against resume profile (if stored), then fire alerts
       if (newMatches.length > 0) {
+        try {
+          const profileRaw = await this.env.STAT_KV.get(KV.resume_profile);
+          const profile = profileRaw ? JSON.parse(profileRaw) : null;
+          if (profile && this.env.ANTHROPIC_API_KEY) {
+            await scoreBatch(newMatches, profile, this.env.ANTHROPIC_API_KEY);
+          }
+        } catch (e) { console.warn('[STAT DO] Fit scoring skipped:', e.message); }
         console.log(`[STAT DO] ${company.name}: ${newMatches.length} new matches`);
         await dispatchAlerts(this.env, newMatches);
       }
