@@ -95,7 +95,7 @@ binding = "MYBROWSER"
   new_sqlite_classes = ["StateStoreDO"]
 
 # ── Secrets (set via: wrangler secret put <NAME> --name stat-job-watcher) ────
-# PUSHOVER_APP_TOKEN  — from pushover.net/apps
+# PUSHOVER_APP_TOKEN  — from pushover.net/apps (set 2026-06-06)
 # PUSHOVER_USER_KEY   — from pushover.net dashboard
 # SENDGRID_API_KEY    — from sendgrid.com (Mail Send scope only)
 # ALERT_EMAIL         — address for email digests
