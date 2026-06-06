@@ -1,4 +1,4 @@
 url=https://career4.successfactors.com/odata/v2/JobRequisitionLocale?$filter=JobReqId%20eq%20149802&$select=JobReqId,externalTitle,externalDesc,country,state,city&$format=json
 accept=application/json,*/*
-extract=json
-max_bytes=8000
+extract=raw
+max_bytes=6000
