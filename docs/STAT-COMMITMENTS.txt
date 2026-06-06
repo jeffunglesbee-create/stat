@@ -200,17 +200,8 @@ OPEN — PROMISED BUT NOT YET BUILT
             fast (300ms confirmed). Caching reduces redundant requests.
 
 "Pushover app installation on device"
-  PROMISED: Session Part 4 SYSTEM STATE — "Pushover: account created,
-            app token set, NOT YET installed on device."
-  CURRENT STATE: Pushover secrets are set in Cloudflare Worker.
-                 The app must be installed on Jeff's device and linked
-                 to the account (ucw83ba9sxinkev1bmv8ve8knb7xfg) for
-                 alerts to actually fire on the device.
-  FIX REQUIRED: Install Pushover app. Link to existing account.
-                Test with POST /trigger to confirm P1 alert fires.
-  PRIORITY: CRITICAL — without this, P1 alerts fire silently.
-            The entire alert system is built around Pushover.
-            This is a user action, not a code change.
+  STATUS: COMPLETE (2026-06-06)
+  Pushover app installed on device. Secrets confirmed set in Worker.
 
 "Resume upload via /ui Resume tab to activate fit scoring"
   PROMISED: Session Part 4 — "Upload resume via /ui Resume tab to
