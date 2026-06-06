@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STAT · Job Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Epilogue:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Reset + Variables ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Warm paper base — nothing like FIELD's obsidian */
+  --paper:     #f7f4ef;
+  --paper2:    #f0ece4;
+  --paper3:    #e8e2d8;
+  --rule:      #d4ccbc;
+  --rule2:     #c4baa8;
+  --dim:       #a09480;
+  --muted:     #7a6e5e;
+  --body:      #3d3428;
+  --head:      #1e1a14;
+
+  /* Accent — teal ink, not gold */
+  --teal:      #1a6b6b;
+  --teal2:     #248080;
+  --teal-pale: #e8f4f4;
+  --teal-mid:  #b8d8d8;
+
+  /* Status colors — muted, clinical */
+  --p1:        #8b2a2a;   /* deep red — P1 urgent */
+  --p1-pale:   #f9eded;
+  --p2:        #6b5200;   /* dark amber — P2 */
+  --p2-pale:   #faf5e8;
+  --p3:        #2a5c2a;   /* forest — P3 */
+  --p3-pale:   #edf5ed;
+
+  --warn:      #7a5200;
+  --warn-pale: #fdf6e3;
+  --dead:      #8b2a2a;
+
+  --serif:   'Instrument Serif', Georgia, serif;
+  --sans:    'Epilogue', system-ui, sans-serif;
+  --mono:    'DM Mono', 'Courier New', monospace;
+
+  --radius:  3px;
+  --shadow:  0 1px 3px rgba(30,26,20,0.08), 0 4px 12px rgba(30,26,20,0.04);
+}
+
+html {
+  background: var(--paper);
+  color: var(--body);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+}
+body { min-height: 100dvh; display: flex; flex-direction: column; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--paper2); }
+::-webkit-scrollbar-thumb { background: var(--rule2); border-radius: 3px; }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 32px 16px;
+  border-bottom: 2px solid var(--head);
+  background: var(--paper);
+}
+.header-left { display: flex; align-items: baseline; gap: 20px; }
+
+.wordmark {
+  font-family: var(--serif);
+  font-size: 28px;
+  color: var(--head);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.wordmark em {
+  font-style: italic;
+  color: var(--teal);
+}
+
+.sub {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding-left: 20px;
+  border-left: 1px solid var(--rule2);
+}
+
+.header-right {
+  display: flex; align-items: center; gap: 20px;
+}
+.connection-state {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+}
+.conn-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--rule2); flex-shrink: 0;
+  transition: background 0.3s;
+}
+.conn-dot.live    { background: var(--teal); }
+.conn-dot.loading { background: var(--p2); }
+.conn-dot.dead    { background: var(--p1); }
+
+.last-poll {
+  font-family: var(--mono); font-size: 10px; color: var(--dim);
+}
+
+/* ── Rule stripe ─────────────────────────────────────────────────────────── */
+.header-rule {
+  height: 3px;
+  background: linear-gradient(to right, var(--teal) 0%, var(--teal2) 30%, var(--teal-mid) 70%, transparent 100%);
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.main {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 680px) { .main { grid-template-columns: 1fr; } }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+.sidebar {
+  background: var(--paper2);
+  border-right: 1px solid var(--rule);
+  overflow-y: auto;
+  padding: 0;
+}
+
+.sidebar-section {
+  padding: 20px 20px 18px;
+  border-bottom: 1px solid var(--rule);
+}
+.sidebar-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 14px;
+}
+
+/* Stat tiles — document-like, no glow */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--paper3);
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-key {
+  font-size: 11px; color: var(--muted);
+}
+.stat-val {
+  font-family: var(--mono); font-size: 13px; font-weight: 500;
+  color: var(--head);
+}
+.stat-val.accent { color: var(--teal); }
+
+/* ATS rows */
+.ats-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--paper3);
+}
+.ats-row:last-child { border-bottom: none; }
+.ats-key { font-size: 11px; color: var(--body); flex: 0 0 90px; }
+.ats-bar-bg {
+  flex: 1; height: 2px;
+  background: var(--paper3); border-radius: 1px;
+}
+.ats-bar-fill {
+  height: 2px; background: var(--teal-mid); border-radius: 1px;
+  transition: width 0.5s ease;
+}
+.ats-n { font-family: var(--mono); font-size: 10px; color: var(--dim); }
+
+/* Sidebar buttons */
+.sbar-btn {
+  display: block; width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-family: var(--sans); font-size: 11px; font-weight: 500;
+  cursor: pointer; border-radius: var(--radius);
+  text-align: left; margin-bottom: 5px;
+  transition: all 0.12s;
+}
+.sbar-btn:hover {
+  background: var(--teal-pale);
+  border-color: var(--teal-mid);
+  color: var(--teal);
+}
+.sbar-btn.danger:hover {
+  background: var(--p1-pale);
+  border-color: #d4a0a0;
+  color: var(--p1);
+}
+.sbar-btn::before { content: '↗ '; opacity: 0.5; font-size: 10px; }
+.sbar-btn.loading { opacity: 0.4; pointer-events: none; }
+
+/* ── Panel ───────────────────────────────────────────────────────────────── */
+.panel {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+
+/* Tabs — simple underline, document-section feel */
+.tabs {
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--rule);
+  padding: 0 28px;
+  background: var(--paper2);
+}
+.tab {
+  padding: 12px 16px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--dim); cursor: pointer;
+  background: none;
+  border: none; border-bottom: 2px solid transparent;
+  font-family: var(--sans);
+  transition: all 0.12s;
+  margin-bottom: -1px;
+}
+.tab:hover { color: var(--body); }
+.tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+/* Tab content */
+.tab-content { display: none; padding: 28px 32px; flex: 1; }
+.tab-content.active { display: block; }
+
+/* ── Company table ───────────────────────────────────────────────────────── */
+.toolbar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px;
+}
+.search-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--paper2);
+  border: 1px solid var(--rule);
+  color: var(--body);
+  font-family: var(--sans); font-size: 12px;
+  border-radius: var(--radius);
+  transition: border-color 0.12s;
+}
+.search-input:focus { outline: none; border-color: var(--teal-mid); }
+.search-input::placeholder { color: var(--dim); }
+
+.add-btn {
+  padding: 8px 16px;
+  background: var(--teal);
+  color: #fff;
+  border: none; border-radius: var(--radius);
+  font-family: var(--sans); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em; cursor: pointer;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+.add-btn:hover { background: var(--teal2); }
+
+/* Add form — inlined document block */
+.add-form {
+  background: var(--teal-pale);
+  border: 1px solid var(--teal-mid);
+  border-left: 3px solid var(--teal);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+.form-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--teal); margin-bottom: 16px;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+.form-field label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted);
+}
+.form-field input, .form-field select {
+  padding: 8px 10px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--body);
+  font-family: var(--sans); font-size: 12px;
+  border-radius: var(--radius);
+  transition: border-color 0.12s;
+}
+.form-field input:focus, .form-field select:focus {
+  outline: none; border-color: var(--teal-mid);
+}
+.form-actions { display: flex; gap: 10px; margin-top: 16px; }
+.btn-submit {
+  padding: 8px 18px; background: var(--teal); color: #fff;
+  border: none; border-radius: var(--radius);
+  font-family: var(--sans); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: background 0.12s;
+}
+.btn-submit:hover { background: var(--teal2); }
+.btn-cancel-form {
+  padding: 8px 14px; background: transparent; color: var(--muted);
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  font-family: var(--sans); font-size: 11px; cursor: pointer;
+  transition: all 0.12s;
+}
+.btn-cancel-form:hover { border-color: var(--rule2); color: var(--body); }
+
+/* Company table */
+.co-table { width: 100%; border-collapse: collapse; }
+.co-table th {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--dim);
+  text-align: left; padding: 0 12px 8px;
+  border-bottom: 2px solid var(--rule);
+}
+.co-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--paper3);
+  vertical-align: middle;
+}
+.co-table tr:hover td { background: var(--paper2); }
+
+.co-name { font-size: 13px; font-weight: 600; color: var(--head); }
+.co-meta { font-size: 10px; color: var(--dim); font-family: var(--mono); margin-top: 1px; }
+
+/* ATS badges — no neon, just tinted paper */
+.ats-pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 2px;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid;
+}
+.ats-greenhouse     { background: #edf6ee; color: #2a6e30; border-color: #b8d8ba; }
+.ats-lever          { background: #eeedf8; color: #3d3a8c; border-color: #c0bed8; }
+.ats-ashby          { background: #f6f0e8; color: #7a4e10; border-color: #d4b880; }
+.ats-workday        { background: #e8f2f8; color: #1a4e7a; border-color: #9ec8e0; }
+.ats-icims          { background: #f5f0e8; color: #6b4800; border-color: #d4b860; }
+.ats-successfactors { background: #f5eaea; color: #8b2020; border-color: #d4a0a0; }
+.ats-taleo          { background: #f0ede8; color: #5c4820; border-color: #c4aa80; }
+
+.watch-state {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; color: var(--dim);
+}
+.watch-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--rule2);
+}
+.watch-dot.active {
+  background: var(--teal);
+}
+
+/* ── Config tab ──────────────────────────────────────────────────────────── */
+.cfg-block {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--rule);
+  border-radius: var(--radius);
+  margin-bottom: 20px; overflow: hidden;
+}
+.cfg-block.p1-block { border-left-color: var(--p1); }
+.cfg-block.p2-block { border-left-color: var(--p2); }
+.cfg-block.p3-block { border-left-color: var(--p3); }
+
+.cfg-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  background: var(--paper2);
+  border-bottom: 1px solid var(--rule);
+}
+.priority-tag {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  padding: 2px 7px; border-radius: 2px; border: 1px solid;
+}
+.pt-1 { background: var(--p1-pale); color: var(--p1); border-color: #d4a0a0; }
+.pt-2 { background: var(--p2-pale); color: var(--p2); border-color: #d4c080; }
+.pt-3 { background: var(--p3-pale); color: var(--p3); border-color: #a0c4a0; }
+
+.cfg-label { font-size: 12px; font-weight: 600; color: var(--head); }
+.cfg-body { padding: 14px 16px; }
+.kw-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.kw-chip {
+  padding: 3px 9px;
+  background: var(--paper3);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+}
+.kw-chip.more {
+  background: transparent; border-style: dashed; color: var(--dim);
+}
+
+.cfg-table { width: 100%; border-collapse: collapse; }
+.cfg-table tr td {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--paper3);
+  font-size: 12px;
+}
+.cfg-table tr:last-child td { border-bottom: none; }
+.cfg-table td:last-child {
+  text-align: right; font-family: var(--mono); font-size: 11px;
+}
+
+/* ── Log tab ─────────────────────────────────────────────────────────────── */
+.log-area {
+  background: var(--paper2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  font-family: var(--mono); font-size: 11px; line-height: 1.8;
+  max-height: 500px; overflow-y: auto; color: var(--body);
+}
+.log-entry { display: flex; gap: 12px; }
+.log-ts { color: var(--dim); flex-shrink: 0; }
+.log-tag { flex-shrink: 0; }
+.log-tag.info  { color: var(--teal); }
+.log-tag.match { color: var(--p3); font-weight: 500; }
+.log-tag.dead  { color: var(--p1); }
+.log-tag.warn  { color: var(--p2); }
+.log-msg { color: var(--muted); }
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 48px 24px;
+  color: var(--dim); text-align: center;
+}
+.empty-icon {
+  font-family: var(--serif); font-size: 48px;
+  font-style: italic; color: var(--rule2); margin-bottom: 12px;
+}
+.empty p { font-size: 12px; color: var(--muted); line-height: 1.7; max-width: 260px; }
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 28px; right: 28px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--teal);
+  border-radius: var(--radius);
+  padding: 11px 18px;
+  font-size: 12px; color: var(--body);
+  box-shadow: var(--shadow);
+  transform: translateY(60px); opacity: 0;
+  transition: all 0.22s cubic-bezier(.22,1,.36,1);
+  z-index: 999; max-width: 300px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { border-left-color: var(--p1); }
+.toast.success { border-left-color: var(--p3); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="wordmark">S<em>T</em>AT</div>
+    <div class="sub">Job Intelligence · Healthcare IT</div>
+  </div>
+  <div class="header-right">
+    <div class="connection-state">
+      <div class="conn-dot loading" id="conn-dot"></div>
+      <span id="conn-label">connecting</span>
+    </div>
+    <span class="last-poll" id="last-poll">—</span>
+  </div>
+</header>
+<div class="header-rule"></div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">System</div>
+      <div class="stat-row">
+        <span class="stat-key">Active DOs</span>
+        <span class="stat-val accent" id="s-dos">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Companies</span>
+        <span class="stat-val" id="s-cos">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Jobs seen</span>
+        <span class="stat-val" id="s-seen">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Alerts today</span>
+        <span class="stat-val" id="s-alerts">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">By ATS</div>
+      <div id="ats-breakdown">
+        <p style="font-size:10px;color:var(--dim)">Loading…</p>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Operations</div>
+      <button class="sbar-btn" id="btn-trigger">HiringCafe scan now</button>
+      <button class="sbar-btn" id="btn-bootstrap">Bootstrap watchers</button>
+      <button class="sbar-btn" id="btn-refresh">Refresh status</button>
+      <button class="sbar-btn danger" id="btn-reset">Clear seen IDs</button>
+    </div>
+
+  </aside>
+
+  <!-- Panel -->
+  <main class="panel">
+    <nav class="tabs">
+      <button class="tab active" data-tab="companies">Companies</button>
+      <button class="tab" data-tab="config">Configuration</button>
+      <button class="tab" data-tab="log">Activity Log</button>
+    </nav>
+
+    <!-- Companies -->
+    <div class="tab-content active" id="tab-companies">
+
+      <div class="add-form" id="add-form" style="display:none">
+        <div class="form-title">Add Company to Watchlist</div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Company Name</label>
+            <input type="text" id="f-name" placeholder="Nordic Consulting">
+          </div>
+          <div class="form-field">
+            <label>ATS Platform</label>
+            <select id="f-ats">
+              <option value="greenhouse">Greenhouse</option>
+              <option value="lever">Lever</option>
+              <option value="ashby">Ashby</option>
+              <option value="workday">Workday</option>
+              <option value="icims">iCIMS</option>
+              <option value="successfactors">SAP SuccessFactors</option>
+              <option value="taleo">Oracle Taleo</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>ATS Token / Slug</label>
+            <input type="text" id="f-token" placeholder="nordicglobal">
+          </div>
+          <div class="form-field">
+            <label>Career Page URL <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <input type="text" id="f-url" placeholder="https://…myworkdayjobs.com/…">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-submit" id="btn-add-submit">Add &amp; start watching</button>
+          <button class="btn-cancel-form" id="btn-add-cancel">Cancel</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input type="text" class="search-input" id="co-search" placeholder="Filter by name, ATS, or token…">
+        <button class="add-btn" id="btn-show-add">+ Add company</button>
+      </div>
+
+      <div id="co-list">
+        <div class="empty">
+          <div class="empty-icon">S</div>
+          <p>Loading watchlist…<br>Set WORKER_URL at the top of this file.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config -->
+    <div class="tab-content" id="tab-config">
+
+      <div id="kw-section"><!-- rendered by JS --></div>
+
+      <div class="cfg-block" style="border-left-color:var(--teal)">
+        <div class="cfg-head">
+          <span class="cfg-label">Ghost Job Thresholds</span>
+        </div>
+        <div class="cfg-body">
+          <table class="cfg-table">
+            <tr>
+              <td style="color:var(--muted)">Warn after</td>
+              <td style="color:var(--p2)">21 days</td>
+            </tr>
+            <tr>
+              <td style="color:var(--muted)">Suppress after</td>
+              <td style="color:var(--p1)">90 days</td>
+            </tr>
+            <tr>
+              <td style="color:var(--muted)">Liveness check timeout</td>
+              <td style="color:var(--teal)">4 s (HEAD → job URL)</td>
+            </tr>
+          </table>
+          <p style="font-size:10px;color:var(--dim);margin-top:10px;line-height:1.6">
+            Thresholds are calibrated for healthcare IT. Epic analyst roles at smaller<br>
+            health systems can genuinely take 4–8 weeks to fill — wider than tech norms.
+          </p>
+        </div>
+      </div>
+
+      <div class="cfg-block" style="border-left-color:var(--teal)">
+        <div class="cfg-head">
+          <span class="cfg-label">Poll Intervals — DO Alarms</span>
+        </div>
+        <div class="cfg-body">
+          <table class="cfg-table">
+            <tr><td style="color:var(--muted)">Greenhouse · Lever · Ashby</td><td style="color:var(--p3)">30 s</td></tr>
+            <tr><td style="color:var(--muted)">Workday · iCIMS</td><td style="color:var(--teal)">60 s</td></tr>
+            <tr><td style="color:var(--muted)">SAP SuccessFactors</td><td style="color:var(--p2)">90 s</td></tr>
+            <tr><td style="color:var(--muted)">Oracle Taleo</td><td style="color:var(--dim)">120 s</td></tr>
+            <tr><td style="color:var(--muted)">HiringCafe (cron)</td><td style="color:var(--dim)">60 s</td></tr>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Log -->
+    <div class="tab-content" id="tab-log">
+      <div class="log-area" id="log-area">
+        <div class="log-entry">
+          <span class="log-ts" id="log-t0">—</span>
+          <span class="log-tag info">[STAT]</span>
+          <span class="log-msg">Dashboard initialised. Connecting to worker…</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Config — set this after: wrangler deploy ────────────────────────────────
+const WORKER_URL = window.STAT_WORKER_URL || '';
+// const WORKER_URL = 'http://localhost:8787'; // wrangler dev
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let companies = [];
+let alertsToday = 0;
+
+// ─── API ─────────────────────────────────────────────────────────────────────
+async function api(path, opts = {}) {
+  if (!WORKER_URL) throw new Error('WORKER_URL not configured');
+  const r = await fetch(WORKER_URL + path, opts);
+  return { ok: r.ok, status: r.status, data: await r.json() };
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// ─── Log ──────────────────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const area = document.getElementById('log-area');
+  const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+  const tagText = { info: '[INFO]', match: '[MATCH]', dead: '[DEAD]', warn: '[WARN]' }[type] || '[INFO]';
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML = `<span class="log-ts">${ts}</span><span class="log-tag ${type}">${tagText}</span><span class="log-msg">${msg}</span>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  while (area.children.length > 200) area.removeChild(area.firstChild);
+}
+
+// ─── Status ───────────────────────────────────────────────────────────────────
+async function loadStatus() {
+  const dot = document.getElementById('conn-dot');
+  const lbl = document.getElementById('conn-label');
+  if (!WORKER_URL) {
+    dot.className = 'conn-dot dead'; lbl.textContent = 'no worker url'; return;
+  }
+  dot.className = 'conn-dot loading'; lbl.textContent = 'fetching';
+  try {
+    const { ok, data } = await api('/');
+    if (!ok) throw new Error();
+    document.getElementById('s-dos').textContent   = data.activeDOs ?? '—';
+    document.getElementById('s-cos').textContent   = data.watchedCompanies ?? '—';
+    const seen = data.seenJobIds;
+    document.getElementById('s-seen').textContent  = seen > 999 ? (seen/1000).toFixed(1)+'k' : seen ?? '—';
+    document.getElementById('last-poll').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
+    dot.className = 'conn-dot live'; lbl.textContent = 'live';
+    log('Status OK — ' + data.activeDOs + ' DOs, ' + data.watchedCompanies + ' companies');
+    await loadCompanies();
+  } catch(e) {
+    dot.className = 'conn-dot dead'; lbl.textContent = 'offline';
+    log('Connection failed: ' + e.message, 'warn');
+    toast('Cannot reach STAT worker', 'error');
+  }
+}
+
+// ─── Companies ────────────────────────────────────────────────────────────────
+async function loadCompanies() {
+  const { ok, data } = await api('/companies');
+  if (!ok) return;
+  companies = data.companies ?? [];
+  renderCompanies();
+  renderAts();
+}
+
+function renderAts() {
+  const counts = {};
+  companies.forEach(c => counts[c.ats] = (counts[c.ats]||0)+1);
+  const total = companies.length || 1;
+  const el = document.getElementById('ats-breakdown');
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if (!sorted.length) { el.innerHTML = '<p style="font-size:10px;color:var(--dim)">None loaded</p>'; return; }
+  el.innerHTML = sorted.map(([a,n]) => `
+    <div class="ats-row">
+      <span class="ats-key">${a}</span>
+      <div class="ats-bar-bg"><div class="ats-bar-fill" style="width:${(n/total*100).toFixed(0)}%"></div></div>
+      <span class="ats-n">${n}</span>
+    </div>`).join('');
+}
+
+function renderCompanies() {
+  const q = document.getElementById('co-search').value.toLowerCase();
+  const filtered = companies.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    c.ats.toLowerCase().includes(q) ||
+    (c.token||'').toLowerCase().includes(q)
+  );
+  const el = document.getElementById('co-list');
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">?</div><p>No companies match "${q}"</p></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <table class="co-table">
+      <thead><tr>
+        <th>Company</th><th>ATS</th><th>Token</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        ${filtered.map(c => `
+        <tr>
+          <td>
+            <div class="co-name">${c.name}</div>
+            ${c.autoDiscovered ? '<div class="co-meta">auto-discovered</div>' : ''}
+          </td>
+          <td><span class="ats-pill ats-${c.ats}">${c.ats}</span></td>
+          <td style="font-family:var(--mono);font-size:10px;color:var(--dim)">${c.token||'—'}</td>
+          <td>
+            <div class="watch-state">
+              <div class="watch-dot ${c.watching?'active':''}"></div>
+              ${c.watching ? 'watching' : 'idle'}
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ─── Config ───────────────────────────────────────────────────────────────────
+function renderConfig() {
+  const groups = [
+    { p:1, label:'Epic / EHR / Healthcare IT',
+      kws:['epic analyst','epic ambulatory','epiccare','clarity sql','ehr analyst','clinical informatics analyst','healthcare it analyst','epic cadence','epic build','epic beacon'] },
+    { p:2, label:'Data / SQL / Analytics',
+      kws:['data analyst','healthcare data analyst','sql analyst','bi analyst','data engineer','clinical data analyst'] },
+    { p:3, label:'Product / Project / IT',
+      kws:['product manager','systems analyst','it analyst','implementation consultant','it project manager'] },
+  ];
+  const ptClass = {1:'pt-1',2:'pt-2',3:'pt-3'};
+  const blkClass = {1:'p1-block',2:'p2-block',3:'p3-block'};
+  document.getElementById('kw-section').innerHTML = groups.map(g => `
+    <div class="cfg-block ${blkClass[g.p]}" style="margin-bottom:12px">
+      <div class="cfg-head">
+        <span class="priority-tag ${ptClass[g.p]}">P${g.p}</span>
+        <span class="cfg-label">${g.label}</span>
+      </div>
+      <div class="cfg-body">
+        <div class="kw-chips">
+          ${g.kws.map(k=>`<span class="kw-chip">${k}</span>`).join('')}
+          <span class="kw-chip more">+ more in config.js</span>
+        </div>
+      </div>
+    </div>`).join('') + '<br>';
+}
+
+// ─── Event handlers ───────────────────────────────────────────────────────────
+document.getElementById('btn-trigger').onclick = async () => {
+  const b = document.getElementById('btn-trigger');
+  b.classList.add('loading');
+  log('Manual HiringCafe scan…');
+  try {
+    const { ok, data } = await api('/trigger', { method:'POST' });
+    if (ok) {
+      const n = data.newMatches ?? 0;
+      log('Scan complete: ' + n + ' match' + (n!==1?'es':''), n>0?'match':'info');
+      toast('Scan complete: ' + n + ' matches', n>0?'success':'');
+      if (n>0) { alertsToday+=n; document.getElementById('s-alerts').textContent=alertsToday; }
+    }
+  } catch(e) { toast('Scan failed','error'); }
+  b.classList.remove('loading');
+};
+
+document.getElementById('btn-bootstrap').onclick = async () => {
+  const b = document.getElementById('btn-bootstrap');
+  b.classList.add('loading');
+  log('Bootstrapping DOs…');
+  try {
+    const { ok, data } = await api('/bootstrap', { method:'POST' });
+    if (ok) { log('Bootstrap: ' + data.spawned + ' new DOs'); toast('Bootstrap complete'); await loadStatus(); }
+  } catch(e) { toast('Bootstrap failed','error'); }
+  b.classList.remove('loading');
+};
+
+document.getElementById('btn-refresh').onclick = async () => { await loadStatus(); toast('Refreshed'); };
+
+document.getElementById('btn-reset').onclick = async () => {
+  if (!confirm('Clear all seen job IDs? STAT will re-alert on all currently live matching jobs on the next poll.')) return;
+  const { ok } = await api('/reset-seen', { method:'POST' });
+  if (ok) { log('Seen IDs cleared','warn'); toast('Seen IDs cleared','success'); await loadStatus(); }
+};
+
+document.getElementById('btn-show-add').onclick = () => {
+  document.getElementById('add-form').style.display = 'block';
+  document.getElementById('f-name').focus();
+};
+document.getElementById('btn-add-cancel').onclick = () => {
+  document.getElementById('add-form').style.display = 'none';
+};
+document.getElementById('btn-add-submit').onclick = async () => {
+  const name  = document.getElementById('f-name').value.trim();
+  const ats   = document.getElementById('f-ats').value;
+  const token = document.getElementById('f-token').value.trim();
+  const url   = document.getElementById('f-url').value.trim();
+  if (!name || !ats || !token) { toast('Name, ATS, and token required','error'); return; }
+  const b = document.getElementById('btn-add-submit');
+  b.textContent = 'Adding…'; b.disabled = true;
+  try {
+    const { ok, data } = await api('/companies', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, ats, token, ...(url?{url}:{}) }),
+    });
+    if (ok) {
+      log('Added: ' + name + ' (' + ats + ':' + token + ')','match');
+      toast('Now watching ' + name,'success');
+      document.getElementById('add-form').style.display = 'none';
+      ['f-name','f-token','f-url'].forEach(id => document.getElementById(id).value='');
+      await loadCompanies();
+    } else {
+      toast(data.error||'Add failed','error');
+    }
+  } catch(e) { toast('Error: '+e.message,'error'); }
+  b.textContent = 'Add & start watching'; b.disabled = false;
+};
+
+document.getElementById('co-search').addEventListener('input', renderCompanies);
+
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.getElementById('log-t0').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
+renderConfig();
+
+if (WORKER_URL) {
+  loadStatus();
+  setInterval(loadStatus, 30_000);
+} else {
+  document.getElementById('conn-dot').className = 'conn-dot dead';
+  document.getElementById('conn-label').textContent = 'no worker url';
+  log('Set WORKER_URL in this file to connect','warn');
+  toast('Set WORKER_URL at the top of ui.html','error');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+STAT — Salary Inference System
+Full Specification
+Updated: 2026-06-06
+
+This document covers the complete salary intelligence layer:
+design philosophy, four data sources, inference logic, display
+rendering, and the DO architecture.
+
+═══════════════════════════════════════════════════════════════
+DESIGN PHILOSOPHY: DO NOT ASSUME
+═══════════════════════════════════════════════════════════════
+
+Every displayed salary number traces to a verifiable source.
+Nothing is fabricated, guessed, or derived from hardcoded ranges.
+
+The four possible salary display states:
+
+1. DISCLOSED:
+   The employer stated the salary in the ATS job listing.
+   No inference. No prefix.
+   Display: "$85k–$110k" (green)
+   Source: job.salaryRaw from ATS adapter
+
+2. PEER-INFERRED:
+   No salary disclosed, but ≥3 similar jobs from the same ATS
+   and keyword group disclosed salary ranges in the last 7 days.
+   Display: "~$78k–$105k" (amber) + "peer est. (N similar roles, same ATS, last 7d)"
+   Source: SalaryInferenceDO peer_pool storage
+
+3. LCA-INFERRED:
+   No salary and insufficient peer data, but DOL H-1B LCA records
+   exist for this employer (or this SOC+state combination).
+   Display: "~$X–$Y · DOL LCA · [employer] · [state] · [period]" (amber)
+   Source: SalaryInferenceDO lca_by_employer or lca_by_soc storage
+
+4. BLS-BENCHMARKED:
+   No salary, no peers, no LCA match.
+   Government percentile data from BLS OEWS survey.
+   Display: "~$X–$Y · BLS OEWS · 15-1211 · [area] · 2025" (amber)
+   Source: SalaryInferenceDO bls_wages storage
+
+5. TRANSPARENCY VIOLATION:
+   No salary disclosed AND the job is in a state that legally
+   requires salary disclosure in job postings.
+   No salary estimate — just a flag.
+   Display: "⚠ No salary disclosed · legally required in NY" (deep red)
+
+6. NO DATA:
+   None of the above sources have data. Salary not shown.
+   No guess, no placeholder.
+
+═══════════════════════════════════════════════════════════════
+SOURCE 1: PEER POOL (Priority 1 — highest accuracy)
+═══════════════════════════════════════════════════════════════
+
+What it is:
+  A rolling 14-day window of disclosed salary ranges from jobs
+  that STAT itself has seen and matched. Stored in SalaryInferenceDO
+  DO storage as 'peer_pool' (JSON array).
+
+Why it's the best source:
+  - Same ATS platform → same employer type, same ATS data quality
+  - Same keyword group → similar role
+  - Same time window → current hiring cycle, current market
+  - Real employer data, not a survey
+  - Self-populating — grows automatically as disclosed jobs are seen
+
+Peer record shape:
+  { ats, group, env, min, max, ts }
+
+Inference logic (requires ≥3 matching peers):
+  Filter: same ats + same group + similar environment + ts > 7 days ago
+  If ≥3 matches:
+    mins = sorted array of peer salary minimums
+    maxs = sorted array of peer salary maximums
+    p25 of mins → inferred lower bound
+    p75 of maxs → inferred upper bound
+  If <3 matches: skip to Source 2
+
+When peer salary is recorded:
+  Any time a CompanyWatcherDO finds a job that HAS a disclosed salary
+  AND that job matches a keyword group, the salary is recorded into
+  the peer pool via POST SalaryInferenceDO /record.
+  This happens whether or not the job generates an alert.
+
+Peer pool maintenance:
+  - Records older than 14 days are pruned automatically
+  - Total capped at 500 records
+  - Stored in DO storage (persists across deploys)
+
+═══════════════════════════════════════════════════════════════
+SOURCE 2: DOL OFLC H-1B LCA DATA (Priority 2 — employer-specific)
+═══════════════════════════════════════════════════════════════
+
+What it is:
+  The Department of Labor's Office of Foreign Labor Certification
+  publishes quarterly H-1B Labor Condition Application disclosure data.
+  This is the ONLY public government dataset with individual-case-level
+  wage data including employer name, job title, worksite state,
+  offered wage, and SOC code.
+
+Why it's uniquely valuable:
+  - Employer-specific: "Nordic Consulting paid $95k in Baltimore in Q3 2025"
+  - Government-sworn: employers certify offered wages under penalty of law
+  - Current: quarterly releases, most recent = FY26 Q2 (Oct 2025–Mar 2026)
+  - Role-specific: SOC codes + job titles filter to Epic analyst roles
+  - Not a survey: actual case records, not self-reported estimates
+
+Source URL pattern:
+  dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY{YY}_Q{N}.xlsx
+
+Tried in order (most recent first):
+  LCA_Disclosure_Data_FY26_Q2.xlsx  (Oct 2025 – Mar 2026)
+  LCA_Disclosure_Data_FY26_Q1.xlsx  (Oct 2025 – Dec 2025)
+  LCA_Disclosure_Data_FY25_Q4.xlsx  (Jul 2025 – Sep 2025)
+
+File handling:
+  The XLSX files are large (~50MB). salary.js attempts to parse:
+  1. True XLSX binary via minimal ZIP/XML extraction
+  2. Tab-delimited TSV (some older DOL releases)
+  If parsing fails, the source is skipped — no crash.
+
+Filtering:
+  CASE_STATUS = CERTIFIED only
+  SOC codes: 15-1211, 15-1299, 11-9111, 13-1111
+  Wage converted to annual if reported hourly (×2080)
+  Sanity range: $20,000–$500,000
+
+Two indexes built from LCA data:
+
+  lca_by_employer:
+    Key: employer name (normalized, lowercase, common suffixes stripped)
+    Value: { min, max, count, state, employer, period }
+    Requirements: ≥3 case records per employer
+    Used for: exact employer match on job company name
+
+  lca_by_soc:
+    Key: "{soc}:{state}" or "{soc}:national"
+    Value: { p25, p50, p75, count, state, period }
+    Requirements: ≥5 case records per key
+    Used for: SOC+state lookup when no exact employer match
+
+Employer name matching:
+  Normalized: lowercase, strip common suffixes (inc, llc, corp, ltd,
+  consulting, group, health, system, systems), collapse whitespace.
+  Exact match or substring containment in either direction.
+  e.g. "Nordic Consulting Group LLC" matches "nordic"
+
+Refresh cadence:
+  POST /salary-refresh triggers a new download + re-parse.
+  Should be run quarterly as DOL releases new data.
+  Recommended: run at bootstrap and re-run after each quarterly release.
+
+Legal note per 20 CFR § 655.731:
+  H-1B employees must be paid the higher of the prevailing wage
+  or the employer's actual wage. LCA data reflects what employers
+  certified they would pay — which equals or exceeds prevailing wage.
+
+═══════════════════════════════════════════════════════════════
+SOURCE 3: DOL LCA SOC+STATE (Priority 3 — role/geography)
+═══════════════════════════════════════════════════════════════
+
+Same LCA dataset as Source 2, but aggregated by SOC code + state
+rather than by specific employer.
+
+Used when:
+  - No exact employer match in lca_by_employer
+  - Sufficient case records exist for the SOC+state combination (≥5)
+
+SOC code mapping by keyword group:
+  Epic / EHR / Healthcare IT → 15-1211 (Computer Systems Analysts)
+  Data / SQL / Analytics     → 15-1211
+  Product / Project / IT     → 13-1111 (Management Analysts)
+
+State inference:
+  parseStateFromLocation() extracts state from job.location string:
+  - Looks for 2-letter abbreviation (e.g. "Baltimore, MD" → "MD")
+  - Falls back to full state name lookup
+  - Returns null for "Remote" with no state context
+
+═══════════════════════════════════════════════════════════════
+SOURCE 4: BLS OEWS BENCHMARKS (Priority 4 — floor/ceiling)
+═══════════════════════════════════════════════════════════════
+
+What it is:
+  Bureau of Labor Statistics Occupational Employment and Wage Statistics.
+  Semi-annual survey of ~1.1M business establishments.
+  Produces p10/p25/p50/p75/p90 annual wages by SOC code, geography,
+  and industry. Published annually in May.
+
+Source:
+  HTML occupation profile pages at:
+  bls.gov/oes/current/oes{soc_nodash}.htm
+  e.g. bls.gov/oes/current/oes151211.htm (Computer Systems Analysts)
+
+Parsing:
+  Pages contain percentile wage tables in HTML.
+  Salary.js fetches the page and extracts numeric values from the
+  "Percentile wage estimates" section.
+  Also attempts to extract healthcare industry (NAICS 622/hospitals)
+  specific wages where present.
+
+SOC codes fetched:
+  15-1211: Computer Systems Analysts (primary for Epic analysts)
+  15-1299: Computer Occupations, All Other
+  11-9111: Medical and Health Services Managers
+  13-1111: Management Analysts
+
+Storage shape (bls_wages):
+  "{soc}:national"        → { p10, p25, p50, p75, p90, area, year }
+  "{soc}:health:national" → { p25, p50, p75, area, year }
+
+The BLS data is used as a bounds check and last-resort benchmark.
+It's the least specific source (national average across all employers
+and all experience levels in the SOC category) but it's verifiable,
+government-sourced, and unambiguous in provenance.
+
+Refresh cadence: annually (BLS publishes May each year).
+
+═══════════════════════════════════════════════════════════════
+SOURCE 5: PAY TRANSPARENCY LAW SIGNAL (Priority 5 — metadata)
+═══════════════════════════════════════════════════════════════
+
+This source produces no salary estimate. It flags jobs where salary
+disclosure is legally required but missing.
+
+States requiring salary ranges in job postings (as of mid-2026):
+  CA, CO, CT, HI, IL, MA, MD, MN, NJ, NV, NY, RI, VT, WA
+  ME (effective July 29, 2026), VA (effective July 1, 2026)
+
+Implemented in TRANSPARENCY_STATES Set in salary.js.
+
+Logic:
+  1. Parse state from job.location via parseStateFromLocation()
+  2. For remote jobs, check if location hints at transparency state
+  3. If state in TRANSPARENCY_STATES AND salary is null:
+     → set job.transparencyFlag = state_abbrev
+     → set job.transparencyViolation = true
+  4. Display: "⚠ No salary disclosed · legally required in NY"
+
+This flag appears:
+  - In email HTML (deep red section)
+  - Appended to Pushover P1 messages
+  - In the UI salary display area
+
+Important: STAT does not provide legal advice. The flag is informational —
+it surfaces that the employer may be non-compliant, which is independently
+useful signal when evaluating whether to apply.
+
+═══════════════════════════════════════════════════════════════
+SALARYINFERENCEDO — IMPLEMENTATION
+═══════════════════════════════════════════════════════════════
+
+Location: src/salary.js
+DO name binding: SALARY_INFERENCE
+Global singleton instance: named 'salary-inference'
+
+HTTP endpoints (internal, called by CompanyWatcherDO and index.js):
+  POST /infer    → { job } → returns InferenceResult
+  POST /record   → { job, match } → records disclosed salary to peer pool
+  POST /refresh-bls → triggers BLS OEWS page fetch
+  POST /refresh-lca → triggers DOL LCA XLSX download + parse
+  GET  /status   → { peerCount, lcaCount, blsDate, lcaDate }
+
+InferenceResult shape:
+  {
+    salary:            string|null    — formatted range or null
+    salaryMin:         number|null
+    salaryMax:         number|null
+    salarySource:      string         — 'peer' | 'lca_employer' | 'lca_soc' | 'bls' | 'none'
+    salaryLabel:       string|null    — full attribution string
+    transparencyFlag:  string|null    — state abbrev or null
+    transparencyViolation: boolean
+    sourcePriority:    number         — 1-5
+  }
+
+enrichJobWithSalary(job, match, env):
+  - If job.salaryRaw has data: record to peer pool, return
+  - Otherwise: POST SalaryInferenceDO /infer with jobWithGroup
+  - On response: set job.salary, salaryLabel, salarySource, etc.
+  - Non-blocking: if DO unreachable, job still alerts without salary
+
+bootstrapSalaryDO(env):
+  Called by bootstrapDOs() in index.js.
+  Runs refresh-bls and refresh-lca in parallel via Promise.allSettled.
+  Returns { bls: result, lca: result } for logging.
+  Non-blocking if either refresh fails — both are best-effort.
+
+═══════════════════════════════════════════════════════════════
+SALARY DISPLAY RENDERING (notify.js + email HTML)
+═══════════════════════════════════════════════════════════════
+
+Pushover P1 message format:
+  Disclosed:  "Epic Analyst\nNordic Consulting · Baltimore · remote · $85k–$110k"
+  Peer est:   "Epic Analyst\nNordic Consulting · Baltimore · remote · ~$88k–$108k"
+  BLS:        "Epic Analyst\nNordic Consulting · Baltimore · remote · ~$72k–$128k"
+  Unverified: appends "\n⚡ URL unconfirmed — verify before applying"
+  Transparency: appends "\n⚠ No salary · legally required in MD"
+
+Email HTML salary section:
+  Disclosed:   green "$85k–$110k", no attribution line
+  Peer-est:    amber "~$85k–$110k" + grey mono attribution:
+               "peer est. (8 similar roles, greenhouse, last 7d)"
+  LCA-employer: amber "~$X–$Y" + grey mono attribution:
+               "DOL LCA · Nordic Consulting · MD · FY26 Q2"
+  LCA-soc:     amber "~$X–$Y" + grey mono attribution:
+               "DOL LCA · 15-1211 · MD · FY26 Q2"
+  BLS:         amber "~$X–$Y" + grey mono attribution:
+               "BLS OEWS · 15-1211 · national · 2025"
+  Transparency: deep red "⚠ No salary disclosed · legally required in NY"
+  No data:     no salary section rendered
+
+The "~" prefix always appears on inferred/estimated values.
+It never appears on disclosed values.
+This distinction is intentional — it signals confidence level.
+
+═══════════════════════════════════════════════════════════════
+OPERATIONAL NOTES
+═══════════════════════════════════════════════════════════════
+
+PEER POOL COLD START:
+  On first deploy, the peer pool is empty.
+  Salary inference falls back to LCA → BLS immediately.
+  The pool populates naturally as STAT sees disclosed salaries.
+  Typical timeline: after 1–2 weeks of watching active employers,
+  peer inference becomes the primary source for most roles.
+
+LCA COLD START:
+  POST /bootstrap triggers bootstrapSalaryDO which calls /refresh-lca.
+  The LCA XLSX download takes 30–60 seconds depending on file size.
+  The DO processes it asynchronously — /bootstrap returns immediately.
+  Check /salary-status to confirm lca_count > 0 before relying on it.
+
+BLS DATA QUALITY NOTE:
+  BLS OEWS pages use HTML tables — the parser is regex-based.
+  If BLS changes their page structure, parser may return null.
+  Failure mode: no BLS data, fallback to transparency signal or null.
+  No crash, no alert suppression.
+  Refresh: POST /salary-refresh re-fetches and re-parses.
+
+DOL LCA PARSING NOTE:
+  The XLSX binary parser in salary.js is minimal.
+  Primary path: TSV (some DOL releases are tab-delimited despite .xlsx ext)
+  Fallback: XLSX XML extraction via ZIP parsing
+  If both fail: lca_count stays 0, STAT falls back to BLS.
+  To verify: GET /salary-status after /bootstrap and check lca_count.

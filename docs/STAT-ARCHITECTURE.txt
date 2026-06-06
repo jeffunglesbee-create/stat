@@ -1,0 +1,544 @@
+STAT — Architecture Reference
+Updated: 2026-06-06
+
+Deep technical reference for all architectural decisions.
+Companion to STAT-CURRENT-STATE.txt.
+
+═══════════════════════════════════════════════════════════════
+SYSTEM OVERVIEW
+═══════════════════════════════════════════════════════════════
+
+Two-tier polling architecture:
+
+TIER 1 — CompanyWatcherDO (30–120s per employer, parallel)
+  One Durable Object instance per target company.
+  Self-scheduling via DO alarms — crash-resilient, guaranteed
+  at-least-once execution. Survives deploys and Worker restarts.
+  Polls ATS APIs directly. Matches keywords. Checks liveness.
+  Infers salary. Fires alerts.
+
+TIER 2 — HiringCafe cron (every 60s, wide-net)
+  1-minute cron trigger on the main Worker.
+  Scrapes HiringCafe for keyword matches across the long tail
+  of ~3,600+ Epic-deploying organizations not in the DO watchlist.
+  Auto-discovers new companies from matches and spawns DOs.
+  Catches employers not explicitly seeded.
+
+Both tiers share:
+  - STAT_KV seen-set for global deduplication
+  - SalaryInferenceDO for salary enrichment
+  - notify.js for Pushover + email dispatch
+
+═══════════════════════════════════════════════════════════════
+DATA FLOW — CompanyWatcherDO alarm cycle
+═══════════════════════════════════════════════════════════════
+
+DO alarm fires
+  → fetchCompanyJobs(company)       [adapters.js]
+      → ATS-specific adapter
+      → returns Array<NormalizedJob>
+  → Load DO storage seen_ids (Set)
+  → For each job:
+      if seenIds.has(job.id) → skip
+      add job.id to seenIds
+      if job.ghostFlag === 'suppress' → skip
+      if !passesEnvFilter(job) → skip
+      match = matchJob(job)          [notify.js]
+      if !match → skip
+      liveness = checkJobLiveness(job) [notify.js]
+      if liveness === 'dead' → skip (stay in seen-set)
+      job.liveness = liveness
+      await enrichJobWithSalary(job, match, env) [salary.js]
+      job.matchedKeyword = match.matchedKw
+      newMatches.push({ job, match })
+  → Persist seen_ids (cap 500), seen_count, last_run
+  → Merge new IDs into global KV seen-set
+  → dispatchAlerts(env, newMatches)  [notify.js]
+  → Reschedule alarm (POLL_INTERVALS[company.ats])
+
+═══════════════════════════════════════════════════════════════
+DATA FLOW — HiringCafe cron cycle
+═══════════════════════════════════════════════════════════════
+
+Cron fires (every minute)
+  → bootstrapDOs(env)               [idempotent — skips existing]
+  → runHiringCafeScrape(env)
+      → Load global KV seen-set
+      → For each search term × environment:
+          fetchHiringCafe(term, env)  [adapters.js]
+          For each job:
+            if seen → skip
+            add to seen
+            if ghostFlag=suppress → skip
+            if !passesEnvFilter → skip
+            match = matchJob(job)
+            if !match → skip
+            await maybeAddNewCompany(env, job)  [auto-discover]
+            newMatches.push
+          delay 400ms between requests (polite)
+      → saveSeenIds(kv, seenIds)
+      → dispatchAlerts(env, newMatches)
+
+═══════════════════════════════════════════════════════════════
+NORMALIZED JOB OBJECT — all adapters produce this shape
+═══════════════════════════════════════════════════════════════
+
+{
+  id:              string   — ATS-unique job identifier
+  title:           string   — job title
+  company:         string   — employer name
+  location:        string   — location string (e.g. "Baltimore, MD")
+  environment:     string   — 'remote' | 'hybrid' | 'onsite' | ''
+  salary:          string|null  — formatted string or null
+  salaryRaw:       {min, max}|null  — raw numbers if parsed from ATS
+  url:             string   — application URL
+  postedAt:        string|null  — ISO date or null
+  daysAgo:         number|null  — computed from postedAt
+  ghostFlag:       null | 'warn' | 'suppress'
+  matchedKeyword:  string|null  — set by matchJob()
+  liveness:        'live' | 'unknown' | null  — set by checkJobLiveness()
+  atsSource:       string   — 'greenhouse' | 'lever' | 'ashby' | etc.
+  salaryLabel:     string|null  — detailed attribution string
+  salarySource:    string   — 'disclosed' | 'peer' | 'lca_employer' | 'lca_soc' | 'bls' | 'none'
+  salaryInferred:  boolean
+  sourcePriority:  number   — 1-5 (salary inference priority level)
+  transparencyFlag: string|null  — state abbreviation if required
+  transparencyViolation: boolean
+  _matchGroup:     string   — match group label, set before salary inference
+}
+
+═══════════════════════════════════════════════════════════════
+ATS ADAPTERS — source of truth
+═══════════════════════════════════════════════════════════════
+
+All adapters live in src/adapters.js.
+All return Array<NormalizedJob> or [].
+All errors are caught internally — callers never throw.
+
+GREENHOUSE (fetchGreenhouse)
+  URL: boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true
+  Auth: none (public JSON API)
+  Salary: metadata fields (varies by company)
+  Ghost signal: updated_at timestamp
+  Poll: 30s
+
+LEVER (fetchLever)
+  URL: api.lever.co/v0/postings/{token}?mode=json&limit=250
+  Auth: none (public JSON API)
+  Salary: salaryRange.min / salaryRange.max
+  Ghost signal: createdAt timestamp
+  Poll: 30s
+
+ASHBY (fetchAshby)
+  URL: api.ashbyhq.com/posting-api/job-board/{token}?includeCompensation=true
+  Auth: none (public JSON API)
+  Salary: compensation.summaryComponents (best salary data of all ATS)
+  Ghost signal: publishedAt timestamp
+  Poll: 30s
+
+WORKDAY (fetchWorkday)
+  URL: company.url (varies per tenant — e.g. jhhs.wd5.myworkdayjobs.com/...)
+  Auth: none
+  Strategy (in priority order):
+    1. JSON API: POST {origin}/wday/cxs/{tenant}/External_Career_Site/jobs
+    2. SSR __NEXT_DATA__ extraction
+    3. window.__reactiveStore extraction
+  Salary: rarely disclosed in listing JSON
+  Ghost signal: postedOn field
+  Poll: 60s
+  NOTE: Workday tenant URLs vary. Some use custom career domains.
+  Verify each URL in SEED_COMPANIES before first deploy.
+
+iCIMS (fetchICIMS)
+  URL: company.url (e.g. careers-{token}.icims.com/jobs/search)
+  Strategy:
+    1. sitemap.xml (fast — all jobs + lastmod in one request, cap 500)
+    2. HTML search page parse (fallback)
+  Salary: not available in listing
+  Ghost signal: lastmod from sitemap
+  Poll: 60s
+  NOTE: iCIMS sitemap for large health systems can exceed 500 entries.
+  Increase cap in fetchICIMS() if needed.
+
+SAP SUCCESSFACTORS (fetchSuccessFactors)
+  URL: career4.successfactors.com/career?company={id}&career_ns=job_listing_summary&resultType=XML
+  Auth: none (public XML feed)
+  Salary: not disclosed
+  Ghost signal: pubDate
+  Poll: 90s
+
+ORACLE TALEO (fetchTaleo)
+  URL: {company}.taleo.net/careersection/{n}/jobsearch.ftl
+  Strategy:
+    1. Embedded JS blob: var jobData = [...] or var jobs = [...]
+    2. HTML table parse (classic Taleo layout)
+  Salary: not available
+  Ghost signal: postedDate or openDate
+  Poll: 120s
+  NOTE: Most fragile adapter. Taleo HTML varies significantly by
+  tenant and version. If a Taleo company returns zero results,
+  inspect the career page HTML directly.
+
+HIRINGCAFE (fetchHiringCafe)
+  URL: hiring.cafe/?q={keyword}&environment={env}
+  Strategy: __NEXT_DATA__ SSR payload extraction
+  Salary: salaryMin / salaryMax when disclosed
+  Ghost signal: postedAt timestamp
+  Role: wide-net fallback (cron-driven, not DO per employer)
+  NOTE: HiringCafe confirms jobs at last crawl time (up to 12hr ago).
+  STAT's liveness check runs AFTER HiringCafe data is received,
+  providing additional verification HiringCafe doesn't offer.
+
+DISPATCHER (fetchCompanyJobs)
+  Routes to the correct adapter by company.ats field.
+  Returns [] for unknown ATS types (silent, never throws).
+
+═══════════════════════════════════════════════════════════════
+KEYWORD MATCHING — matchJob()
+═══════════════════════════════════════════════════════════════
+
+Evaluates job title + company name against WATCH_GROUPS in config.js.
+Groups are evaluated top-to-bottom. First match wins.
+Returns { group, priority, label, matchedKw } or null.
+
+Haystack: `${job.title} ${job.company}`.toLowerCase()
+All keywords are lowercased before comparison (case-insensitive).
+
+Example: "Epic Ambulatory Analyst" matches P1 group via "epic ambulatory"
+Example: "Healthcare Data Analyst" matches P2 group via "healthcare data analyst"
+
+To add a keyword: edit WATCH_GROUPS in src/config.js → redeploy.
+No DO restart needed — keyword matching runs on the Worker,
+not inside the DO storage.
+
+═══════════════════════════════════════════════════════════════
+ENVIRONMENT FILTER — passesEnvFilter()
+═══════════════════════════════════════════════════════════════
+
+Checks job.environment against ENVIRONMENTS array in config.js.
+Default: ['remote', 'hybrid']
+
+Behavior:
+  - If ENVIRONMENTS is empty: all jobs pass
+  - If job.environment is empty/unknown: job passes (don't suppress unknown)
+  - Otherwise: job.environment must include one of the configured values
+
+To allow onsite jobs: add 'onsite' to ENVIRONMENTS in config.js → redeploy.
+
+═══════════════════════════════════════════════════════════════
+AUTO-DISCOVERY — maybeAddNewCompany()
+═══════════════════════════════════════════════════════════════
+
+When HiringCafe returns a match from an employer not in the watchlist,
+STAT attempts to infer the ATS from the job URL and auto-registers
+the company.
+
+URL detection patterns:
+  boards.greenhouse.io/... → ats='greenhouse', token=slug
+  api.lever.co/... → ats='lever', token=path segment
+  jobs.ashbyhq.com/... → ats='ashby', token=path segment
+  *.myworkdayjobs.com → ats='workday', token=subdomain
+  careers-*.icims.com → ats='icims', token=extracted slug
+
+On detection:
+  1. Company added to STAT_KV company_watchlist
+  2. CompanyWatcherDO spawned immediately
+  3. First poll in 5 seconds
+
+Auto-discovered companies are marked autoDiscovered:true in the
+company config and flagged in the UI.
+
+═══════════════════════════════════════════════════════════════
+GLOBAL SEEN-SET ARCHITECTURE
+═══════════════════════════════════════════════════════════════
+
+Two levels of deduplication prevent double-alerting:
+
+LEVEL 1: Per-DO seen_ids (DO storage, per company)
+  Used by CompanyWatcherDO to track jobs seen from that company.
+  Prevents re-alerting when the same job appears in consecutive polls.
+  Capped at 500 per company. Older IDs trimmed.
+
+LEVEL 2: Global KV seen-set (STAT_KV stat:seen_job_ids)
+  Used by the HiringCafe cron scraper.
+  Prevents HiringCafe from re-alerting a job already alerted by a DO.
+  Capped at 5000 total. Older IDs trimmed.
+  CompanyWatcherDO also writes new match IDs here after alerting.
+
+Why two levels:
+  - HiringCafe and per-company DOs can both discover the same job
+  - The DO is faster (30–120s) but may miss companies not in watchlist
+  - HiringCafe catches the long tail but runs every 60s vs per-company alarm
+  - Global seen-set is the dedup bridge between the two systems
+
+═══════════════════════════════════════════════════════════════
+BOOTSTRAPPING FLOW
+═══════════════════════════════════════════════════════════════
+
+POST /bootstrap triggers bootstrapDOs(env) which:
+
+1. Loads company watchlist from STAT_KV (or initializes from SEED_COMPANIES)
+2. Loads DO registry from STAT_KV
+3. For each company not in registry:
+   a. Generates DO ID: env.COMPANY_WATCHER.idFromName(doKey)
+   b. Gets stub: env.COMPANY_WATCHER.get(id)
+   c. POST stub /init with company config
+   d. DO schedules first alarm in 5 seconds
+   e. Adds to registry
+4. Saves updated registry to STAT_KV
+5. Calls bootstrapSalaryDO(env) if spawned > 0 or registry empty:
+   a. POST SalaryInferenceDO /refresh-bls (fetches BLS OEWS pages)
+   b. POST SalaryInferenceDO /refresh-lca (downloads DOL LCA XLSX)
+
+This is idempotent — safe to run repeatedly.
+Running /bootstrap when some DOs are already active spawns only
+the ones not yet in the registry.
+
+First deploy sequence:
+  wrangler deploy
+  wrangler kv:namespace create STAT_KV → paste ID in wrangler.toml
+  wrangler deploy (with KV ID)
+  wrangler secret put × 4
+  POST /bootstrap
+  POST /trigger (test HiringCafe scan)
+
+═══════════════════════════════════════════════════════════════
+COMPANY WATCHLIST — SEED_COMPANIES
+═══════════════════════════════════════════════════════════════
+
+The initial watchlist is defined in src/config.js SEED_COMPANIES.
+On first /bootstrap, this array is written to STAT_KV as the
+authoritative watchlist. Subsequent /bootstrap calls use the KV list.
+
+New companies can be added two ways:
+
+1. HTTP POST /companies — immediate, no redeploy needed:
+   curl -X POST https://stat-job-watcher.*.workers.dev/companies \
+     -H "Content-Type: application/json" \
+     -d '{"name":"My Hospital","ats":"workday","token":"myhospital","url":"https://..."}'
+
+2. Edit SEED_COMPANIES in config.js → wrangler deploy → POST /bootstrap
+   (use for permanent additions to the canonical list)
+
+Watchlist is stored in STAT_KV. The KV list is authoritative.
+SEED_COMPANIES is only used if the KV list is empty/absent.
+
+═══════════════════════════════════════════════════════════════
+WORKER BINDINGS (wrangler.toml)
+═══════════════════════════════════════════════════════════════
+
+[[kv_namespaces]]
+  binding = "STAT_KV"
+  id = "[set after: wrangler kv:namespace create STAT_KV]"
+
+[[durable_objects.bindings]]
+  name = "COMPANY_WATCHER"
+  class_name = "CompanyWatcherDO"
+
+[[durable_objects.bindings]]
+  name = "SALARY_INFERENCE"
+  class_name = "SalaryInferenceDO"
+
+[[migrations]]
+  tag = "v1"
+  new_classes = ["CompanyWatcherDO", "SalaryInferenceDO"]
+
+Both DO classes are exported from src/index.js.
+CompanyWatcherDO exported from src/do.js
+SalaryInferenceDO exported from src/salary.js
+
+═══════════════════════════════════════════════════════════════
+CRON TRIGGER
+═══════════════════════════════════════════════════════════════
+
+[triggers]
+crons = ["* * * * *"]   — every minute
+
+The cron handler in src/index.js:
+  1. Calls bootstrapDOs(env) — idempotent, spawns any missing DOs
+  2. Calls runHiringCafeScrape(env) — wide-net keyword search
+
+The cron does NOT replace DO alarms — it's supplementary.
+DO alarms run independently per-company on their own intervals.
+The cron catches employers not in the DO watchlist.
+
+═══════════════════════════════════════════════════════════════
+UI ARCHITECTURE (src/ui.html)
+═══════════════════════════════════════════════════════════════
+
+Standalone HTML file — open in any browser.
+No server needed. Calls the deployed Worker directly.
+
+Setup: set const WORKER_URL at the top of the file to your
+deployed Worker URL after: wrangler deploy
+
+Design language: warm paper/clinical (COMPLETELY SEPARATE from FIELD)
+  Base: #f7f4ef parchment
+  Accent: #1a6b6b teal
+  Fonts: Instrument Serif (wordmark), Epilogue (sans), DM Mono (data)
+
+Structure:
+  Sidebar:  status tiles, ATS breakdown bar chart, action buttons
+  Tabs:
+    Companies — searchable table of all watched employers + DO status
+                inline "Add Company" form → POST /companies
+    Config    — keyword groups P1/P2/P3, ghost thresholds, poll intervals
+    Log       — timestamped stream of all UI actions and API responses
+
+Auto-refresh: every 30 seconds via setInterval.
+
+FIELD COMPARISON — deliberate opposites:
+  FIELD: dark obsidian base, gold accent, Playfair/Barlow/JetBrains
+  STAT:  warm parchment base, teal accent, Instrument/Epilogue/DM Mono
+  No shared CSS variables, no shared design tokens, no shared motifs.
+
+═══════════════════════════════════════════════════════════════
+RESUME MATCHER (resume-matcher.html)
+═══════════════════════════════════════════════════════════════
+
+Standalone HTML file — run via Claude.ai artifact viewer.
+(Browser CORS blocks direct Anthropic API calls from local file:// URLs.)
+
+Uses Anthropic API (claude-sonnet-4-20250514) directly from the browser.
+No server component needed.
+
+Step 1 — Resume input:
+  Drop PDF or paste text. PDFs sent as base64 document content blocks.
+
+Step 2 — Profile extraction:
+  Claude extracts structured JSON profile:
+    name, headline, yearsExperience, epicModules, otherSystems,
+    certifications, skills, targetRoles, environments, locationContext,
+    targetSalary, experienceSummary, matchStrengths, potentialGaps
+
+Step 3 — Job scoring:
+  Paste any job description. Claude scores 1–10 against profile with:
+    score, verdict (2-3 words), jobTitle, company, summary (2 sentences),
+    strengths (3-5 specific), gaps (2-4 specific), salaryAssessment,
+    coverLetterOpener (2 sentences, specific to job + candidate)
+
+Score cards stack. Each card: expandable body, copy button on cover opener.
+Score badge color: green (9-10), teal (7-8), amber (5-6), red (1-4)
+
+═══════════════════════════════════════════════════════════════
+NETWORK CONSTRAINTS — CLAUDE SANDBOX
+═══════════════════════════════════════════════════════════════
+
+These constraints apply when Claude is doing the building
+(not when the Worker is running in production):
+
+ACCESSIBLE from sandbox:
+  github.com          ✅ git push/pull via HTTPS
+  api.github.com      ✅ GitHub REST API
+  api.anthropic.com   ✅ Claude API (artifact builds)
+  raw.githubusercontent.com ✅
+  pypi.org / npmjs.org ✅
+
+BLOCKED from sandbox:
+  *.workers.dev       ❌ ALL Cloudflare Worker URLs
+  api.cloudflare.com  ❌ Cloudflare REST API
+
+IMPLICATIONS:
+  - Worker secrets (PUSHOVER, SENDGRID, etc.) must be set from
+    Jeff's local terminal via wrangler secret put — cannot be set
+    from the sandbox.
+  - Live Worker URL cannot be verified from sandbox. Use CI
+    deploy success confirmation instead.
+  - Cloudflare API calls from sandbox require the cf-api-probe
+    outbox pattern (see FIELD CI/Deploy Reference).
+
+═══════════════════════════════════════════════════════════════
+CI/DEPLOY PATTERN
+═══════════════════════════════════════════════════════════════
+
+DEPLOY TRIGGER: push to main where src/** or wrangler.toml changed
+
+WORKFLOW: .github/workflows/deploy.yml
+  Steps:
+    1. Checkout
+    2. Setup Node 20
+    3. cloudflare/wrangler-action@v3
+       apiToken: secrets.CLOUDFLARE_API_TOKEN
+       accountId: b57e9af57ab46c52ca9215804e689c29
+       wranglerVersion: "3.109.0"  (pinned — same as FIELD)
+
+CLOUDFLARE_API_TOKEN secret:
+  Set as GitHub Actions secret.
+  From terminal: GitHub repo → Settings → Secrets → Actions → New
+  Or via PyNaCl from sandbox (see FIELD CI/Deploy Reference).
+
+OIDC NOTE: STAT does not use the Courier OIDC chain.
+  The FIELD Courier OIDC pattern is for cross-repo secret propagation
+  (field-relay-nba CI setting secrets in jubilant-bassoon).
+  STAT is a standalone repo — direct CLOUDFLARE_API_TOKEN secret
+  in GitHub Actions is simpler and correct for this use case.
+  If STAT ever needs cross-repo automation, apply the Courier pattern
+  from Drive doc 1GRvHk70ScS8AGmm1EfcZgROCPUmOBBK0.
+
+CANONICAL DEPLOY COMMAND (from sandbox if needed):
+  cd /home/claude/stat-repo
+  git add src/ wrangler.toml
+  git commit -m "description"
+  git push https://ghp_REDACTED_SEE_FIELD_CIDEPLOYREF@github.com/jeffunglesbee-create/stat.git main
+
+  Wait ~30s → check CI:
+  GET https://api.github.com/repos/jeffunglesbee-create/stat/actions/runs?per_page=3
+
+═══════════════════════════════════════════════════════════════
+ADDING A COMPANY TO THE WATCHLIST
+═══════════════════════════════════════════════════════════════
+
+ATS TOKEN DISCOVERY:
+
+  Greenhouse:       boards.greenhouse.io/{TOKEN}
+  Lever:            jobs.lever.co/{TOKEN}
+  Ashby:            jobs.ashbyhq.com/{TOKEN}
+  Workday:          {TOKEN}.wd5.myworkdayjobs.com  (subdomain is token)
+  iCIMS:            careers-{TOKEN}.icims.com
+  SuccessFactors:   career?company={TOKEN}
+  Taleo:            {TOKEN}.taleo.net
+
+Via HTTP (no redeploy):
+  curl -X POST https://stat-job-watcher.*.workers.dev/companies \
+    -H "Content-Type: application/json" \
+    -d '{"name":"Name","ats":"greenhouse","token":"slug"}'
+
+Via config.js (permanent addition):
+  Edit SEED_COMPANIES in src/config.js
+  wrangler deploy
+  POST /bootstrap (spawns the new DO)
+
+═══════════════════════════════════════════════════════════════
+DIAGNOSTIC RUNBOOK
+═══════════════════════════════════════════════════════════════
+
+NO ALERTS FIRING:
+  1. Check GET / — are DOs active? Is seen count suspiciously high?
+  2. Try POST /trigger — do any HiringCafe matches fire?
+  3. Try POST /reset-seen — re-alerts all current live matching jobs
+  4. Check Pushover app — is token valid? (pushover.net/apps)
+  5. Check GET /do/{key}/status — is DO last_run recent?
+
+SALARY NOT SHOWING:
+  1. GET /salary-status — are BLS and LCA caches populated?
+  2. POST /salary-refresh — manually trigger cache refresh
+  3. Check peer_count — is it > 3? (need 3+ peers for peer inference)
+  4. Check lca_count — is DOL LCA data downloaded?
+
+DO NOT SPAWNING:
+  1. POST /bootstrap — idempotent, safe to run anytime
+  2. Check STAT_KV do_registry — is the company in the registry?
+  3. Verify KV namespace ID in wrangler.toml is correct
+
+ATS ADAPTER RETURNING 0 JOBS:
+  Greenhouse/Lever/Ashby: verify token is the correct board slug
+  Workday: verify URL — tenant may use custom domain not *.myworkdayjobs.com
+  iCIMS: check if sitemap returns 200 at {base}/sitemap.xml
+  Taleo: HTML structure may differ from selector — inspect page
+  SuccessFactors: verify XML feed URL returns valid XML
+
+WORKER SECRETS MISSING:
+  From local terminal:
+    wrangler secret list   ← shows what's set (not values)
+    wrangler secret put PUSHOVER_APP_TOKEN   ← prompts for value
+  CF dashboard: Workers & Pages → stat-job-watcher → Settings → Variables

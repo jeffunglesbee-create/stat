@@ -1,0 +1,42 @@
+name = "stat-job-watcher"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+account_id = "b57e9af57ab46c52ca9215804e689c29"
+
+# ── Cron: wide-net HiringCafe scrape + DO health check every minute ──────────
+[triggers]
+crons = ["* * * * *"]
+
+# ── KV: seen job IDs + company watchlist + DO registry ───────────────────────
+# Create with: wrangler kv:namespace create STAT_KV
+# Then paste the returned id below
+[[kv_namespaces]]
+binding = "STAT_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+# ── Durable Objects: one CompanyWatcherDO per target employer ────────────────
+[[durable_objects.bindings]]
+name = "COMPANY_WATCHER"
+class_name = "CompanyWatcherDO"
+
+[[durable_objects.bindings]]
+name = "SALARY_INFERENCE"
+class_name = "SalaryInferenceDO"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["CompanyWatcherDO", "SalaryInferenceDO"]
+
+# ── R2 bucket (optional — for large LCA/BLS file caching) ──────────────────────
+# Create with: wrangler r2 bucket create stat-salary-cache
+# Then uncomment:
+# [[r2_buckets]]
+# binding = "STAT_R2"
+# bucket_name = "stat-salary-cache"
+
+# ── Secrets (set via: wrangler secret put <NAME>) ────────────────────────────
+# PUSHOVER_APP_TOKEN  — from pushover.net/apps
+# PUSHOVER_USER_KEY   — from pushover.net dashboard
+# SENDGRID_API_KEY    — from sendgrid.com (restricted: Mail Send only)
+# ALERT_EMAIL         — address to receive email digests

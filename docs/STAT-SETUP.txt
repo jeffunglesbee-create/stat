@@ -1,0 +1,459 @@
+STAT — Setup & Operations Guide
+Updated: 2026-06-06
+
+Step-by-step setup from zero to first alert.
+Plus ongoing operational procedures.
+
+═══════════════════════════════════════════════════════════════
+PREREQUISITES
+═══════════════════════════════════════════════════════════════
+
+Cloudflare account: b57e9af57ab46c52ca9215804e689c29
+Plan: Workers Plus (Durable Objects enabled)
+GitHub PAT: ghp_REDACTED_SEE_FIELD_CIDEPLOYREF
+  (repo + workflow scopes, expires May 2027)
+
+Local tools needed:
+  node / npm (for wrangler)
+  wrangler v3.109.0: npm install -g wrangler@3.109.0
+
+═══════════════════════════════════════════════════════════════
+STEP 1 — PUSHOVER SETUP ($4.99 one-time, 30-day free trial)
+═══════════════════════════════════════════════════════════════
+
+Pushover delivers high-priority alerts that bypass Do Not Disturb.
+This is how P1 (Epic/EHR) job matches reach you instantly.
+
+1. Download Pushover app: iOS App Store or Google Play
+2. Create account at pushover.net
+3. Note your User Key on the dashboard
+4. Create application at pushover.net/apps/build
+   - Name: "STAT Job Watcher"
+   - Type: Application
+   - Icon: (optional)
+5. Note the API Token/Key for the application
+
+You will use both values in Step 4 (Worker secrets).
+
+Push priority behavior:
+  P1 matches → priority=1 → siren sound, bypasses quiet hours
+  P2 matches → priority=0 → normal Pushover sound
+  P3 matches → email only, no push
+
+═══════════════════════════════════════════════════════════════
+STEP 2 — SENDGRID SETUP (free tier: 100 emails/day)
+═══════════════════════════════════════════════════════════════
+
+1. Create account at sendgrid.com (free)
+2. Complete email verification
+3. Settings → Sender Authentication → verify your email address
+   (required to send from that address)
+4. Settings → API Keys → Create API Key
+   - Name: "STAT Job Watcher"
+   - Permission: Restricted Access → Mail Send → Full Access
+   - Copy the key (shown only once)
+
+You will use the API key in Step 4 (Worker secrets).
+
+═══════════════════════════════════════════════════════════════
+STEP 3 — GITHUB REPO SETUP
+═══════════════════════════════════════════════════════════════
+
+The STAT source code needs a GitHub repo for CI deployment.
+
+Option A — Create repo via GitHub web UI:
+  1. github.com/new
+  2. Owner: jeffunglesbee-create
+  3. Name: stat
+  4. Private or public (your choice)
+  5. No README, no .gitignore (we have our own)
+  6. Create repository
+
+Then push the code:
+  cd /path/to/stat-repo
+  git init
+  git add .
+  git commit -m "Initial STAT setup"
+  git remote add origin https://ghp_REDACTED_SEE_FIELD_CIDEPLOYREF@github.com/jeffunglesbee-create/stat.git
+  git push -u origin main
+
+Option B — From Claude sandbox (if building in session):
+  cd /home/claude/stat-repo
+  git init && git add . && git commit -m "Initial STAT setup"
+  git remote add origin https://ghp_REDACTED_SEE_FIELD_CIDEPLOYREF@github.com/jeffunglesbee-create/stat.git
+  git push -u origin main
+
+  (Requires the stat repo to already exist on GitHub)
+
+═══════════════════════════════════════════════════════════════
+STEP 4 — SET GITHUB ACTIONS SECRET
+═══════════════════════════════════════════════════════════════
+
+The CI deploy workflow needs CLOUDFLARE_API_TOKEN.
+
+Via GitHub web UI:
+  1. github.com/jeffunglesbee-create/stat/settings/secrets/actions
+  2. New repository secret
+  3. Name: CLOUDFLARE_API_TOKEN
+  4. Value: [your Cloudflare API token with Workers:Edit scope]
+
+To get a Cloudflare API token:
+  dash.cloudflare.com → My Profile → API Tokens → Create Token
+  Use template: "Edit Cloudflare Workers"
+  Zone Resources: All zones (or specific zone if preferred)
+  Save and copy the token
+
+═══════════════════════════════════════════════════════════════
+STEP 5 — CREATE KV NAMESPACE
+═══════════════════════════════════════════════════════════════
+
+From your local terminal (wrangler must be authenticated):
+
+  wrangler login    (if not already authenticated)
+  wrangler kv:namespace create STAT_KV
+
+Copy the returned id value, e.g.:
+  Add the following to your configuration file in your kv_namespaces array:
+  { binding = "STAT_KV", id = "abc123...def456" }
+
+Edit wrangler.toml in the stat-repo:
+  Find: id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+  Replace with the actual ID from the output above
+
+Commit and push:
+  git add wrangler.toml
+  git commit -m "Set KV namespace ID"
+  git push
+
+This will trigger the CI deploy.
+
+═══════════════════════════════════════════════════════════════
+STEP 6 — SET WORKER SECRETS
+═══════════════════════════════════════════════════════════════
+
+These are the notification credentials. They live ONLY in Cloudflare
+Workers — never in GitHub, never in wrangler.toml, never in git.
+
+IMPORTANT: wrangler deploy does NOT overwrite secrets.
+Set them once. They persist across all future code deploys forever.
+When a secret needs to rotate, run the command again.
+
+From your local terminal (after wrangler login):
+
+  wrangler secret put PUSHOVER_APP_TOKEN --name stat-job-watcher
+  [Enter the Pushover API Token from Step 1]
+
+  wrangler secret put PUSHOVER_USER_KEY --name stat-job-watcher
+  [Enter the Pushover User Key from Step 1]
+
+  wrangler secret put SENDGRID_API_KEY --name stat-job-watcher
+  [Enter the SendGrid API key from Step 2]
+
+  wrangler secret put ALERT_EMAIL --name stat-job-watcher
+  [Enter the email address to receive alert digests]
+
+Verify all are set:
+  wrangler secret list --name stat-job-watcher
+
+Expected output:
+  PUSHOVER_APP_TOKEN
+  PUSHOVER_USER_KEY
+  SENDGRID_API_KEY
+  ALERT_EMAIL
+
+═══════════════════════════════════════════════════════════════
+STEP 7 — VERIFY DEPLOYMENT
+═══════════════════════════════════════════════════════════════
+
+After pushing wrangler.toml with the KV ID (Step 5), the CI
+workflow should have run automatically. Check:
+
+  GET https://api.github.com/repos/jeffunglesbee-create/stat/actions/runs?per_page=3
+  
+  (Or: github.com/jeffunglesbee-create/stat/actions)
+
+Look for: "Deploy STAT worker" → conclusion: "success"
+
+If CI failed:
+  - Check CLOUDFLARE_API_TOKEN is set correctly in GitHub secrets
+  - Check wrangler.toml has the correct KV namespace ID
+  - Check account ID in deploy.yml matches b57e9af57ab46c52ca9215804e689c29
+
+═══════════════════════════════════════════════════════════════
+STEP 8 — BOOTSTRAP (first deploy only)
+═══════════════════════════════════════════════════════════════
+
+This primes all the Durable Objects and salary caches:
+
+  curl -X POST https://stat-job-watcher.<subdomain>.workers.dev/bootstrap
+
+Replace <subdomain> with your Workers subdomain
+(found at: dash.cloudflare.com → Workers & Pages → Overview → 
+ click stat-job-watcher → the URL shown is the Worker URL)
+
+Expected response:
+  {"ok":true,"spawned":50,"total":50}  (approximate numbers)
+
+Bootstrap:
+  - Spawns CompanyWatcherDO for all ~50 seed companies
+  - Starts BLS OEWS cache refresh (async, ~10s)
+  - Starts DOL LCA download + parse (async, ~30–60s)
+
+DOs begin polling immediately after bootstrap.
+First alerts may arrive within 1–2 minutes if matching jobs exist.
+
+Verify salary caches after ~2 minutes:
+  curl https://stat-job-watcher.<subdomain>.workers.dev/salary-status
+
+Expected (after bootstrap):
+  {"peerCount":0,"lcaCount":50000+,"blsDate":"2026-...","lcaDate":"2026-..."}
+  (lcaCount will vary; blsDate and lcaDate confirm caches populated)
+
+═══════════════════════════════════════════════════════════════
+STEP 9 — TEST
+═══════════════════════════════════════════════════════════════
+
+Force a HiringCafe scrape to test the alert pipeline:
+
+  curl -X POST https://stat-job-watcher.<subdomain>.workers.dev/trigger
+
+Expected response:
+  {"ok":true,"newMatches":N,"time":"2026-..."}
+
+If N > 0: check Pushover app (within ~5 seconds) and email inbox.
+If N = 0: no new matching jobs found right now. This is normal.
+  Wait a few minutes and try again, or check /salary-status and
+  GET / to confirm the system is running.
+
+═══════════════════════════════════════════════════════════════
+STEP 10 — UI SETUP
+═══════════════════════════════════════════════════════════════
+
+The dashboard UI is a standalone HTML file (src/ui.html).
+
+1. Open src/ui.html in a text editor
+2. Find line 1 of the <script> block:
+   const WORKER_URL = window.STAT_WORKER_URL || '';
+3. Change to:
+   const WORKER_URL = 'https://stat-job-watcher.<subdomain>.workers.dev';
+4. Open ui.html in any browser
+
+The UI auto-refreshes every 30 seconds.
+
+Alternatively, set the URL without editing the file:
+  In browser console before opening: window.STAT_WORKER_URL = 'https://...'
+  Or host the file and set via query param (would require code change)
+
+═══════════════════════════════════════════════════════════════
+ONGOING OPERATIONS
+═══════════════════════════════════════════════════════════════
+
+ADDING A NEW COMPANY:
+  Fastest (no redeploy):
+    curl -X POST https://stat-job-watcher.*.workers.dev/companies \
+      -H "Content-Type: application/json" \
+      -d '{"name":"Acme Health","ats":"greenhouse","token":"acmehealth"}'
+  
+  Or via UI: Companies tab → + Add company → fill form → submit
+
+  Permanent (persists through redeploys):
+    1. Add to SEED_COMPANIES in src/config.js
+    2. git add src/config.js && git commit -m "Add Acme Health to watchlist"
+    3. git push (triggers CI deploy)
+    4. POST /bootstrap (spawns DO for new company)
+
+UPDATING KEYWORDS:
+  1. Edit WATCH_GROUPS in src/config.js
+  2. git add src/config.js && git commit -m "Update keyword groups"
+  3. git push (triggers CI deploy)
+  Note: keyword matching runs on the Worker, not in DOs.
+  No DO restart needed. Updated keywords take effect after next
+  alarm cycle for each company.
+
+REFRESHING SALARY CACHES:
+  BLS OEWS updates annually (May):
+    curl -X POST https://stat-job-watcher.*.workers.dev/salary-refresh
+
+  DOL LCA updates quarterly (Q1=Jan, Q2=Apr, Q3=Jul, Q4=Oct):
+    Same command — /salary-refresh re-fetches both BLS and LCA.
+
+  Recommended schedule: POST /salary-refresh on the first of each
+  month. The command is idempotent — safe to run anytime.
+
+CLEARING SEEN IDs (re-alert on all current jobs):
+  Use case: want to see all currently live matching jobs,
+  e.g. after changing keyword groups.
+
+  curl -X POST https://stat-job-watcher.*.workers.dev/reset-seen
+  
+  CAUTION: This will generate alerts for ALL currently live
+  matching jobs on the next poll cycle. Could be noisy.
+
+CHECKING STATUS:
+  System overview:        GET /
+  Companies + DO status:  GET /companies
+  Salary cache status:    GET /salary-status
+  Specific DO status:     GET /do/greenhouse:nordicglobal/status
+
+NUCLEAR RESET (start over):
+  curl -X POST https://stat-job-watcher.*.workers.dev/reset-all
+  # Then re-bootstrap:
+  curl -X POST https://stat-job-watcher.*.workers.dev/bootstrap
+
+═══════════════════════════════════════════════════════════════
+ADDING COMPANIES NOT IN SEED LIST
+═══════════════════════════════════════════════════════════════
+
+ATS TOKEN LOOKUP:
+
+  Greenhouse: Go to employer's career page → URL shows:
+    boards.greenhouse.io/{TOKEN}/jobs  or  greenhouse.io/boards/{TOKEN}
+    Token = the slug in the URL
+
+  Lever: Go to employer's career page → URL shows:
+    jobs.lever.co/{TOKEN}/{job-id}
+    Token = the slug between lever.co/ and the job ID
+
+  Ashby: Go to employer's career page → URL shows:
+    jobs.ashbyhq.com/{TOKEN}/{job-slug}
+    Token = the slug between ashbyhq.com/ and the job slug
+
+  Workday: Go to employer's career page → URL shows:
+    {TOKEN}.wd5.myworkdayjobs.com/en-US/{path}
+    Token = the subdomain before .wd
+    IMPORTANT: Also need the full URL for the url field.
+    Some employers use custom career page domains that redirect to Workday.
+    Check Network tab in browser to find the actual *.myworkdayjobs.com URL.
+
+  iCIMS: Go to employer's career page → URL shows:
+    careers-{TOKEN}.icims.com  or  careers.{TOKEN}.icims.com
+    Token = extracted from the subdomain
+    url field = the full search URL, e.g.:
+    https://careers-hca.icims.com/jobs/search?in_iframe=1
+
+  SAP SuccessFactors:
+    URL pattern: career4.successfactors.com/career?company={TOKEN}
+    Token = the company parameter value
+    url field = full XML feed URL:
+    https://career4.successfactors.com/career?company={TOKEN}&career_ns=job_listing_summary&resultType=XML
+
+  Oracle Taleo:
+    URL pattern: {TOKEN}.taleo.net/careersection/{n}/jobsearch.ftl
+    Token = the subdomain before .taleo.net
+    url field = the full search URL
+
+═══════════════════════════════════════════════════════════════
+RESUME MATCHER USAGE
+═══════════════════════════════════════════════════════════════
+
+The resume-matcher.html file uses the Anthropic API to score
+job descriptions against your resume profile.
+
+IMPORTANT: The Anthropic API call goes to api.anthropic.com from the
+browser. This works in Claude.ai's artifact viewer but NOT when
+opening the file locally from disk (browser CORS blocks it).
+
+Options for using resume-matcher.html:
+  1. Upload to Claude.ai as an artifact and interact there
+  2. Host on any simple web server (even python -m http.server)
+  3. Open via Claude.ai's "Open in Claude" feature if available
+
+Workflow:
+  1. Drop your resume PDF or paste resume text
+  2. Click "Analyze Resume" — Claude extracts a structured profile
+  3. Edit the profile if needed (JSON edit button)
+  4. Paste any job description → "Score this job →"
+  5. Get: 1-10 score, verdict, strengths, gaps, salary alignment,
+     and a tailored cover letter opener (2 sentences, specific to the
+     actual job and your actual background)
+
+The cover letter opener: copy button provided. Two sentences:
+  - References specific job requirements (not generic phrases)
+  - Connects to your specific Epic modules or experience
+  - More effective than any template opener
+
+═══════════════════════════════════════════════════════════════
+TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════
+
+"Worker not found" after deploy:
+  Check: wrangler.toml name = "stat-job-watcher" is correct
+  Check: CI deploy succeeded (GitHub Actions tab)
+  Check: Cloudflare account ID in deploy.yml is b57e9af57ab46c52ca9215804e689c29
+
+No alerts despite matching jobs:
+  1. GET / — confirm activeDOs > 0
+  2. GET /companies — confirm companies are marked "watching"
+  3. POST /trigger — force a HiringCafe scan
+  4. POST /reset-seen — re-alert all current jobs (noisy!)
+  5. Check Pushover API token validity at pushover.net
+  6. Check SendGrid API key at sendgrid.com
+
+KV namespace errors:
+  "Error: KV namespace not found" — KV ID in wrangler.toml is wrong
+  Run: wrangler kv:namespace list
+  Find the STAT_KV namespace and use its correct ID
+
+DO migration errors:
+  If you add a new DO class or modify migrations tag:
+  Error: "Cannot apply migration ... without deleting existing data"
+  Solution: The v1 migration covers both DO classes.
+  Only add a new migrations entry if adding NEW DO classes in future.
+
+Worker secret missing in runtime:
+  Error behavior: Pushover/email silently fails, no crash
+  Diagnosis: wrangler secret list --name stat-job-watcher
+  Fix: wrangler secret put [SECRET_NAME] --name stat-job-watcher
+
+═══════════════════════════════════════════════════════════════
+COST ESTIMATE
+═══════════════════════════════════════════════════════════════
+
+Cloudflare Workers Plus: $5/month (already paying for FIELD)
+  No additional cost for STAT on the same account.
+
+Estimated STAT-specific usage:
+  Worker requests: ~50 companies × 1min/interval avg × 60min × 24hr
+    = ~72,000 requests/day = ~2.2M requests/month
+    Well within the 10M/month included in Workers Plus.
+
+  DO alarm executions: same volume as Worker requests
+    DO usage included in Workers Plus.
+
+  KV reads/writes: ~50/alarm cycle = ~72,000/day
+    KV: 100K reads/day free, $0.50/million additional. Minimal cost.
+
+Pushover: $4.99 one-time license (30-day free trial)
+SendGrid: free tier (100 emails/day) — sufficient for job alerts
+
+Total ongoing cost (STAT specific): ~$0–$1/month above current plan.
+
+═══════════════════════════════════════════════════════════════
+SECURITY NOTES
+═══════════════════════════════════════════════════════════════
+
+Worker secrets (PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY,
+SENDGRID_API_KEY, ALERT_EMAIL):
+  - Set via wrangler secret put (CLI only)
+  - Never in git, never in wrangler.toml, never in CI logs
+  - Persist across deploys forever
+  - Visible in CF dashboard under Worker settings (name only, not value)
+  - To rotate: run wrangler secret put again with new value
+
+CLOUDFLARE_API_TOKEN (GitHub secret):
+  - Stored in GitHub Actions secrets (encrypted at rest)
+  - Never appears in CI logs
+  - Scoped to Workers:Edit only (not full CF account access)
+  - To rotate: generate new token in CF dashboard, update GitHub secret
+
+HTTP endpoints (GET /, GET /companies, etc.):
+  - No authentication on HTTP endpoints currently
+  - Worker URL is public but unguessable unless shared
+  - If security is a concern: add a simple secret header check
+    in handleFetch() in src/index.js
+
+Resume matcher (resume-matcher.html):
+  - Runs entirely in browser
+  - Resume data sent to Anthropic API only (not to STAT Worker)
+  - No resume data stored anywhere
+  - Job scoring: only job description and extracted profile sent to API

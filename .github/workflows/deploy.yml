@@ -1,0 +1,77 @@
+# .github/workflows/deploy.yml
+#
+# STAT — Deploy Gate
+#
+# Triggers on pushes to src/ or wrangler.toml.
+# Deploys to Cloudflare Workers via CLOUDFLARE_API_TOKEN secret.
+#
+# CLOUDFLARE_API_TOKEN must be set as a GitHub Actions secret.
+# Set it once from your terminal:
+#
+#   pip install pynacl --break-system-packages -q
+#   # Then use PyNaCl SealedBox to PUT /repos/jeffunglesbee-create/stat/actions/secrets/CLOUDFLARE_API_TOKEN
+#   # OR set it manually in GitHub repo Settings → Secrets and variables → Actions
+#
+# WORKER SECRETS (PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY, SENDGRID_API_KEY, ALERT_EMAIL)
+# must be set from your local terminal BEFORE first deploy:
+#   cd stat-repo && wrangler secret put PUSHOVER_APP_TOKEN
+#   wrangler secret put PUSHOVER_USER_KEY
+#   wrangler secret put SENDGRID_API_KEY
+#   wrangler secret put ALERT_EMAIL
+#
+# Worker secrets are NOT in GitHub — they live only in Cloudflare Workers.
+# wrangler deploy does NOT overwrite Worker secrets. Set once, persist forever.
+#
+# [skip ci] in commit message skips this workflow entirely → no deploy.
+#
+# OIDC NOTE: This workflow uses CLOUDFLARE_API_TOKEN directly (simpler than
+# the FIELD Courier OIDC chain since STAT is a standalone repo with no
+# cross-repo secret propagation needs). If STAT ever needs cross-repo
+# automation, apply the Courier OIDC pattern from:
+# Drive doc 1GRvHk70ScS8AGmm1EfcZgROCPUmOBBK0
+
+name: Deploy STAT worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'wrangler.toml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare Workers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: b57e9af57ab46c52ca9215804e689c29
+          wranglerVersion: "3.109.0"
+
+      - name: Post-deploy bootstrap reminder
+        run: |
+          echo "✅ Deployed ${{ github.sha }}"
+          echo ""
+          echo "FIRST DEPLOY CHECKLIST:"
+          echo "  1. wrangler kv:namespace create STAT_KV → paste ID in wrangler.toml"
+          echo "  2. wrangler secret put PUSHOVER_APP_TOKEN"
+          echo "  3. wrangler secret put PUSHOVER_USER_KEY"
+          echo "  4. wrangler secret put SENDGRID_API_KEY"
+          echo "  5. wrangler secret put ALERT_EMAIL"
+          echo "  6. curl -X POST https://stat-job-watcher.<subdomain>.workers.dev/bootstrap"
+          echo ""
+          echo "SUBSEQUENT DEPLOYS: no action needed. Secrets persist."
