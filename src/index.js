@@ -23,7 +23,7 @@ export {
   IcimsDO, SuccessFactorsDO, TaleoDO,
 } from './platform-do.js';
 
-import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, BATCH_POLLER } from './config.js';
+import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, BATCH_POLLER, LEARNING } from './config.js';
 import { bootstrapSalaryDO } from './salary.js';
 import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
@@ -304,13 +304,17 @@ async function maybeAddOrPromoteCompany(env, job) {
   if (recentCount >= LEARNING.promote_after_matches) {
     const company = companies.find(c => c.ats === ats && c.token === token);
     if (!company) return;
-    const id = env.COMPANY_WATCHER.idFromName(doKey);
-    const stub = env.COMPANY_WATCHER.get(id);
+    // Route to the correct platform DO (not the deprecated CompanyWatcherDO)
+    const PLATFORM_MAP = {
+      greenhouse: 'GREENHOUSE_DO', lever: 'LEVER_DO', ashby: 'ASHBY_DO',
+      workday: 'WORKDAY_DO', icims: 'ICIMS_DO',
+      successfactors: 'SUCCESSFACTORS_DO', taleo: 'TALEO_DO',
+    };
+    const platformBinding = PLATFORM_MAP[ats];
+    if (!platformBinding || !env[platformBinding]) return; // unsupported ATS
+    // Platform DOs poll all companies of their type — no per-company init needed.
+    // Just record in registry so /learning shows it as promoted.
     try {
-      await stub.fetch(new Request('https://stat-internal/init', {
-        method: 'POST', body: JSON.stringify(company),
-        headers: { 'Content-Type': 'application/json' },
-      }));
       registry[doKey] = { name: company.name, ats, autoDiscovered: true, promoted: true,
         promotedAt: new Date().toISOString(), matchCount: recentCount };
       await saveDoRegistry(env, registry);
@@ -524,14 +528,8 @@ async function handleFetch(request, env) {
     if (exists) return json({ error: 'Company already in watchlist' }, 409);
     companies.push(company);
     await saveCompanyList(env, companies);
-    // Spawn DO immediately
-    const id = env.COMPANY_WATCHER.idFromName(doKey);
-    const stub = env.COMPANY_WATCHER.get(id);
-    await stub.fetch(new Request('https://stat-internal/init', {
-      method: 'POST',
-      body: JSON.stringify(company),
-      headers: { 'Content-Type': 'application/json' },
-    }));
+    // Platform DOs load company_list on every alarm cycle — no per-company init needed.
+    // The platform DO for this ATS will pick up the new company on its next alarm.
     const registry = await loadDoRegistry(env);
     registry[doKey] = { name: company.name, ats: company.ats, startedAt: new Date().toISOString() };
     await saveDoRegistry(env, registry);
@@ -879,13 +877,13 @@ Return ONLY the JSON object, no markdown, no explanation.`;
             const applyUrl = job.url || '';
 
             if (!company || company.length < 3) continue;
+            const SUPPORTED = ['greenhouse','lever','ashby','workday','icims','successfactors','taleo'];
             if (atsSource && SUPPORTED.includes(atsSource)) {
               allSeenCompanies.push({company, ats: atsSource, known: knownNames.has(company.toLowerCase())});
             }
             if (knownNames.has(company.toLowerCase())) continue;
 
             // Determine ATS and canonical token/url
-            const SUPPORTED = ['greenhouse','lever','ashby','workday','icims','successfactors','taleo'];
             if (!SUPPORTED.includes(atsSource)) continue;
 
             const tokenVal = token || (atsSource === 'workday' ? applyUrl : '');
