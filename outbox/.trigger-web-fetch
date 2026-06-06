@@ -1,4 +1,4 @@
-url=https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst&in_iframe=1
+url=https://careers-vhchealth.icims.com/jobs/13916/job
 accept=text/html,*/*
 extract=raw
-max_bytes=50000
+max_bytes=15000
