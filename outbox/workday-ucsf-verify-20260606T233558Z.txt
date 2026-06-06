@@ -1,0 +1,139 @@
+STAT — Workday/BrassRing UCSF End-to-End Verification
+Run: 20260606T233558Z
+
+QUESTION: Is UCSF on BrassRing, Workday, or both?
+QUESTION: What is the correct Workday path slug for UCSF?
+
+════════════════════════════════════════
+SECTION 1: BrassRing — original UCSF URL
+════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST: BrassRing UCSF (partnerid=6495, siteid=5861)
+URL:  https://sjobs.brassring.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=6495&siteid=5861
+HTTP: 500 | Final URL: https://sjobs.brassring.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=6495&siteid=5861
+Body (first 2000):
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Error</title>
+</head>
+<body>
+    <hgroup>
+        <h1>Error.</h1>
+        <h2>An error occurred while processing your request.</h2>
+    </hgroup>
+</body>
+</html>
+
+
+
+
+
+
+════════════════════════════════════════
+SECTION 2: Workday — UCSF domain + path slugs
+════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST: Workday UCSF /en-US/Search (our current config)
+URL:  https://ucsf.wd5.myworkdayjobs.com/en-US/Search
+HTTP: 200 | Final URL: https://ucsf.wd5.myworkdayjobs.com/en-US/Search
+Body (first 2000):
+<wml:Application_Error xmlns:wml="http://www.workday.com/ns/model/1.0" Type="Validation"><wml:Message>Internal Server Error. (id: )</wml:Message> </wml:Application_Error>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST: Workday UCSF /en-US/UCSF_External (common pattern)
+URL:  https://ucsf.wd5.myworkdayjobs.com/en-US/UCSF_External
+HTTP: 200 | Final URL: https://ucsf.wd5.myworkdayjobs.com/en-US/UCSF_External
+Body (first 2000):
+<wml:Application_Error xmlns:wml="http://www.workday.com/ns/model/1.0" Type="Validation"><wml:Message>Internal Server Error. (id: )</wml:Message> </wml:Application_Error>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST: Workday UCSF root (discover redirect path)
+URL:  https://ucsf.wd5.myworkdayjobs.com/
+HTTP: 406 | Final URL: https://ucsf.wd5.myworkdayjobs.com/
+Body (first 2000):
+
+
+
+════════════════════════════════════════
+SECTION 3: Workday /wday/cxs/ JSON API
+════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST: API: /wday/cxs/ucsf/Search/jobs
+URL:  https://ucsf.wd5.myworkdayjobs.com/wday/cxs/ucsf/Search/jobs
+HTTP: 422
+jobPostings count: 0
+Body (first 1000):
+{"errorCode":"HTTP_422","errorCaseId":"BD8453MQ2ZRNOY","httpStatus":422,"message":"","messageParams":{}}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST: API: /wday/cxs/ucsf/UCSF_External/jobs
+URL:  https://ucsf.wd5.myworkdayjobs.com/wday/cxs/ucsf/UCSF_External/jobs
+HTTP: 422
+jobPostings count: 0
+Body (first 1000):
+{"errorCode":"HTTP_422","errorCaseId":"B69FEBMQ2ZRNU7","httpStatus":422,"message":"","messageParams":{}}
+
+
+════════════════════════════════════════
+SECTION 4: UCSF Careers homepage
+════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST: careers.ucsf.edu (official careers page)
+URL:  https://careers.ucsf.edu
+HTTP: 200 | Final URL: https://careers.ucsf.edu/
+Body (first 2000):
+
+    
+    
+    
+    
+        
+    
+    
+                
+    
+    
+                
+                
+            
+        
+        
+    <!DOCTYPE html>
+<html lang="en-US" xml:lang="en-US" xmlns="http://www.w3.org/1999/xhtml" menu-type="visible" menu-toggleSide="right" menu-panelFrom="right" menu-panelEffect="over" data-animations="default" class="tbd-focus tbd-layouts">
+    <head><meta name="csp-nonce-style" content="169e64c48f05f95b568405c33d7e0b3f6ec47bea8930907908bc54197e3a96df"/><meta name="csp-nonce-script" content="169e64c48f05f95b568405c33d7e0b3f6ec47bea8930907908bc54197e3a96df"/><meta name="avature.wizard.registrars" content="[{&quot;wizardId&quot;:11,&quot;settings&quot;:{&quot;isInternationalizationEnabled&quot;:true,&quot;autoPartialSaveInterval&quot;:null,&quot;shouldShowFieldByField&quot;:false,&quot;isSearchWizard&quot;:true,&quot;uploadedResumeId&quot;:null,&quot;largeFilesUploadParams&quot;:[]},&quot;fields&quot;:[{&quot;fieldId&quot;:&quot;248&quot;,&quot;registrars&quot;:[{&quot;type&quot;:&quot;Field&quot;,&quot;name&quot;:&quot;KeywordsField&quot;}],&quot;visibilityConditions&quot;:{&quot;conditionSetOperator&quot;:&quot;and&quot;,&quot;conditions&quot;:[]},&quot;validationConditions&quot;:[{&quot;type&quot;:&quot;MinLengthValidator&quot;,&quot;errorMessage&quot;:&quot;Type at least 3 characters.&quot;,&quot;minLength&quot;:3}]},{&quot;fieldId&quot;:&quot;261&quot;,&quot;registrars&quot;:[{&quot;type&quot;:&quot;Field&quot;,&quot;name&quot;:&quot;ButtonBarField&quot;,&quot;settings&quot;:{&quot;buttonsData&quot;:[{&quot;buttonId&quot;:13,&quot;buttonType&quot;:&quot;submitButton&quot;,&quot;workflowStepUpdateIds&quot;:&quot;&quot;,&quot;isAutomaticAction&quot;:false,&quot;disableButtonConditions&quot;:[]}]}}]}]}]"/><meta name="avature.portal.id" content="9"/><meta name="avature.portal.name" content="UCSF Careers"/><meta name="avature.portal.urlPath" content="careers"/><meta name="avature.portal.lang" content="en_US"/><meta name="avature.portal.pa
+
+════════════════════════════════════════
+INTERPRETATION GUIDE
+════════════════════════════════════════
+BrassRing 200 + UCSF content: UCSF still on BrassRing → revert config
+BrassRing 404/redirect away: UCSF migrated from BrassRing
+Workday 200 + job titles: UCSF is on Workday → config is correct
+API JSON with jobPostings: use that path slug in config
+careers.ucsf.edu redirects to *.myworkdayjobs.com: confirmed Workday
+careers.ucsf.edu redirects to sjobs.brassring.com: still BrassRing
