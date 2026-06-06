@@ -1,4 +1,4 @@
-url=https://msmc.wd12.myworkdayjobs.com/wday/cxs/msmc/msmc_careers/jobs/JR102337
-accept=application/json
-extract=json
-max_bytes=8000
+url=https://msmc.wd12.myworkdayjobs.com/msmc_careers/job/Miami-Beach-FL/Epic-Ambulatory-Analyst_JR102337
+accept=text/html
+extract=next_data
+max_bytes=15000
