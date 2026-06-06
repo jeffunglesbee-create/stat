@@ -1,4 +1,4 @@
-url=https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst&in_iframe=1&hireVueEnabled=false
-accept=text/html,*/*
+url=https://career4.successfactors.com/career?company=SFHUP&sitemal.xml
+accept=text/xml,application/xml,*/*
 extract=raw
 max_bytes=10000
