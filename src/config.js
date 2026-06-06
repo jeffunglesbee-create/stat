@@ -218,14 +218,24 @@ export const LEARNING = {
 export const HIRINGCAFE = {
   environments: ['remote', 'hybrid'],
   search_terms: [
+    // Epic / EHR module-specific
     'epic analyst', 'epic ambulatory', 'ehr analyst',
     'clarity sql', 'healthcare it analyst',
+    'epic reporting', 'epic cogito', 'epic caboodle',
+    'epic within', 'epic cadence', 'epic mychart',
+    'epic inpatient', 'epic optime', 'epic beacon',
+    'epic radiant', 'epic willow', 'epic resolute',
+    // Broader health IT
+    'clinical informatics analyst', 'health informatics analyst',
+    // Remote CS / contact center
     'remote customer service', 'remote customer success',
     'virtual customer support', 'work from home customer service',
     'remote contact center',
+    // Logistics / supply chain
     'remote logistics coordinator', 'remote supply chain',
     'logistics analyst remote', 'remote freight coordinator',
     'remote operations coordinator',
+    // Data / analytics
     'data analyst', 'remote business analyst',
   ],
 };
