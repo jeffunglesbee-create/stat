@@ -1,4 +1,4 @@
-url=https://jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions
+url=https://jobs.jhu.edu
 accept=text/html,*/*
 extract=raw
-max_bytes=3000
+max_bytes=4000
