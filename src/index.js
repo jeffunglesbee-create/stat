@@ -31,6 +31,7 @@ import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
 import { getStatStore, storeGet, storeSet, storeDel } from './store.js';
 export { StateStoreDO } from './store.js';
+import UI_HTML from './ui.html';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GLOBAL STATE — DO SQLite helpers (via StateStoreDO)
@@ -329,8 +330,19 @@ async function handleScheduled(env) {
 async function handleFetch(request, env) {
   const url = new URL(request.url);
 
-  // GET / — system overview
-  if (url.pathname === '/') {
+  // GET /ui — HTML dashboard (served inline from ui.html)
+  if (url.pathname === '/ui' && request.method === 'GET') {
+    return new Response(UI_HTML, {
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+  }
+
+  // GET / — redirect browsers to /ui, return JSON for API clients
+  if (url.pathname === '/' && request.method === 'GET') {
+    const accept = request.headers.get('Accept') || '';
+    if (accept.includes('text/html')) {
+      return Response.redirect(new URL('/ui', request.url).toString(), 302);
+    }
     const registry = await loadDoRegistry(env);
     const seenIds  = await loadSeenIds(env);
     const companies = await loadCompanyList(env) ?? [];

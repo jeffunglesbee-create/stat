@@ -651,7 +651,7 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
 
 <script>
 // ─── Config — set this after: wrangler deploy ────────────────────────────────
-const WORKER_URL = window.STAT_WORKER_URL || '';
+const WORKER_URL = window.STAT_WORKER_URL || window.location.origin;
 // const WORKER_URL = 'http://localhost:8787'; // wrangler dev
 
 // ─── State ───────────────────────────────────────────────────────────────────

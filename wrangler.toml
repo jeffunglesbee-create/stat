@@ -94,6 +94,13 @@ binding = "MYBROWSER"
   tag = "v4"
   new_sqlite_classes = ["StateStoreDO"]
 
+
+# ── Module rules — treat .html files as text imports ─────────────────────────
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = false
+
 # ── Secrets (set via: wrangler secret put <NAME> --name stat-job-watcher) ────
 # PUSHOVER_APP_TOKEN  — from pushover.net/apps (set 2026-06-06)
 # PUSHOVER_USER_KEY   — from pushover.net dashboard
