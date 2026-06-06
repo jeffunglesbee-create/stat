@@ -537,6 +537,95 @@ async function handleFetch(request, env) {
   // then extracts: og:description, page title, job links, DOM text excerpt.
   // Used to verify Browser Rendering works against iCIMS/Taleo SPAs and
   // to harvest real job URLs from their rendered DOM for further testing.
+  // ── GET /plain-fetch-test?url={url} ───────────────────────────────────────
+  // Plain Worker fetch() diagnostic — no headless browser.
+  // Tests whether Cloudflare Worker IPs are blocked by a given URL.
+  // Returns HTTP status, response size, og:description, page title,
+  // any job IDs found in href patterns, and a body text excerpt.
+  //
+  // Critical use: verifying iCIMS in_iframe=1 endpoints are reachable
+  // from inside a Worker (Cloudflare IP) without Browser Rendering.
+  //
+  // Usage:
+  //   /plain-fetch-test?url=https://careers-vhchealth.icims.com/jobs/search%3Fss%3D1%26in_iframe%3D1
+  //
+  if (url.pathname === '/plain-fetch-test' && request.method === 'GET') {
+    const targetUrl = url.searchParams.get('url');
+    if (!targetUrl) return json({ error: 'url param required' }, 400);
+
+    const t0 = Date.now();
+    try {
+      const res = await fetch(targetUrl, {
+        method: 'GET',
+        headers: {
+          'User-Agent':      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control':   'no-cache',
+        },
+        redirect: 'follow',
+      });
+
+      const elapsed   = Date.now() - t0;
+      const body      = await res.text();
+      const bodyLen   = body.length;
+
+      // Extract og:description
+      const ogMatch = body.match(/<meta[^>]*(?:property|name)="og:description"[^>]*content="([^"]{10,})"[^>]*>/i)
+                   || body.match(/<meta[^>]*content="([^"]{10,})"[^>]*(?:property|name)="og:description"[^>]*>/i);
+      const ogDesc  = ogMatch?.[1] ?? '';
+
+      // Page title
+      const titleMatch = body.match(/<title[^>]*>([^<]+)<\/title>/i);
+      const title      = titleMatch?.[1]?.trim() ?? '';
+
+      // Job IDs from href patterns — iCIMS: /jobs/{id}/
+      const jobIdMatches = [...body.matchAll(/\/jobs\/(\d{4,6})\//g)];
+      const jobIds = [...new Set(jobIdMatches.map(m => m[1]))].slice(0, 20);
+
+      // Job hrefs
+      const hrefMatches = [...body.matchAll(/href="(\/jobs\/\d+\/[^"?]+)"/g)];
+      const jobHrefs = [...new Set(hrefMatches.map(m => m[1]))].slice(0, 10);
+
+      // Body text excerpt (strip tags)
+      const bodyText = body
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 500);
+
+      // Blocked indicators
+      const isBlocked = res.status === 403
+        || title.includes('403')
+        || title.includes('Forbidden')
+        || title.includes('Access Denied');
+
+      return json({
+        ok:          !isBlocked && res.status < 400,
+        url:         targetUrl,
+        http_status: res.status,
+        elapsed_ms:  elapsed,
+        body_bytes:  bodyLen,
+        is_blocked:  isBlocked,
+        title,
+        og_description:   ogDesc.slice(0, 300),
+        job_ids:          jobIds,
+        job_hrefs:        jobHrefs,
+        body_text_excerpt: bodyText.slice(0, 300),
+      });
+
+    } catch (e) {
+      return json({
+        ok:        false,
+        url:       targetUrl,
+        elapsed_ms: Date.now() - t0,
+        error:     e.message,
+      }, 500);
+    }
+  }
+
   //
   // Usage:
   //   curl "https://stat-job-watcher.*.workers.dev/br-test?url=https://careers-vhchealth.icims.com/jobs/search&ats=icims"
