@@ -1,0 +1,24 @@
+=== Web Fetch Probe [20260606T161432Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/br-test?url=https%3A%2F%2Fcareers-vhchealth.icims.com%2Fjobs%2Fsearch%3Fss%3D1%26searchKeyword%3Danalyst%26hireVueEnabled%3Dfalse&ats=icims
+Extract mode: json
+
+HTTP Status: 200
+Body length: 1072 chars
+
+=== JSON response ===
+{
+    "ok": true,
+    "ats": "icims",
+    "url": "https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst&hireVueEnabled=false",
+    "elapsed_ms": 7310,
+    "title": "Job Listings at VHC Health",
+    "og_description": "",
+    "job_links": [
+        "https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst&hireVueEnabled=false&mobile=false&width=627&height=500&bga=true&needsRedirect=false&jan1offset=0&jun1offset=0#icims_content_iframe"
+    ],
+    "job_card_count": 0,
+    "dom_text_excerpt": "Skip Branding\nSkip to Content\nExpand Menu\nExpand Search\nCareers\nPay My Bill\nContact Us\nDonate\nMyVHC Patient Portal\n\n703.558.5000\n\nMain Navigation\nFind a Doctor\nMedical Services\nLocations & Directions\nPatients & Visitors\nSearch for a Doctor  \nPopular Searches:\nGastroenterology\nObstetrics & Gynecology\nPrimary Care\nNeurology\nSurgery\nUrology\n\nView VHC Health Physicians Only\n\nAdvanced Search Options\n\nExpress Care\n\nVisit VHC Health Express Care when you need quick treatment for minor illnesses, injuri",
+    "job_container_text": ""
+}
+
+=== End ===
