@@ -1,0 +1,59 @@
+{
+  "ts": "20260606T164141Z",
+  "tenants": [
+    {
+      "tenant": "VHC Health",
+      "token": "vhchealth",
+      "url": "https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst",
+      "http_status": 200,
+      "nav_error": null,
+      "elapsed_ms": 4004,
+      "title": "Job Listings at VHC Health",
+      "job_count": 0,
+      "job_ids": [],
+      "job_titles": [],
+      "card_count": 0,
+      "is_blocked": false,
+      "body_excerpt": "Skip Branding\nSkip to Content\nExpand Menu\nExpand Search\nCareers\nPay My Bill\nContact Us\nDonate\nMyVHC Patient Portal\n\n703.558.5000\n\nMain Navigation\nFind a Doctor\nMedical Services\nLocations & Directions\nPatients & Visitors\nSearch for a Doctor  \nPopular Searches:\nGastroenterology\nObstetrics & Gynecology",
+      "pass": false
+    },
+    {
+      "tenant": "UCI Health",
+      "token": "uci",
+      "url": "https://careers-uci.icims.com/jobs/search?ss=1&searchKeyword=analyst",
+      "http_status": 200,
+      "nav_error": null,
+      "elapsed_ms": 3310,
+      "title": "403 Forbidden",
+      "job_count": 0,
+      "job_ids": [],
+      "job_titles": [],
+      "card_count": 0,
+      "is_blocked": true,
+      "body_excerpt": "403 Forbidden",
+      "pass": false
+    },
+    {
+      "tenant": "Infirmary Health",
+      "token": "infirmaryhealth",
+      "url": "https://careers-infirmaryhealth.icims.com/jobs/search?ss=1&searchKeyword=analyst",
+      "http_status": 200,
+      "nav_error": null,
+      "elapsed_ms": 3789,
+      "title": "403 Forbidden",
+      "job_count": 0,
+      "job_ids": [],
+      "job_titles": [],
+      "card_count": 0,
+      "is_blocked": true,
+      "body_excerpt": "403 Forbidden",
+      "pass": false
+    }
+  ],
+  "summary": {
+    "total_tenants": 3,
+    "passing_tenants": 0,
+    "verdict": "FAIL — all tenants blocked",
+    "passing_names": []
+  }
+}
