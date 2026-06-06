@@ -1,0 +1,112 @@
+name: STAT — UMiami careers.miami.edu Probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe careers.miami.edu
+        shell: bash
+        run: |
+          set +e
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/umiami-miami-careers-${TS}.txt"
+          mkdir -p outbox
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          g() {
+            local L="$1" URL="$2"
+            printf '\n=== %s ===\nURL: %s\n' "$L" "$URL" >> "$OUT"
+            local TF; TF=$(mktemp)
+            local INFO
+            INFO=$(curl -s --max-time 20 -L -o "$TF" \
+              -w "HTTP:%{http_code} FINAL:%{url_effective}" \
+              -H "User-Agent: $UA" \
+              -H "Accept: text/html,application/xhtml+xml,*/*" \
+              -H "Accept-Language: en-US,en;q=0.9" \
+              "$URL" 2>/dev/null)
+            printf '%s\n' "$INFO" >> "$OUT"
+            local B; B=$(cat "$TF")
+            local BL; BL=$(echo "$B" | tr '[:upper:]' '[:lower:]')
+            local S=""
+            echo "$BL" | grep -q 'myworkdayjobs\|wday/cxs\|workdaycdn' && S="$S WORKDAY"
+            echo "$BL" | grep -q 'brassring\|tgnewui' && S="$S BRASSRING"
+            echo "$BL" | grep -q 'avature' && S="$S AVATURE"
+            echo "$BL" | grep -q 'taleo\|careersection' && S="$S TALEO"
+            echo "$BL" | grep -q 'icims\.com' && S="$S iCIMS"
+            echo "$BL" | grep -q 'greenhouse\.io' && S="$S GREENHOUSE"
+            echo "$BL" | grep -q 'lever\.co' && S="$S LEVER"
+            echo "$BL" | grep -q 'ashbyhq\.com' && S="$S ASHBY"
+            echo "$BL" | grep -q 'successfactors' && S="$S SUCCESSFACTORS"
+            [ -n "$S" ] && printf 'ATS SIGNALS:%s\n' "$S" >> "$OUT" || printf 'ATS SIGNALS: none\n' >> "$OUT"
+            # Extract ATS-specific meta tags and hrefs
+            printf 'ATS meta/href matches:\n' >> "$OUT"
+            echo "$B" | grep -i 'workday\|brassring\|avature\|taleo\|icims\|lever\|greenhouse\|ashby\|phenom\|successfactor\|smartrecruiters\|jobvite\|myworkdayjobs' | grep -v 'newrelic\|analytics\|google\|facebook' | head -20 >> "$OUT"
+            printf 'Body (first 3000):\n' >> "$OUT"
+            echo "$B" | head -c 3000 >> "$OUT"
+            printf '\n' >> "$OUT"
+            rm -f "$TF"
+          }
+
+          p() {
+            local L="$1" URL="$2"
+            printf '\n=== POST: %s ===\nURL: %s\n' "$L" "$URL" >> "$OUT"
+            local TF; TF=$(mktemp)
+            local HC
+            HC=$(curl -s --max-time 15 -o "$TF" -w "%{http_code}" \
+              -X POST \
+              -H "User-Agent: $UA" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d '{"appliedFacets":{},"limit":5,"offset":0,"searchText":""}' \
+              "$URL" 2>/dev/null)
+            printf 'HTTP: %s\n' "$HC" >> "$OUT"
+            cat "$TF" | head -c 1500 >> "$OUT"
+            printf '\n' >> "$OUT"
+            rm -f "$TF"
+          }
+
+          printf 'UMiami careers.miami.edu Probe — %s\n' "$TS" > "$OUT"
+          printf 'LEAD: umiamihealth.org/en/careers links to careers.miami.edu\n' >> "$OUT"
+
+          g "careers.miami.edu health-care-careers" \
+            "https://careers.miami.edu/us/en/health-care-careers"
+
+          g "careers.miami.edu root" \
+            "https://careers.miami.edu"
+
+          # Phenom People is a common ATS wrapper for Workday — check if it's the platform
+          g "careers.miami.edu search" \
+            "https://careers.miami.edu/us/en/search-results"
+
+          # If it's Phenom People, it wraps Workday — probe the underlying Workday API
+          p "miami Workday API Health_System" \
+            "https://miami.wd1.myworkdayjobs.com/wday/cxs/miami/Health_System/jobs"
+          p "miami Workday API UMH" \
+            "https://miami.wd1.myworkdayjobs.com/wday/cxs/miami/UMH/jobs"
+          p "miami Workday API University_of_Miami" \
+            "https://miami.wd1.myworkdayjobs.com/wday/cxs/miami/University_of_Miami/jobs"
+
+          printf '\nDONE\n' >> "$OUT"
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          cat "$OUT"
+          exit 0
+
+      - name: Push results
+        run: |
+          git config user.email "stat@stat" && git config user.name "STAT"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "umiami-miami-careers results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break
+            sleep $((i*5))
+          done
+        env:
+          OUT: ${{ env.OUT }}
