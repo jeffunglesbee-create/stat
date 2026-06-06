@@ -18,8 +18,9 @@
 
 export { CompanyWatcherDO } from './do.js';
 export { SalaryInferenceDO } from './salary.js';
+export { BatchPollerDO } from './batch.js';
 
-import { SEED_COMPANIES, KV, HIRINGCAFE, POLL_INTERVALS, LEARNING } from './config.js';
+import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, LEARNING, BATCH_POLLER } from './config.js';
 import { bootstrapSalaryDO } from './salary.js';
 import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
@@ -129,6 +130,27 @@ async function bootstrapDOs(env) {
       console.log('[STAT] Salary bootstrap:', JSON.stringify(r));
     } catch (e) {
       console.warn('[STAT] Salary bootstrap failed (non-critical):', e.message);
+    }
+  }
+
+  // Bootstrap BatchPollerDO — single DO for the BATCH_WATCHLIST
+  if (!registry['batch:main'] && BATCH_WATCHLIST.length > 0) {
+    try {
+      const id   = env.BATCH_POLLER.idFromName('batch-main');
+      const stub = env.BATCH_POLLER.get(id);
+      await stub.fetch(new Request('https://stat-internal/init', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ list: 'batch_watchlist' }),
+      }));
+      registry['batch:main'] = {
+        name: 'BatchPollerDO', type: 'batch',
+        listSize: BATCH_WATCHLIST.length,
+        startedAt: new Date().toISOString(),
+      };
+      await saveDoRegistry(env.STAT_KV, registry);
+      console.log(`[STAT] BatchPollerDO started — ${BATCH_WATCHLIST.length} companies`);
+    } catch (e) {
+      console.warn('[STAT] BatchPollerDO bootstrap failed (non-critical):', e.message);
     }
   }
 
@@ -308,6 +330,7 @@ async function handleFetch(request, env) {
         'POST /profile':       'Store resume profile (JSON from resume-matcher)',
         'DELETE /profile':     'Remove stored profile',
         'GET /learning':       'Auto-discovered companies + promotion status',
+        'GET /batch-status':   'BatchPollerDO cycle status + cursor position',
         'POST /reset-seen':    'Clear seen job IDs',
         'POST /reset-all':     'Nuclear reset',
       },
@@ -394,6 +417,18 @@ async function handleFetch(request, env) {
     const stub = env.COMPANY_WATCHER.get(id);
     const res  = await stub.fetch(new Request('https://stat-internal/status'));
     return res;
+  }
+
+  // GET /batch-status — BatchPollerDO status
+  if (url.pathname === '/batch-status' && request.method === 'GET') {
+    try {
+      const id   = env.BATCH_POLLER.idFromName('batch-main');
+      const stub = env.BATCH_POLLER.get(id);
+      const res  = await stub.fetch(new Request('https://stat-internal/status'));
+      return res;
+    } catch (e) {
+      return json({ error: 'BatchPollerDO not available: ' + e.message });
+    }
   }
 
   // GET /profile

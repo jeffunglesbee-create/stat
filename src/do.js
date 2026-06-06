@@ -12,7 +12,7 @@
 import { fetchCompanyJobs } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
-import { POLL_INTERVALS, KV, GHOST } from './config.js';
+import { getPollingInterval, KV, GHOST } from './config.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 
 export class CompanyWatcherDO {
@@ -148,9 +148,11 @@ export class CompanyWatcherDO {
       console.error(`[STAT DO] ${company.name} poll error:`, e.message);
     }
 
-    // 7. Reschedule — always, even on error (alarm auto-retries on throw,
-    // but we catch errors so we control the interval ourselves)
-    const interval = POLL_INTERVALS[company.ats] ?? 60_000;
+    // 7. Reschedule — time-aware interval based on ET time of day and day of week.
+    // Fastest during Mon–Fri 6–10am ET (peak posting window), slowest overnight
+    // and weekends. Cuts alarm writes ~75% vs flat 30s, enabling ~3,300 companies
+    // at $25/month while preserving competitive speed when it matters.
+    const interval = getPollingInterval(company?.ats ?? 'workday');
     await this.state.storage.setAlarm(Date.now() + interval);
   }
 

@@ -40,3 +40,11 @@ new_classes = ["CompanyWatcherDO", "SalaryInferenceDO"]
 # PUSHOVER_USER_KEY   — from pushover.net dashboard
 # SENDGRID_API_KEY    — from sendgrid.com (restricted: Mail Send only)
 # ALERT_EMAIL         — address to receive email digests
+
+[[durable_objects.bindings]]
+  name = "BATCH_POLLER"
+  class_name = "BatchPollerDO"
+
+[[migrations]]
+  tag = "v2"
+  new_classes = ["BatchPollerDO"]
