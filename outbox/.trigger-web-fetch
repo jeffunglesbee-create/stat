@@ -1,2 +1,4 @@
 url=https://stat-job-watcher.jeffunglesbee.workers.dev/platform/greenhouse/status
-triggered 1780778274
+extract=raw
+max_bytes=2000
+triggered 1780778345
