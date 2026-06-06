@@ -1,0 +1,11 @@
+=== Web Fetch Probe [20260606T143542Z] ===
+URL: https://bswh.wd1.myworkdayjobs.com/en-US/BSWH/jobs
+Extract mode: raw
+
+HTTP Status: 200
+Body length: 170 chars
+
+=== Response body (first 3000 bytes) ===
+<wml:Application_Error xmlns:wml="http://www.workday.com/ns/model/1.0" Type="Validation"><wml:Message>Internal Server Error. (id: )</wml:Message> </wml:Application_Error>
+
+=== End ===
