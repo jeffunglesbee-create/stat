@@ -1,0 +1,32 @@
+=== Web Fetch Probe [20260606T162134Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/br-test?url=https%3A%2F%2Ftuhs.taleo.net%2Fcareersection%2Ftuhs_ex%2Fjobdetail.ftl%3Fjob%3D262000%26tz%3DGMT%252B00%253A00%26tzname%3DUTC&ats=taleo
+Extract mode: json
+
+HTTP Status: 200
+Body length: 1943 chars
+
+=== JSON response ===
+{
+    "ok": true,
+    "ats": "taleo",
+    "url": "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC",
+    "elapsed_ms": 5326,
+    "title": "Job Description - Medical Assistant-Chemotherapy- 24HR Day Shift= Episcopal Campus (262000)",
+    "og_description": "Click the link provided to see the complete job description.",
+    "job_links": [
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC#mainContent",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC#",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC#"
+    ],
+    "job_card_count": 0,
+    "dom_text_excerpt": "Go to the main content section.\nTemple Health\n|\nCareers\n\nWelcome. You are not signed in.|My Account Options\nMy Job Cart|\nSign In\n\nJob Search\nMy Jobpage\nBasic Search\n|\nAdvanced Search\n|\nBeginning of the main content section.\nReturn to the home page\nPrintable Format\n\u00a0\n\u00a0\nJob Description - Medical Assistant-Chemotherapy- 24HR Day Shift= Episcopal Campus (262000)\nJob Description\u00a0\nMedical Assistant-Chemotherapy- 24HR Day Shift= Episcopal Campus\u00a0-\u00a0(262000)\nDescription\n\u00a0The Medical Assistant receives pa",
+    "job_container_text": ""
+}
+
+=== End ===
