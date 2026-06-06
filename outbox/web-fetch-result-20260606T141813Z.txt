@@ -1,0 +1,18 @@
+=== Web Fetch Probe [20260606T141813Z] ===
+URL: https://msmc.wd12.myworkdayjobs.com/wday/cxs/msmc/msmc_careers/jobs/JR102337
+Extract mode: json
+
+HTTP Status: 406
+Body length: 135 chars
+
+=== JSON response ===
+{
+    "errorCode": "HTTP_406",
+    "errorCaseId": "B60AE3MQ2FUCTB",
+    "httpStatus": 406,
+    "locale": "en-US,en;q=0.9",
+    "message": "",
+    "messageParams": {}
+}
+
+=== End ===
