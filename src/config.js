@@ -411,18 +411,28 @@ export const SEED_COMPANIES = [
     url: 'https://rush.wd5.myworkdayjobs.com/en-US/RushCareers' },
 
   // ── Health systems — iCIMS ────────────────────────────────────────────────
-  { name: 'Dignity Health',            ats: 'icims', token: 'dignityhealth',
-    url: 'https://careers-dignityhealth.icims.com/jobs/search?in_iframe=1' },
-  { name: 'Tenet Healthcare',          ats: 'icims', token: 'tenethealth',
-    url: 'https://careers-tenethealth.icims.com/jobs/search?in_iframe=1' },
-  { name: 'HCA Healthcare',            ats: 'icims', token: 'hca',
-    url: 'https://careers-hca.icims.com/jobs/search?in_iframe=1' },
+  // Verified live tenants (Session Part 1, 2026-06-06):
+  //   VHC Health: plain fetch + ?in_iframe=1 confirmed → 8 jobs, 423ms, not blocked
+  //   UCI Health: confirmed live (verify with /plain-fetch-test before querying)
+  //   Infirmary Health: confirmed live
+  //   PHS: confirmed live
+  // Confirmed MIGRATED AWAY from iCIMS (Session Part 1):
+  //   HCA → Oracle Taleo (hca.taleo.net)
+  //   Dignity Health → migrated
+  //   Encompass Health → migrated
+  //   Tenet Healthcare → Oracle Fusion Cloud HCM (eodr.fa.us2.oraclecloud.com)
+  { name: 'VHC Health',                ats: 'icims', token: 'vhchealth',
+    url: 'https://careers-vhchealth.icims.com/jobs/search?in_iframe=1' },
+  { name: 'UCI Health',                ats: 'icims', token: 'uci',
+    url: 'https://careers-uci.icims.com/jobs/search?in_iframe=1' },
+  { name: 'Infirmary Health',          ats: 'icims', token: 'infirmaryhealth',
+    url: 'https://careers-infirmaryhealth.icims.com/jobs/search?in_iframe=1' },
+  { name: 'PHS',                       ats: 'icims', token: 'phs',
+    url: 'https://careers-phs.icims.com/jobs/search?in_iframe=1' },
   { name: 'Lifepoint Health',          ats: 'icims', token: 'lifepointhealth',
     url: 'https://careers-lifepointhealth.icims.com/jobs/search?in_iframe=1' },
   { name: 'Community Health Systems',  ats: 'icims', token: 'chs',
     url: 'https://careers-chs.icims.com/jobs/search?in_iframe=1' },
-  { name: 'Encompass Health',          ats: 'icims', token: 'encompasshealth',
-    url: 'https://careers-encompasshealth.icims.com/jobs/search?in_iframe=1' },
 
   // ── Health systems — SAP SuccessFactors ───────────────────────────────────
   // XML feed confirmed working 2026-06-06. Full job description in <Job-Description> CDATA.
