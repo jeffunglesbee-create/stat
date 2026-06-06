@@ -88,6 +88,16 @@ async function fetchPlainDescription(job) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Browser Rendering fetch — iCIMS / Taleo
 //
+// VERIFIED 2026-06-06 via /br-test endpoint:
+//   Taleo (TUHS): ✅ WORKS — search SPA yields 20+ real job URLs,
+//     detail page renders with full description in DOM body text.
+//     og:description is boilerplate — use DOM text selectors instead.
+//   iCIMS (VHC, UCI): ❌ IP-BLOCKED — Cloudflare Browser Rendering IPs
+//     are blocked at WAF level. VHC returns wrapper site; UCI returns 403.
+//     Fallback: iCIMS jobs surface via HiringCafe with description in
+//     job_information.description (v5_processed_job_data). Direct iCIMS
+//     polling delivers title/location/url only — no description available.
+//
 // Both are JavaScript SPAs — og:description meta tags are NOT in the server
 // HTML. The browser must execute JS to populate the DOM. Browser Rendering
 // runs headless Chromium at the edge and returns fully-rendered HTML.
@@ -143,25 +153,43 @@ async function fetchBrowserDescription(job, env) {
       timeout:   15_000,
     });
 
-    // Extract og:description after JS executes
-    const description = await page.evaluate(() => {
+    // Extract description after JS executes.
+    // Taleo og:description is always boilerplate ("Click the link to see...").
+    // Real description is in the rendered body text — use DOM selectors.
+    const atsSource = job.atsSource;
+    const description = await page.evaluate((ats) => {
       const og = document.querySelector(
         'meta[property="og:description"], meta[name="og:description"]' +
         ', meta[name="description"]'
       );
-      if (og?.content && og.content.length > 20) return og.content;
+      const ogContent = og?.content ?? '';
 
-      // Fallback: largest text block in main content area
+      // Taleo og:description is boilerplate — skip it
+      const ogUsable = ats !== 'taleo' && ogContent.length > 50 &&
+        !ogContent.toLowerCase().includes('click the link');
+
+      if (ogUsable) return ogContent;
+
+      // DOM text: job description containers, then body text
       const selectors = [
         '.job-description', '#job-description', '[class*="description"]',
-        '.job-content', '#job-content', 'main p',
+        '.job-content', '#job-content',
+        // Taleo-specific: main content section
+        '#mainContent', '.requisitionDescriptionInterface',
+        'main', 'article',
       ];
       for (const sel of selectors) {
         const el = document.querySelector(sel);
-        if (el?.textContent?.length > 50) return el.textContent.trim();
+        const text = el?.innerText?.trim();
+        if (text && text.length > 100) return text.slice(0, 3000);
       }
-      return '';
-    });
+
+      // Last resort: body text after navigation header
+      const body = document.body?.innerText?.trim() ?? '';
+      const mainIdx = body.indexOf('Beginning of the main content');
+      if (mainIdx > 0) return body.slice(mainIdx + 40, mainIdx + 3040);
+      return body.slice(0, 3000);
+    }, atsSource);
 
     await page.close();
 
