@@ -23,6 +23,12 @@ export const WATCH_GROUPS = [
       'health informatics analyst', 'epic inpatient', 'epic cadence',
       'epic resolute', 'epic beacon', 'epic radiant', 'epic willow',
       'epic optime', 'epic stork', 'epic clindoc', 'epic orders',
+      // Cardiology / Cupid module — high-volume Epic install base, remote-friendly
+      'epic cupid', 'epic cardiology', 'cardiac analyst',
+      // HIM / Health Information Management — large remote workforce
+      'epic him', 'health information management analyst', 'him analyst',
+      // Identity / MPI — in demand at health system mergers and consolidations
+      'epic identity', 'patient identity analyst', 'mpi analyst',
     ],
     companyFilter: {
       health_system_hints: [
@@ -227,6 +233,8 @@ export const HIRINGCAFE = {
     'epic radiant', 'epic willow', 'epic resolute',
     // Broader health IT
     'clinical informatics analyst', 'health informatics analyst',
+    // Cardiology, HIM, Identity — modules in profile with no HiringCafe coverage
+    'epic cupid', 'epic him', 'epic identity', 'him analyst',
     // Remote CS / contact center
     'remote customer service', 'remote customer success',
     'virtual customer support', 'work from home customer service',
