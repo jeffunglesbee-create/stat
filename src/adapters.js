@@ -172,11 +172,28 @@ export async function fetchWorkday(company) {
   if (!company.url) return [];
 
   // Attempt 1: Workday's internal search API (JSON, much cleaner than SSR)
-  // Pattern: replace /en-US/... with /wday/cxs/.../jobs
+  //
+  // URL derivation (verified via Workday SPA network inspection):
+  //   Browser URL: https://{tenant}.wd5.myworkdayjobs.com/en-US/{PathSlug}
+  //   API URL:     https://{tenant}.wd5.myworkdayjobs.com/wday/cxs/{tenant}/{PathSlug}/jobs
+  //
+  // The path slug is ALWAYS the last segment of the company.url path.
+  // It is tenant-specific and cannot be hardcoded as "External_Career_Site".
+  //
+  // Custom domain handling: some companies (e.g. Cleveland Clinic) use custom
+  // career domains (jobs.clevelandclinic.org) that are NOT *.myworkdayjobs.com.
+  // These likely proxy to Workday but the /wday/cxs/ API path may not be accessible.
+  // For these, the SSR fallback (Attempt 2) is the viable path.
   try {
     const parsed = new URL(company.url);
-    const tenant = parsed.hostname.split('.')[0]; // e.g. "jhhs"
-    const apiUrl = `${parsed.origin}/wday/cxs/${tenant}/External_Career_Site/jobs`;
+    const tenant = parsed.hostname.split('.')[0]; // e.g. "jhhs" from jhhs.wd5.myworkdayjobs.com
+    // Extract path slug: last non-empty segment of the URL path
+    // e.g. /en-US/JHH_External_Positions → "JHH_External_Positions"
+    // e.g. /en-US/mayoclinic → "mayoclinic"
+    // e.g. /IntermountainCareers → "IntermountainCareers" (no /en-US/)
+    const pathParts = parsed.pathname.split('/').filter(Boolean);
+    const pathSlug = pathParts[pathParts.length - 1] || 'External_Career_Site';
+    const apiUrl = `${parsed.origin}/wday/cxs/${tenant}/${pathSlug}/jobs`;
     const body = JSON.stringify({
       appliedFacets: {},
       limit: 20,

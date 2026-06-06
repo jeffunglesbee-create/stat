@@ -302,13 +302,13 @@ export const SEED_COMPANIES = [
   { name: 'Kaiser Permanente',         ats: 'workday', token: 'kaiserpermanente',
     url: 'https://kp.wd5.myworkdayjobs.com/en-US/KP_External_Career_Site' },
   { name: 'Cleveland Clinic',          ats: 'workday', token: 'clevelandclinic',
-    url: 'https://jobs.clevelandclinic.org' },
+    url: 'https://jobs.clevelandclinic.org' }, // Custom domain — /wday/cxs/ API unavailable; SSR fallback path
   { name: 'Mass General Brigham',      ats: 'workday', token: 'massgeneralbrigham',
     url: 'https://massgeneralbrigham.wd1.myworkdayjobs.com/en-US/MGB_External', mdApproved: true },
   { name: 'Penn Medicine',             ats: 'workday', token: 'pennmedicine',
     url: 'https://uphs.wd5.myworkdayjobs.com/en-US/UPHS' },
   { name: 'UCSF Health',               ats: 'workday', token: 'ucsf',
-    url: 'https://sjobs.brassring.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=6495&siteid=5861' },
+    url: 'https://ucsf.wd5.myworkdayjobs.com/en-US/Search' },  // NOTE: verify — was incorrectly set to BrassRing URL
   { name: 'Vanderbilt Health',         ats: 'workday', token: 'vanderbilt',
     url: 'https://vanderbilt.wd5.myworkdayjobs.com/en-US/ext-vumc' },
   { name: 'AdventHealth',              ats: 'workday', token: 'adventhealth',
