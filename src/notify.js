@@ -125,23 +125,26 @@ export async function sendPushover(env, { title, message, url, urlTitle, priorit
 // SENDGRID EMAIL
 // ─────────────────────────────────────────────────────────────────────────────
 export async function sendEmail(env, { subject, htmlBody }) {
-  if (!env.SENDGRID_API_KEY || !env.ALERT_EMAIL) return;
+  if (!env.RESEND_API_KEY || !env.ALERT_EMAIL) return;
+  // Resend API — same service FIELD uses for night-owl and daily-brief emails.
+  // Free tier: 3,000 emails/month, 100/day. From address locked to
+  // onboarding@resend.dev on free tier (verify a domain for custom sender).
   const payload = {
-    personalizations: [{ to: [{ email: env.ALERT_EMAIL }] }],
-    from: { email: env.ALERT_EMAIL, name: 'STAT Job Watcher' },
+    from:    'STAT Job Watcher <onboarding@resend.dev>',
+    to:      [env.ALERT_EMAIL],
     subject,
-    content: [{ type: 'text/html', value: htmlBody }],
+    html:    htmlBody,
   };
   try {
-    const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${env.SENDGRID_API_KEY}`,
-        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type':  'application/json',
       },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) console.error('SendGrid error:', res.status, await res.text());
+    if (!res.ok) console.error('Resend error:', res.status, await res.text());
   } catch (e) { console.error('Email failed:', e.message); }
 }
 

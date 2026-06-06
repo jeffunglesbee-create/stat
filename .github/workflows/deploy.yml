@@ -66,8 +66,12 @@ jobs:
           wranglerVersion: "3.109.0"
           secrets: |
             GEMINI_KEY
+            RESEND_API_KEY
+            ALERT_EMAIL
         env:
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
 
       - name: Post-deploy bootstrap reminder
         run: |
