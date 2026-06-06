@@ -1,4 +1,4 @@
-url=https://careers-vhchealth.icims.com/jobs/12870/2025-12870/job
-accept=text/html,*/*
+url=https://careers-vhchealth.icims.com/jobs/feed
+accept=application/json,text/xml,*/*
 extract=raw
-max_bytes=6000
+max_bytes=5000
