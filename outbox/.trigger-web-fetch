@@ -1,3 +1,4 @@
-url=https://hiring.cafe/?q=health+informatics+analyst
-extract=next_data
-max_bytes=30000
+url=https://careers-hca.icims.com/jobs/search?ss=1&searchCategory=&searchKeyword=analyst&searchLocation=
+accept=text/html,*/*
+extract=raw
+max_bytes=8000
