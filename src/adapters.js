@@ -60,6 +60,7 @@ function makeJob(fields) {
     location:     fields.location ?? '',
     environment:  normalizeEnv(fields.environment),
     salary:       fields.salary ?? null,
+    salaryRaw:    fields.salaryRaw ?? null,  // {min, max} numbers — required for peer pool recording
     url:          fields.url ?? '',
     postedAt:     fields.postedAt ?? null,
     daysAgo,
@@ -123,6 +124,7 @@ export async function fetchLever(company) {
                    : j.categories?.location?.toLowerCase().includes('remote') ? 'remote'
                    : '',
       salary:      normalizeSalary(j.salaryRange?.min, j.salaryRange?.max),
+      salaryRaw:   (j.salaryRange?.min || j.salaryRange?.max) ? { min: j.salaryRange?.min ?? null, max: j.salaryRange?.max ?? null } : null,
       url:         j.hostedUrl ?? `https://jobs.lever.co/${company.token}/${j.id}`,
       postedAt:    j.createdAt ? new Date(j.createdAt).toISOString() : null,
       atsSource:   'lever',
