@@ -35,6 +35,7 @@ import {
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
+import { getStatStore, storeGet, storeSet } from './store.js';
 import { getPollingInterval, KV, GHOST } from './config.js';
 import { applyMarylandScore } from './maryland.js';
 import { enrichDescriptions } from './enrich.js';
@@ -86,7 +87,7 @@ class PlatformDO {
     // Load this platform's company list from KV
     let allCompanies;
     try {
-      const raw = await this.env.STAT_KV.get(KV.company_list);
+      const raw = await storeGet(getStatStore(this.env), 'company_list');
       const list = raw ? JSON.parse(raw) : [];
       allCompanies = list.filter(c => c.ats === this.ats);
     } catch (e) {
@@ -110,7 +111,7 @@ class PlatformDO {
     // Also load global KV seen-set for cross-platform dedup
     let globalSeen;
     try {
-      const raw = await this.env.STAT_KV.get(KV.seen_jobs);
+      const raw = await storeGet(getStatStore(this.env), 'seen_ids');
       globalSeen = raw ? new Set(JSON.parse(raw)) : new Set();
     } catch { globalSeen = new Set(); }
 
@@ -195,7 +196,7 @@ class PlatformDO {
     try {
       let gArr = Array.from(globalSeen);
       if (gArr.length > KV.max_seen) gArr = gArr.slice(-KV.max_seen);
-      await this.env.STAT_KV.put(KV.seen_jobs, JSON.stringify(gArr));
+      await storeSet(getStatStore(this.env), 'seen_ids', JSON.stringify(gArr));
     } catch (e) {
       console.warn(`[STAT ${this.ats}] Global seen-set save failed:`, e.message);
     }
@@ -211,7 +212,7 @@ class PlatformDO {
     // Fit score + dispatch
     if (newMatches.length > 0) {
       try {
-        const profileRaw = await this.env.STAT_KV.get(KV.resume_profile);
+        const profileRaw = await storeGet(getStatStore(this.env), 'resume_profile');
         const profile    = profileRaw ? JSON.parse(profileRaw) : null;
         if (profile && this.env.ANTHROPIC_API_KEY) {
           await scoreBatch(newMatches, profile, this.env.ANTHROPIC_API_KEY);

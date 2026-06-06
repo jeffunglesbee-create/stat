@@ -29,62 +29,68 @@ import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
+import { getStatStore, storeGet, storeSet, storeDel } from './store.js';
+export { StateStoreDO } from './store.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SEEN IDs — global KV helpers
+// GLOBAL STATE — DO SQLite helpers (via StateStoreDO)
+// All five previously-KV keys now live in StateStoreDO SQLite storage.
+// Helpers accept env and derive the stub internally for a clean call site.
 // ─────────────────────────────────────────────────────────────────────────────
-async function loadSeenIds(kv) {
+async function loadSeenIds(env) {
   try {
-    const raw = await kv.get(KV.seen_jobs);
+    const raw = await storeGet(getStatStore(env), 'seen_ids');
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch { return new Set(); }
 }
 
-async function saveSeenIds(kv, seenSet) {
+async function saveSeenIds(env, seenSet) {
   let arr = Array.from(seenSet);
   if (arr.length > KV.max_seen) arr = arr.slice(-KV.max_seen);
-  await kv.put(KV.seen_jobs, JSON.stringify(arr));
+  await storeSet(getStatStore(env), 'seen_ids', JSON.stringify(arr));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COMPANY WATCHLIST — KV helpers
-// ─────────────────────────────────────────────────────────────────────────────
-async function loadCompanyList(kv) {
+async function loadCompanyList(env) {
   try {
-    const raw = await kv.get(KV.company_list);
+    const raw = await storeGet(getStatStore(env), 'company_list');
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
-async function saveCompanyList(kv, list) {
-  await kv.put(KV.company_list, JSON.stringify(list));
+async function saveCompanyList(env, list) {
+  await storeSet(getStatStore(env), 'company_list', JSON.stringify(list));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DO REGISTRY — track which companies have active DOs
-// ─────────────────────────────────────────────────────────────────────────────
-async function loadDoRegistry(kv) {
+async function loadDoRegistry(env) {
   try {
-    const raw = await kv.get(KV.do_registry);
+    const raw = await storeGet(getStatStore(env), 'do_registry');
     return raw ? JSON.parse(raw) : {};
   } catch { return {}; }
 }
 
-async function saveDoRegistry(kv, registry) {
-  await kv.put(KV.do_registry, JSON.stringify(registry));
+async function saveDoRegistry(env, registry) {
+  await storeSet(getStatStore(env), 'do_registry', JSON.stringify(registry));
 }
 
-async function loadProfile(kv) {
-  try { const r = await kv.get(KV.resume_profile); return r ? JSON.parse(r) : null; }
-  catch { return null; }
+async function loadProfile(env) {
+  try {
+    const raw = await storeGet(getStatStore(env), 'resume_profile');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
 }
-async function saveProfile(kv, p) { await kv.put(KV.resume_profile, JSON.stringify(p)); }
+async function saveProfile(env, p) {
+  await storeSet(getStatStore(env), 'resume_profile', JSON.stringify(p));
+}
 
-async function loadMatchCounts(kv) {
-  try { const r = await kv.get(KV.match_counts); return r ? JSON.parse(r) : {}; }
-  catch { return {}; }
+async function loadMatchCounts(env) {
+  try {
+    const raw = await storeGet(getStatStore(env), 'match_counts');
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
 }
-async function saveMatchCounts(kv, c) { await kv.put(KV.match_counts, JSON.stringify(c)); }
+async function saveMatchCounts(env, c) {
+  await storeSet(getStatStore(env), 'match_counts', JSON.stringify(c));
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BOOTSTRAP DOs for all companies in the watchlist
@@ -92,10 +98,10 @@ async function saveMatchCounts(kv, c) { await kv.put(KV.match_counts, JSON.strin
 // ─────────────────────────────────────────────────────────────────────────────
 async function bootstrapDOs(env) {
   // Load or initialize company watchlist
-  let companies = await loadCompanyList(env.STAT_KV);
+  let companies = await loadCompanyList(env);
   if (!companies) {
     companies = SEED_COMPANIES;
-    await saveCompanyList(env.STAT_KV, companies);
+    await saveCompanyList(env, companies);
   }
 
   // Platform DO map: binding name → ATS key
@@ -109,7 +115,7 @@ async function bootstrapDOs(env) {
     { binding: 'TALEO_DO',          ats: 'taleo' },
   ];
 
-  const registry = await loadDoRegistry(env.STAT_KV);
+  const registry = await loadDoRegistry(env);
   let spawned = 0;
 
   for (const { binding, ats } of PLATFORM_DOS) {
@@ -133,7 +139,7 @@ async function bootstrapDOs(env) {
     }
   }
 
-  if (spawned > 0) await saveDoRegistry(env.STAT_KV, registry);
+  if (spawned > 0) await saveDoRegistry(env, registry);
 
   // Bootstrap SalaryInferenceDO
   if (spawned > 0 || Object.keys(registry).filter(k => k.startsWith('platform:')).length === 0) {
@@ -158,7 +164,7 @@ async function bootstrapDOs(env) {
         name: 'BatchPollerDO', type: 'batch',
         listSize: BATCH_WATCHLIST.length, startedAt: new Date().toISOString(),
       };
-      await saveDoRegistry(env.STAT_KV, registry);
+      await saveDoRegistry(env, registry);
       console.log(`[STAT] BatchPollerDO started — ${BATCH_WATCHLIST.length} companies`);
     } catch (e) {
       console.warn('[STAT] BatchPollerDO bootstrap failed (non-critical):', e.message);
@@ -175,7 +181,7 @@ async function bootstrapDOs(env) {
 // On a new company match, adds them to the watchlist and spawns a DO.
 // ─────────────────────────────────────────────────────────────────────────────
 async function runHiringCafeScrape(env) {
-  const seenIds = await loadSeenIds(env.STAT_KV);
+  const seenIds = await loadSeenIds(env);
   const newMatches = [];
   const seenThisRun = new Set();
 
@@ -210,10 +216,10 @@ async function runHiringCafeScrape(env) {
     }
   }
 
-  await saveSeenIds(env.STAT_KV, seenIds);
+  await saveSeenIds(env, seenIds);
 
   if (newMatches.length > 0) {
-    const profile = await loadProfile(env.STAT_KV);
+    const profile = await loadProfile(env);
     if (profile && env.ANTHROPIC_API_KEY) {
       await scoreBatch(newMatches, profile, env.ANTHROPIC_API_KEY);
     }
@@ -233,9 +239,9 @@ async function runHiringCafeScrape(env) {
 // ─────────────────────────────────────────────────────────────────────────────
 async function maybeAddOrPromoteCompany(env, job) {
   if (!job.url || !job.company) return;
-  const companies = await loadCompanyList(env.STAT_KV) ?? [];
-  const registry  = await loadDoRegistry(env.STAT_KV);
-  const counts    = await loadMatchCounts(env.STAT_KV);
+  const companies = await loadCompanyList(env) ?? [];
+  const registry  = await loadDoRegistry(env);
+  const counts    = await loadMatchCounts(env);
 
   let ats = null, token = null;
 
@@ -269,7 +275,7 @@ async function maybeAddOrPromoteCompany(env, job) {
   if (!counts[doKey]) counts[doKey] = { count: 0, firstSeen: now, lastSeen: now, name: job.company };
   counts[doKey].count++;
   counts[doKey].lastSeen = now;
-  await saveMatchCounts(env.STAT_KV, counts);
+  await saveMatchCounts(env, counts);
 
   // Already have a DO — nothing more to do
   if (registry[doKey]) return;
@@ -279,7 +285,7 @@ async function maybeAddOrPromoteCompany(env, job) {
   if (!exists) {
     companies.push({ name: job.company, ats, token, url: job.url,
       autoDiscovered: true, firstMatchAt: new Date().toISOString() });
-    await saveCompanyList(env.STAT_KV, companies);
+    await saveCompanyList(env, companies);
     console.log(`[STAT] Tracking: ${job.company} (${ats}) — match #1`);
   }
 
@@ -297,7 +303,7 @@ async function maybeAddOrPromoteCompany(env, job) {
       }));
       registry[doKey] = { name: company.name, ats, autoDiscovered: true, promoted: true,
         promotedAt: new Date().toISOString(), matchCount: recentCount };
-      await saveDoRegistry(env.STAT_KV, registry);
+      await saveDoRegistry(env, registry);
       console.log(`[STAT] Promoted: ${company.name} (${ats}) after ${recentCount} matches`);
     } catch (e) {
       console.error(`[STAT] Promotion failed for ${company.name}:`, e.message);
@@ -325,10 +331,10 @@ async function handleFetch(request, env) {
 
   // GET / — system overview
   if (url.pathname === '/') {
-    const registry = await loadDoRegistry(env.STAT_KV);
-    const seenIds  = await loadSeenIds(env.STAT_KV);
-    const companies = await loadCompanyList(env.STAT_KV) ?? [];
-    const profile = await loadProfile(env.STAT_KV);
+    const registry = await loadDoRegistry(env);
+    const seenIds  = await loadSeenIds(env);
+    const companies = await loadCompanyList(env) ?? [];
+    const profile = await loadProfile(env);
     return json({
       name: 'STAT Job Watcher',
       version: '2.0.0',
@@ -396,8 +402,8 @@ async function handleFetch(request, env) {
 
   // GET /companies — list watchlist with platform DO status
   if (url.pathname === '/companies' && request.method === 'GET') {
-    const companies = await loadCompanyList(env.STAT_KV) ?? SEED_COMPANIES;
-    const registry  = await loadDoRegistry(env.STAT_KV);
+    const companies = await loadCompanyList(env) ?? SEED_COMPANIES;
+    const registry  = await loadDoRegistry(env);
     // Group by ATS platform
     const byPlatform = {};
     for (const c of companies) {
@@ -423,12 +429,12 @@ async function handleFetch(request, env) {
     if (!company.name || !company.ats) {
       return json({ error: 'name and ats are required' }, 400);
     }
-    const companies = await loadCompanyList(env.STAT_KV) ?? [];
+    const companies = await loadCompanyList(env) ?? [];
     const doKey = `${company.ats}:${company.token ?? company.name}`;
     const exists = companies.some(c => `${c.ats}:${c.token ?? c.name}` === doKey);
     if (exists) return json({ error: 'Company already in watchlist' }, 409);
     companies.push(company);
-    await saveCompanyList(env.STAT_KV, companies);
+    await saveCompanyList(env, companies);
     // Spawn DO immediately
     const id = env.COMPANY_WATCHER.idFromName(doKey);
     const stub = env.COMPANY_WATCHER.get(id);
@@ -437,9 +443,9 @@ async function handleFetch(request, env) {
       body: JSON.stringify(company),
       headers: { 'Content-Type': 'application/json' },
     }));
-    const registry = await loadDoRegistry(env.STAT_KV);
+    const registry = await loadDoRegistry(env);
     registry[doKey] = { name: company.name, ats: company.ats, startedAt: new Date().toISOString() };
-    await saveDoRegistry(env.STAT_KV, registry);
+    await saveDoRegistry(env, registry);
     return json({ ok: true, company: company.name, doKey });
   }
 
@@ -473,7 +479,7 @@ async function handleFetch(request, env) {
 
   // GET /profile
   if (url.pathname === '/profile' && request.method === 'GET') {
-    const profile = await loadProfile(env.STAT_KV);
+    const profile = await loadProfile(env);
     if (!profile) return json({ stored: false });
     return json({ stored: true, profile });
   }
@@ -482,7 +488,7 @@ async function handleFetch(request, env) {
   if (url.pathname === '/profile' && request.method === 'POST') {
     let profile;
     try { profile = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
-    await saveProfile(env.STAT_KV, profile);
+    await saveProfile(env, profile);
     return json({
       ok: true, name: profile.name || '(unnamed)',
       fitScoring: env.ANTHROPIC_API_KEY
@@ -493,14 +499,14 @@ async function handleFetch(request, env) {
 
   // DELETE /profile
   if (url.pathname === '/profile' && request.method === 'DELETE') {
-    await env.STAT_KV.delete(KV.resume_profile);
+    await storeDel(getStatStore(env), 'resume_profile');
     return json({ ok: true, message: 'Profile removed. Fit scoring disabled.' });
   }
 
   // GET /learning — auto-discovered companies + promotion status
   if (url.pathname === '/learning' && request.method === 'GET') {
-    const counts   = await loadMatchCounts(env.STAT_KV);
-    const registry = await loadDoRegistry(env.STAT_KV);
+    const counts   = await loadMatchCounts(env);
+    const registry = await loadDoRegistry(env);
     const entries  = Object.entries(counts)
       .map(([key, v]) => ({
         key, name: v.name, matchCount: v.count,
@@ -518,16 +524,16 @@ async function handleFetch(request, env) {
 
   // POST /reset-seen — clear global seen IDs
   if (url.pathname === '/reset-seen' && request.method === 'POST') {
-    await env.STAT_KV.put(KV.seen_jobs, JSON.stringify([]));
+    await storeSet(getStatStore(env), 'seen_ids', JSON.stringify([]));
     return json({ ok: true, message: 'Seen IDs cleared — next run will re-alert all current jobs' });
   }
 
   // POST /reset-all — nuclear reset
   if (url.pathname === '/reset-all' && request.method === 'POST') {
-    await env.STAT_KV.put(KV.seen_jobs, JSON.stringify([]));
-    await env.STAT_KV.put(KV.do_registry, JSON.stringify({}));
-    await env.STAT_KV.put(KV.match_counts, JSON.stringify({}));
-    await env.STAT_KV.delete(KV.company_list);
+    await storeSet(getStatStore(env), 'seen_ids', JSON.stringify([]));
+    await storeSet(getStatStore(env), 'do_registry', JSON.stringify({}));
+    await storeSet(getStatStore(env), 'match_counts', JSON.stringify({}));
+    await storeDel(getStatStore(env), 'company_list');
     return json({ ok: true, message: 'Full reset — POST /bootstrap to re-initialize all platform DOs' });
   }
 

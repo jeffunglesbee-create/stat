@@ -61,6 +61,10 @@ class_name = "BatchPollerDO"
 name = "SALARY_INFERENCE"
 class_name = "SalaryInferenceDO"
 
+[[durable_objects.bindings]]
+name = "STATE_STORE"
+class_name = "StateStoreDO"
+
 # ── Browser Rendering — SPA description extraction (iCIMS / Taleo / SF) ────────
 # Workers Paid: 10 browser-hours/month free (~7,200 fetches at 5s each).
 # Only fires for new keyword-matched jobs from SPA-based ATS — negligible usage.
@@ -85,6 +89,10 @@ binding = "MYBROWSER"
   tag = "v3"
   new_sqlite_classes = ["GreenhouseDO", "LeverDO", "AshbyDO", "WorkdayDO", "IcimsDO", "SuccessFactorsDO", "TaleoDO"]
   deleted_classes = ["CompanyWatcherDO"]
+
+[[migrations]]
+  tag = "v4"
+  new_sqlite_classes = ["StateStoreDO"]
 
 # ── Secrets (set via: wrangler secret put <NAME> --name stat-job-watcher) ────
 # PUSHOVER_APP_TOKEN  — from pushover.net/apps

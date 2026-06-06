@@ -25,6 +25,7 @@
  */
 
 import { fetchCompanyJobs } from './adapters.js';
+import { getStatStore, storeGet, storeSet } from './store.js';
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
@@ -79,7 +80,7 @@ export class BatchPollerDO {
     // Load global seen-set
     let seenIds;
     try {
-      const raw = await this.env.STAT_KV.get(KV.seen_jobs);
+      const raw = await storeGet(getStatStore(this.env), 'seen_ids');
       seenIds = raw ? new Set(JSON.parse(raw)) : new Set();
     } catch { seenIds = new Set(); }
 
@@ -149,7 +150,7 @@ export class BatchPollerDO {
     try {
       let arr = Array.from(seenIds);
       if (arr.length > KV.max_seen) arr = arr.slice(-KV.max_seen);
-      await this.env.STAT_KV.put(KV.seen_jobs, JSON.stringify(arr));
+      await storeSet(getStatStore(this.env), 'seen_ids', JSON.stringify(arr));
     } catch (e) {
       console.warn('[STAT Batch] Failed to save seen IDs:', e.message);
     }
@@ -170,7 +171,7 @@ export class BatchPollerDO {
     // Score + dispatch
     if (newMatches.length > 0) {
       try {
-        const profileRaw = await this.env.STAT_KV.get(KV.resume_profile);
+        const profileRaw = await storeGet(getStatStore(this.env), 'resume_profile');
         const profile = profileRaw ? JSON.parse(profileRaw) : null;
         if (profile && this.env.ANTHROPIC_API_KEY) {
           await scoreBatch(newMatches, profile, this.env.ANTHROPIC_API_KEY);

@@ -6,7 +6,7 @@
  * not just keyword match.
  *
  * Architecture:
- *   - Profile stored as JSON in STAT_KV (stat:resume_profile)
+ *   - Profile stored in StateStoreDO SQLite (key: resume_profile)
  *   - Extracted by resume-matcher.html and POSTed to /profile
  *   - Each new match scored before dispatch
  *   - Score gates Pushover priority: low scores → email-only
