@@ -16,8 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run HiringCafe harvest
-        run: python3 scripts/hc_harvest.py
+      - name: Call Worker /harvest endpoint
+        run: |
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/hc-harvest-result.json"
+          echo "Calling Worker /harvest endpoint..."
+          curl -sf --max-time 600 \
+            "https://stat-job-watcher.jeffunglesbee.workers.dev/harvest" \
+            | tee "$OUT" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          print('ok:', d.get('ok'))
+          print('total_calls:', d.get('total_calls'))
+          print('new companies:', d.get('count'))
+          by_ats = d.get('by_ats', {})
+          for ats, count in sorted(by_ats.items()):
+              print(f'  {ats}: {count}')
+          "
+          echo "OUT=$OUT" >> $GITHUB_ENV
 
       - name: Push results
         run: |

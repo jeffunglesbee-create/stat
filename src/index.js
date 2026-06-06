@@ -543,6 +543,95 @@ async function handleFetch(request, env) {
   // then extracts: og:description, page title, job links, DOM text excerpt.
   // Used to verify Browser Rendering works against iCIMS/Taleo SPAs and
   // to harvest real job URLs from their rendered DOM for further testing.
+  // ── GET /harvest — discover new companies from HiringCafe ─────────────────
+  // Runs fetchHiringCafe() across all WATCH_GROUPS keywords and environments.
+  // Returns company+ATS pairs not already in the current company watchlist.
+  // Used by CI harvest workflow to bulk-discover new companies.
+  // Worker IP is not blocked by HiringCafe (proven — 1-min cron works).
+  if (url.pathname === '/harvest' && request.method === 'GET') {
+    const HARVEST_TERMS = [
+      'epic analyst', 'epic ambulatory', 'epic application analyst',
+      'ehr analyst', 'ehr application analyst', 'clarity sql',
+      'epic implementation', 'epic consultant', 'epic inpatient',
+      'clinical informatics analyst', 'healthcare it analyst',
+      'health informatics analyst', 'epic cadence', 'epic resolute',
+      'epic beacon', 'epic radiant', 'epic willow', 'epic optime',
+      'epic training analyst', 'epic build analyst', 'epic go live',
+      'cerner analyst', 'meditech analyst',
+      'health information management', 'revenue cycle analyst',
+      'remote customer service', 'remote customer success',
+      'remote logistics coordinator', 'remote supply chain analyst',
+      'remote data analyst', 'remote sql analyst',
+    ];
+    const ENVS = ['remote', 'hybrid'];
+
+    // Load current company list for dedup
+    const knownCompanies = await loadCompanyList(env) ?? SEED_COMPANIES;
+    const knownNames  = new Set(knownCompanies.map(c => c.name.toLowerCase().trim()));
+    const knownTokens = new Set(knownCompanies.filter(c => c.token).map(c => c.token.toLowerCase()));
+    const knownUrls   = new Set(knownCompanies.filter(c => c.url).map(c => c.url.toLowerCase()));
+
+    const discovered = new Map(); // key: ats:token → {company, ats, token, hits}
+    let totalCalls = 0;
+
+    for (const term of HARVEST_TERMS) {
+      for (const envType of ENVS) {
+        try {
+          const jobs = await fetchHiringCafe(term, envType);
+          totalCalls++;
+          for (const job of jobs) {
+            const company  = (job.company || '').trim();
+            const atsSource = job.hc?.atsSource || job.atsSource || '';
+            const token    = job.hc?.boardToken || '';
+            const applyUrl = job.url || '';
+
+            if (!company || company.length < 3) continue;
+            if (knownNames.has(company.toLowerCase())) continue;
+
+            // Determine ATS and canonical token/url
+            const SUPPORTED = ['greenhouse','lever','ashby','workday','icims','successfactors','taleo'];
+            if (!SUPPORTED.includes(atsSource)) continue;
+
+            const tokenVal = token || (atsSource === 'workday' ? applyUrl : '');
+            if (!tokenVal || tokenVal.length < 3) continue;
+            if (knownTokens.has(tokenVal.toLowerCase())) continue;
+            if (knownUrls.has(tokenVal.toLowerCase())) continue;
+
+            const key = atsSource + ':' + tokenVal.toLowerCase();
+            if (!discovered.has(key)) {
+              discovered.set(key, { company, ats: atsSource, token: tokenVal, hits: 0 });
+            }
+            discovered.get(key).hits++;
+          }
+        } catch (e) {
+          console.warn('[STAT harvest]', term, envType, e.message);
+        }
+        // Small delay to be polite
+        await new Promise(r => setTimeout(r, 300));
+      }
+    }
+
+    const results = [...discovered.values()].sort((a, b) =>
+      a.ats.localeCompare(b.ats) || a.company.localeCompare(b.company)
+    );
+
+    // Summary by ATS
+    const byAts = {};
+    for (const r of results) {
+      if (!byAts[r.ats]) byAts[r.ats] = [];
+      byAts[r.ats].push(r.company);
+    }
+
+    return json({
+      ok: true,
+      total_calls: totalCalls,
+      count: results.length,
+      by_ats: Object.fromEntries(Object.entries(byAts).map(([k,v]) => [k, v.length])),
+      companies: results,
+    });
+  }
+
+
   // ── GET /plain-fetch-test?url={url} ───────────────────────────────────────
   // Plain Worker fetch() diagnostic — no headless browser.
   // Tests whether Cloudflare Worker IPs are blocked by a given URL.
