@@ -1,4 +1,4 @@
-url=https://stat-job-watcher.jeffunglesbee.workers.dev/br-test?url=https%3A%2F%2Fhttpbin.org%2Fip&ats=test
-accept=application/json,*/*
-extract=json
-max_bytes=5000
+url=https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst&in_iframe=1
+accept=text/html,*/*
+extract=raw
+max_bytes=20000
