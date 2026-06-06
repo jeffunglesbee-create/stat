@@ -544,9 +544,12 @@ async function handleFetch(request, env) {
     });
   }
 
-  // POST /backfill-browse — one-shot: re-polls all companies, saves env-filtered
-  // non-matches to the browse store WITHOUT writing to seenIds (read-only).
-  // Needed because dedup fires before unmatchedJobs capture in the alarm loop.
+  // POST /backfill-browse — RECOVERY ONLY (Rule 11).
+  // Originally created because Browse capture was after the dedup gate (bug).
+  // That bug is fixed in platform-do.js + batch.js (2026-06-06, f56188c).
+  // Browse now auto-populates on every alarm cycle. This endpoint is retained
+  // as a recovery tool if the store is manually cleared or needs priming.
+  // Do NOT build automation on top of this — the alarm loop is the primary path.
   // Safe to run multiple times — saveUnmatchedJobs dedupes by job.id.
   if (url.pathname === '/backfill-browse' && request.method === 'POST') {
     const companies = await loadCompanyList(env) ?? SEED_COMPANIES;
