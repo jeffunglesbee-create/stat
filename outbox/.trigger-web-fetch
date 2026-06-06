@@ -1,4 +1,3 @@
-url=https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst&in_iframe=1
-accept=text/html,*/*
-extract=raw
-max_bytes=20000
+url=https://hiring.cafe/?q=epic+analyst+healthcare&ats_source=icims
+extract=next_data
+max_bytes=30000
