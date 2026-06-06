@@ -1,4 +1,3 @@
-url=https://careers-encompasshealth.icims.com/jobs/search?in_iframe=1&hireVueEnabled=false
-accept=text/html,*/*
-extract=raw
-max_bytes=5000
+url=https://hiring.cafe/?q=ehr+analyst&environment=remote
+extract=next_data
+max_bytes=25000
