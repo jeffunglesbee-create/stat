@@ -13,7 +13,7 @@ crons = ["* * * * *"]
 # Then paste the returned id below
 [[kv_namespaces]]
 binding = "STAT_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "67b2f7113a7c4754a263f6f984e884ae"
 
 # ── Durable Objects: one CompanyWatcherDO per target employer ────────────────
 [[durable_objects.bindings]]
