@@ -331,6 +331,47 @@ async function handleScheduled(env) {
   await bootstrapDOs(env);
   // Wide-net HiringCafe scrape
   await runHiringCafeScrape(env);
+  // Auto-refresh salary caches on schedule — no manual intervention required
+  await maybeRefreshSalaryCaches(env);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTO SALARY CACHE REFRESH
+// Runs every cron tick but only refreshes when caches are stale.
+// LCA: quarterly (90 days) — DOL releases new data every quarter
+// BLS: annual (365 days) — BLS OEWS publishes in May each year
+// Both refreshes are non-blocking — a failure never blocks the cron cycle.
+// ─────────────────────────────────────────────────────────────────────────────
+async function maybeRefreshSalaryCaches(env) {
+  try {
+    const id   = env.SALARY_INFERENCE.idFromName('salary-inference');
+    const stub = env.SALARY_INFERENCE.get(id);
+
+    const statusRes = await stub.fetch(new Request('https://stat-salary/status'));
+    const { blsDate, lcaDate } = await statusRes.json();
+
+    const now         = Date.now();
+    const BLS_TTL_MS  = 365 * 24 * 60 * 60 * 1000; // 1 year
+    const LCA_TTL_MS  =  90 * 24 * 60 * 60 * 1000; // 90 days (quarterly)
+
+    const blsStale = !blsDate || (now - new Date(blsDate).getTime()) > BLS_TTL_MS;
+    const lcaStale = !lcaDate || (now - new Date(lcaDate).getTime()) > LCA_TTL_MS;
+
+    if (blsStale) {
+      console.log('[STAT cron] BLS cache stale — refreshing');
+      stub.fetch(new Request('https://stat-salary/refresh-bls', { method: 'POST' }))
+        .catch(e => console.warn('[STAT cron] BLS refresh error:', e.message));
+    }
+
+    if (lcaStale) {
+      console.log('[STAT cron] LCA cache stale — refreshing');
+      stub.fetch(new Request('https://stat-salary/refresh-lca', { method: 'POST' }))
+        .catch(e => console.warn('[STAT cron] LCA refresh error:', e.message));
+    }
+  } catch (e) {
+    // Non-critical — salary DO may not be bootstrapped yet
+    console.warn('[STAT cron] Salary cache check skipped:', e.message);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -356,6 +397,24 @@ async function handleFetch(request, env) {
     const seenIds  = await loadSeenIds(env);
     const companies = await loadCompanyList(env) ?? [];
     const profile = await loadProfile(env);
+
+    // Fetch salary cache status non-blocking (failure just means no salary data yet)
+    let salaryStatus = { peerCount: 0, lcaCount: 0, blsDate: null, lcaDate: null };
+    try {
+      const salId = env.SALARY_INFERENCE.idFromName('salary-inference');
+      const salStub = env.SALARY_INFERENCE.get(salId);
+      const salRes = await salStub.fetch(new Request('https://stat-salary/status'));
+      salaryStatus = await salRes.json();
+    } catch { /* not yet bootstrapped */ }
+
+    const now = Date.now();
+    const blsAge = salaryStatus.blsDate
+      ? Math.floor((now - new Date(salaryStatus.blsDate).getTime()) / 86_400_000) + 'd'
+      : 'never';
+    const lcaAge = salaryStatus.lcaDate
+      ? Math.floor((now - new Date(salaryStatus.lcaDate).getTime()) / 86_400_000) + 'd'
+      : 'never';
+
     return json({
       name: 'STAT Job Watcher',
       version: '2.0.0',
@@ -366,6 +425,15 @@ async function handleFetch(request, env) {
       seenJobIds: seenIds.size,
       resumeProfile: profile ? `${profile.name || 'stored'} · ${profile.headline || ''}` : null,
       fitScoring: profile && env.GEMINI_KEY ? 'active' : profile ? 'profile stored — add ANTHROPIC_API_KEY' : 'disabled (no profile stored)',
+      salary: {
+        peers: salaryStatus.peerCount,
+        lcaRecords: salaryStatus.lcaCount,
+        blsCacheAge: blsAge,
+        lcaCacheAge: lcaAge,
+        status: salaryStatus.lcaCount > 0 && salaryStatus.blsDate
+          ? 'active' : salaryStatus.lcaCount > 0
+          ? 'bls-pending' : 'cold-start',
+      },
       endpoints: {
         'GET /':               'This status overview',
         'POST /trigger':       'Run HiringCafe scrape now',

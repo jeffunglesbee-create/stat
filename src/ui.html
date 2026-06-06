@@ -643,6 +643,10 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
         <span class="stat-key">Alerts today</span>
         <span class="stat-val" id="s-alerts">0</span>
       </div>
+      <div class="stat-row">
+        <span class="stat-key">Salary data</span>
+        <span class="stat-val" id="s-salary" title="BLS + LCA cache status">—</span>
+      </div>
     </div>
 
     <div class="sidebar-section">
@@ -927,6 +931,20 @@ async function loadStatus() {
     const seen = data.seenJobIds;
     document.getElementById('s-seen').textContent  = seen > 999 ? (seen/1000).toFixed(1)+'k' : seen ?? '—';
     document.getElementById('last-poll').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
+    if (data.salary) {
+      const s = data.salary;
+      const salEl = document.getElementById('s-salary');
+      if (s.status === 'active') {
+        salEl.textContent = `✓ ${s.lcaRecords > 999 ? (s.lcaRecords/1000).toFixed(0)+'k' : s.lcaRecords} LCA · BLS ${s.blsCacheAge}`;
+        salEl.style.color = 'var(--teal)';
+      } else if (s.status === 'bls-pending') {
+        salEl.textContent = `${s.lcaRecords} LCA · BLS pending`;
+        salEl.style.color = 'var(--p2)';
+      } else {
+        salEl.textContent = 'cold-start';
+        salEl.style.color = 'var(--dim)';
+      }
+    }
     dot.className = 'conn-dot live'; lbl.textContent = 'live';
     log('Status OK — ' + data.activeDOs + ' DOs, ' + data.watchedCompanies + ' companies');
     await loadCompanies();
