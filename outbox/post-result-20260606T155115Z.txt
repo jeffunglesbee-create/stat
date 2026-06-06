@@ -1,0 +1,10 @@
+URL: https://tuhs.taleo.net/careersection/tuhs_ex/rss?lang=en  [20260606T155115Z]
+=== Request body ===
+{}
+
+=== Custom headers ===
+(none)
+
+=== Response (status + body, first 4000 chars) ===
+Invoking serviceResource with POST method, generally caused when trying to invoke a servlet that do not exist: /tuhs_ex/rss
+HTTP_STATUS:404
