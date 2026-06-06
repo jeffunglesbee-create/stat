@@ -1,3 +1,4 @@
-url=https://hiring.cafe/?q=VHC+Health+analyst
-extract=next_data
-max_bytes=30000
+url=https://virginiahospitalcenter.icims.com/icims2/servlet/icims2?module=AppInert&action=asyncGetJobSearchResults&portal=17&lang=en&searchKeyword=&startRow=0&numRows=25
+accept=application/json,text/html,*/*
+extract=raw
+max_bytes=15000
