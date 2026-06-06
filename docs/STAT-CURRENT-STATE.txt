@@ -254,6 +254,15 @@ STAT Architecture:                       1pX1BJQA4D_Q4sSO9IHiAYpD-6t2rrrs6
 STAT Salary System:                      13RqeTohP8TYyUp10XGNZAozxuuH9XikQ
 STAT Setup Guide:                        1RETMiMa6CvvWoLIhsfsnGUrxCS-VztsD
 
+SESSION DOCS (2026-06-06):
+  Part 1 — Architecture & ATS:           1iA9pxHwBXlTI-9yEywgUgNv04Rvad6L_
+  Part 2 — iCIMS in_iframe Discovery:    1ha4HlEkW8PcICFqdm26ZNdgXSa7BrV6A
+  Part 3 — iCIMS Routing Fix:            1KQSsjubK4MWLZz00mZxpaN6x-S9Ze-74
+  Part 4 — UI + Browse:                  1MNOUwqR-1RWpcVe5hvktVau7zZJtoNy-
+  Part 5 — Accountability & Audit:       19PX92Qw9enH-w0-RfCqiBAHhaXpYYR8f7cIKO_272zU
+  Full Chat History:                     1sZqjZ6wz1P0R-ejwRwC5r2Iugwz2eFsfdm-sux1RfIw
+  Technical Decisions Log:               1LCFFmL6ZOXZREFEiBBCiz6HaKnXGEGhdRoMDUebDYM4
+
 ═══════════════════════════════════════════════════════════════
 SESSION START CHECKLIST
 ═══════════════════════════════════════════════════════════════
