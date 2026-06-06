@@ -12,17 +12,60 @@
 // P3 = Email only (no push)
 // ─────────────────────────────────────────────────────────────────────────────
 export const WATCH_GROUPS = [
-  // ── Healthcare IT (P1) ────────────────────────────────────────────────────
+  // ── Epic at a hospital / health system (P1) ──────────────────────────────
+  // Preferred destination. Always siren-push when keyword matches.
+  // STAT's hospital system DO watchlist covers these employers directly —
+  // if it fires from a hospital system, it's the real thing.
   {
     priority: 1,
-    label: 'Epic / EHR / Healthcare IT',
+    label: 'Epic · Health System',
     keywords: [
       'epic analyst', 'epic ambulatory', 'epiccare', 'epic application analyst',
-      'epic build', 'epic consultant', 'epic implementation', 'ehr analyst',
-      'ehr application analyst', 'clarity sql', 'clinical informatics analyst',
-      'healthcare it analyst', 'health informatics analyst', 'epic inpatient',
-      'epic cadence', 'epic resolute', 'epic beacon', 'epic radiant',
-      'epic willow', 'epic optime', 'epic stork', 'epic clindoc', 'epic orders',
+      'epic build', 'epic implementation', 'ehr analyst', 'ehr application analyst',
+      'clarity sql', 'clinical informatics analyst', 'healthcare it analyst',
+      'health informatics analyst', 'epic inpatient', 'epic cadence',
+      'epic resolute', 'epic beacon', 'epic radiant', 'epic willow',
+      'epic optime', 'epic stork', 'epic clindoc', 'epic orders',
+    ],
+    // Only apply to jobs from health systems — consulting firms handled below.
+    // Matched by company name substring (lowercase). If a job company name
+    // contains any of these terms, it stays P1. Otherwise downgraded to P2
+    // and chemistry check (fit score) determines if it gets pushed.
+    // Empty = all companies treated equally (fallback if not using company filter).
+    companyFilter: {
+      // Jobs from these company name patterns stay P1 without needing high fit score
+      health_system_hints: [
+        'health', 'hospital', 'medical center', 'medical centre', 'clinic',
+        'healthcare', 'medicine', 'physician', 'care center', 'care centre',
+        'health system', 'health network', 'health plan', 'health sciences',
+        'memorial', 'baptist', 'presbyterian', 'methodist', 'adventist',
+        'ascension', 'dignity', 'intermountain', 'providence', 'kaiser',
+        'ucsf', 'mayo', 'geisinger', 'sanford', 'vanderbilt', 'atrium',
+      ],
+      // Jobs from these company name patterns are consulting — use P2 + chemistry check
+      consulting_hints: [
+        'consulting', 'consultancy', 'advisors', 'advisory', 'solutions',
+        'partners', 'staffing', 'technology', 'technologies', 'services',
+        'implement', 'accenture', 'deloitte', 'cognizant', 'optum', 'leidos',
+        'nordic', 'guidehouse', 'huron', 'chartis', 'netsmart', 'tegria',
+        'divurgent', 'inovalon', 'evolent',
+      ],
+    },
+  },
+
+  // ── Epic at a consulting firm (P2 by default, upgrades to P1 on strong fit) ─
+  // Consulting firms are good options only if there's genuine chemistry —
+  // the resume fit score determines whether it's worth the siren push.
+  // A consulting match scoring 8+ (min_score_for_p1) will still get P1 treatment.
+  // A consulting match scoring 5 goes to email only. No noise.
+  {
+    priority: 2,
+    label: 'Epic · Consulting (fit-gated)',
+    keywords: [
+      // Consulting-specific framing — these phrases rarely appear in health system postings
+      'epic consultant', 'ehr consultant', 'health it consultant',
+      'healthcare it consultant', 'epic contractor', 'epic contract',
+      'traveling epic', 'remote epic consultant',
     ],
   },
 

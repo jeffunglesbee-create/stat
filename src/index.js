@@ -23,7 +23,7 @@ import { SEED_COMPANIES, KV, HIRINGCAFE, POLL_INTERVALS, LEARNING } from './conf
 import { bootstrapSalaryDO } from './salary.js';
 import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
-import { scoreBatch } from './fit.js';
+import { scoreBatch, companyAwarePriority } from './fit.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEEN IDs — global KV helpers
@@ -163,8 +163,12 @@ async function runHiringCafeScrape(env) {
         if (!match) continue;
 
         job.matchedKeyword = match.matchedKw;
-        job._matchGroup = match.label;
-        newMatches.push({ job, match });
+        const adjustedPriority = companyAwarePriority(job, match);
+        const adjustedMatch = adjustedPriority !== match.priority
+          ? { ...match, priority: adjustedPriority }
+          : match;
+        job._matchGroup = adjustedMatch.label;
+        newMatches.push({ job, match: adjustedMatch });
 
         await maybeAddOrPromoteCompany(env, job);
       }

@@ -13,7 +13,7 @@ import { fetchCompanyJobs } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { POLL_INTERVALS, KV, GHOST } from './config.js';
-import { scoreBatch } from './fit.js';
+import { scoreBatch, companyAwarePriority } from './fit.js';
 
 export class CompanyWatcherDO {
   constructor(state, env) {
@@ -104,8 +104,18 @@ export class CompanyWatcherDO {
         // Non-blocking: if the SalaryInferenceDO is unreachable, job still alerts.
         await enrichJobWithSalary(job, match, this.env);
 
+        // Apply company-aware priority: consulting firm Epic matches
+        // are downgraded to P2; health system matches stay P1.
+        // The fit score can still upgrade consulting matches back to P1
+        // if chemistry is strong (handled in effectivePriority).
+        const adjustedPriority = companyAwarePriority(job, match);
+        const adjustedMatch = adjustedPriority !== match.priority
+          ? { ...match, priority: adjustedPriority }
+          : match;
+
         job.matchedKeyword = match.matchedKw;
-        newMatches.push({ job, match });
+        job._matchGroup = adjustedMatch.label;
+        newMatches.push({ job, match: adjustedMatch });
       }
 
       // 4. Persist updated seen-set (cap at 500 per company)

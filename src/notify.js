@@ -204,8 +204,10 @@ export function buildEmailHtml(newMatches) {
   }).join('');
 
   const p1Count = newMatches.filter(m => m.match.priority === 1).length;
+  const hsCount = newMatches.filter(m => m.match.label?.includes('Health System')).length;
+  const consultCount = newMatches.filter(m => m.match.label?.includes('Consulting')).length;
   const headline = p1Count > 0
-    ? `${p1Count} P1 Epic/EHR match${p1Count > 1 ? 'es' : ''} + ${newMatches.length - p1Count} others`
+    ? `${p1Count} P1 match${p1Count > 1 ? 'es' : ''}${hsCount ? ` · ${hsCount} health system` : ''}${consultCount ? ` · ${consultCount} consulting` : ''}`
     : `${newMatches.length} new match${newMatches.length > 1 ? 'es' : ''}`;
 
   return `

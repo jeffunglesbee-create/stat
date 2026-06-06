@@ -120,6 +120,38 @@ export async function scoreBatch(matches, profile, anthropicKey) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// COMPANY-AWARE PRIORITY
+// For the Epic · Health System P1 group, check whether the job is actually
+// from a health system or a consulting firm. Consulting firm matches are
+// downgraded to P2 and rely on fit score to re-earn P1 treatment.
+//
+// Why this is in fit.js rather than the keyword matcher:
+//   matchJob() runs on job.title + job.company and returns the first group match.
+//   The company filter is a post-match adjustment — we know the keyword matched,
+//   now we decide if the company context changes the priority.
+// ─────────────────────────────────────────────────────────────────────────────
+export function companyAwarePriority(job, match) {
+  // Only applies to groups that define a companyFilter
+  const filter = match.group?.companyFilter;
+  if (!filter) return match.priority;
+
+  const company = (job.company || '').toLowerCase();
+
+  // If company name contains a consulting hint → downgrade to P2
+  const isConsulting = filter.consulting_hints?.some(h => company.includes(h));
+  if (isConsulting) return 2;
+
+  // If company name contains a health system hint → keep P1
+  const isHealthSystem = filter.health_system_hints?.some(h => company.includes(h));
+  if (isHealthSystem) return 1;
+
+  // Company name doesn't match either list — keep original priority.
+  // Unknown companies get the benefit of the doubt; the fit score
+  // will still gate the final push behavior.
+  return match.priority;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // EFFECTIVE PRIORITY — applies fit score gate
 // Returns the effective push priority after applying fit thresholds.
 // Called by dispatchAlerts to decide whether a P1 keyword match actually
