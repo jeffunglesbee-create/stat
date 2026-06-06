@@ -201,7 +201,7 @@ export const FIT_SCORING = {
   enabled:           true,
   min_score_for_push: 6,
   min_score_for_p1:   7,
-  model: 'claude-haiku-4-5-20251001',
+  model: 'gemini-2.5-flash-lite',  // free tier: 1500 RPD, 0 cost at STAT match rates,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

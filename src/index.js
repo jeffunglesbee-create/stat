@@ -220,8 +220,8 @@ async function runHiringCafeScrape(env) {
 
   if (newMatches.length > 0) {
     const profile = await loadProfile(env);
-    if (profile && env.ANTHROPIC_API_KEY) {
-      await scoreBatch(newMatches, profile, env.ANTHROPIC_API_KEY);
+    if (profile && env.GEMINI_KEY) {
+      await scoreBatch(newMatches, profile, env.GEMINI_KEY);
     }
     console.log(`[STAT HC] ${newMatches.length} new HiringCafe matches`);
     await dispatchAlerts(env, newMatches);
@@ -344,7 +344,7 @@ async function handleFetch(request, env) {
       totalMonitored: companies.length + BATCH_WATCHLIST.length,
       seenJobIds: seenIds.size,
       resumeProfile: profile ? `${profile.name || 'stored'} · ${profile.headline || ''}` : null,
-      fitScoring: profile && env.ANTHROPIC_API_KEY ? 'active' : profile ? 'profile stored — add ANTHROPIC_API_KEY' : 'disabled (no profile stored)',
+      fitScoring: profile && env.GEMINI_KEY ? 'active' : profile ? 'profile stored — add ANTHROPIC_API_KEY' : 'disabled (no profile stored)',
       endpoints: {
         'GET /':               'This status overview',
         'POST /trigger':       'Run HiringCafe scrape now',
@@ -491,7 +491,7 @@ async function handleFetch(request, env) {
     await saveProfile(env, profile);
     return json({
       ok: true, name: profile.name || '(unnamed)',
-      fitScoring: env.ANTHROPIC_API_KEY
+      fitScoring: env.GEMINI_KEY
         ? 'active — all future alerts will be scored against this profile'
         : 'profile stored but ANTHROPIC_API_KEY not set — run: wrangler secret put ANTHROPIC_API_KEY',
     });

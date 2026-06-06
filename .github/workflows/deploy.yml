@@ -64,6 +64,10 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: b57e9af57ab46c52ca9215804e689c29
           wranglerVersion: "3.109.0"
+          secrets: |
+            GEMINI_KEY
+        env:
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
 
       - name: Post-deploy bootstrap reminder
         run: |

@@ -20,13 +20,24 @@
 
 import { FIT_SCORING } from './config.js';
 
+// Gemini API helpers — same model FIELD uses for journalism (free tier: 1500 RPD)
+const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+
+function toGeminiBody(systemPrompt, userMsg) {
+  return JSON.stringify({
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ parts: [{ text: userMsg }] }],
+    generationConfig: { maxOutputTokens: 200, temperature: 0.2 },
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SCORE A JOB AGAINST A PROFILE
 // Returns { score, verdict, reasoning } or null on failure
 // Fast path: if no profile stored, returns null (alerts proceed normally)
 // ─────────────────────────────────────────────────────────────────────────────
-export async function scoreFit(job, profile, anthropicKey) {
-  if (!profile || !anthropicKey || !FIT_SCORING.enabled) return null;
+export async function scoreFit(job, profile, geminiKey) {
+  if (!profile || !geminiKey || !FIT_SCORING.enabled) return null;
 
   const systemPrompt = `You are a hiring expert scoring job fit for a candidate.
 Given a candidate profile and a job posting summary, score how well the candidate fits.
@@ -62,28 +73,21 @@ Keyword matched: ${job.matchedKeyword || 'n/a'}
 Keyword group: ${job._matchGroup || 'n/a'}`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/'
+      + GEMINI_MODEL + ':generateContent?key=' + geminiKey;
+    const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: FIT_SCORING.model,
-        max_tokens: 200,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMsg }],
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: toGeminiBody(systemPrompt, userMsg),
     });
 
     if (!res.ok) {
-      console.warn('[STAT fit] API error:', res.status);
+      console.warn('[STAT fit] Gemini API error:', res.status);
       return null;
     }
 
     const data = await res.json();
-    const text = data.content?.[0]?.text ?? '';
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     const cleaned = text.replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned);
   } catch (e) {
@@ -98,8 +102,8 @@ Keyword group: ${job._matchGroup || 'n/a'}`;
 // with job.fitScore / job.fitVerdict / job.fitReasoning populated.
 // Non-blocking: if scoring fails for a job, it proceeds without a score.
 // ─────────────────────────────────────────────────────────────────────────────
-export async function scoreBatch(matches, profile, anthropicKey) {
-  if (!profile || !anthropicKey || !FIT_SCORING.enabled) return matches;
+export async function scoreBatch(matches, profile, geminiKey) {
+  if (!profile || !geminiKey || !FIT_SCORING.enabled) return matches;
 
   // Score concurrently but cap at 5 parallel requests to stay polite
   const CONCURRENCY = 5;
@@ -107,7 +111,7 @@ export async function scoreBatch(matches, profile, anthropicKey) {
     const batch = matches.slice(i, i + CONCURRENCY);
     await Promise.all(batch.map(async ({ job, match }) => {
       job._matchGroup = match.label;
-      const result = await scoreFit(job, profile, anthropicKey);
+      const result = await scoreFit(job, profile, geminiKey);
       if (result) {
         job.fitScore    = result.score;
         job.fitVerdict  = result.verdict;

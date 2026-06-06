@@ -214,8 +214,8 @@ class PlatformDO {
       try {
         const profileRaw = await storeGet(getStatStore(this.env), 'resume_profile');
         const profile    = profileRaw ? JSON.parse(profileRaw) : null;
-        if (profile && this.env.ANTHROPIC_API_KEY) {
-          await scoreBatch(newMatches, profile, this.env.ANTHROPIC_API_KEY);
+        if (profile && this.env.GEMINI_KEY) {
+          await scoreBatch(newMatches, profile, this.env.GEMINI_KEY);
         }
       } catch (e) {
         console.warn(`[STAT ${this.ats}] Fit scoring skipped:`, e.message);
