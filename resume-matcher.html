@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STAT · Resume Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Epilogue:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --paper:    #f7f4ef;
+  --paper2:   #f0ece4;
+  --paper3:   #e8e2d8;
+  --rule:     #d4ccbc;
+  --rule2:    #c4baa8;
+  --dim:      #a09480;
+  --muted:    #7a6e5e;
+  --body:     #3d3428;
+  --head:     #1e1a14;
+  --teal:     #1a6b6b;
+  --teal2:    #248080;
+  --teal-pale:#e8f4f4;
+  --teal-mid: #b8d8d8;
+  --p1:       #8b2a2a;
+  --p1-pale:  #f9eded;
+  --p2:       #6b5200;
+  --p2-pale:  #faf5e8;
+  --p3:       #2a5c2a;
+  --p3-pale:  #edf5ed;
+  --serif:  'Instrument Serif', Georgia, serif;
+  --sans:   'Epilogue', system-ui, sans-serif;
+  --mono:   'DM Mono', 'Courier New', monospace;
+  --shadow: 0 1px 3px rgba(30,26,20,0.08), 0 4px 12px rgba(30,26,20,0.04);
+}
+html { background: var(--paper); color: var(--body); font-family: var(--sans); font-size: 14px; line-height: 1.55; }
+body { min-height: 100dvh; display: flex; flex-direction: column; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--paper2); }
+::-webkit-scrollbar-thumb { background: var(--rule2); border-radius: 3px; }
+
+/* ── Header ── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 32px 16px; border-bottom: 2px solid var(--head); background: var(--paper);
+}
+.wordmark { font-family: var(--serif); font-size: 26px; color: var(--head); letter-spacing: -0.01em; }
+.wordmark em { font-style: italic; color: var(--teal); }
+.sub { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); padding-left: 20px; border-left: 1px solid var(--rule2); }
+.header-rule { height: 3px; background: linear-gradient(to right, var(--teal) 0%, var(--teal2) 30%, var(--teal-mid) 70%, transparent 100%); }
+
+/* ── Mode toggle ── */
+.mode-bar {
+  display: flex; align-items: center; gap: 0;
+  border: 1px solid var(--rule); border-radius: 4px; overflow: hidden;
+  width: fit-content;
+}
+.mode-btn {
+  padding: 8px 20px; background: var(--paper2); border: none;
+  font-family: var(--sans); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  cursor: pointer; transition: all 0.14s; border-right: 1px solid var(--rule);
+}
+.mode-btn:last-child { border-right: none; }
+.mode-btn.active { background: var(--head); color: var(--paper); }
+.mode-btn:not(.active):hover { background: var(--paper3); color: var(--body); }
+
+.mode-note {
+  font-size: 11px; color: var(--dim); margin-top: 10px; line-height: 1.5;
+  padding: 10px 14px; background: var(--paper2); border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+.mode-note strong { color: var(--muted); }
+
+/* ── Layout ── */
+.container { max-width: 960px; margin: 0 auto; padding: 32px 32px 64px; width: 100%; }
+
+/* ── Section labels ── */
+.section-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+
+/* ── Upload zone ── */
+.upload-zone {
+  border: 2px dashed var(--rule2); border-radius: 4px; padding: 40px 32px;
+  text-align: center; cursor: pointer; transition: all 0.15s; background: var(--paper2);
+  margin-bottom: 20px;
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--teal-mid); background: var(--teal-pale); }
+.upload-icon { font-family: var(--serif); font-size: 36px; font-style: italic; color: var(--rule2); margin-bottom: 10px; }
+.upload-title { font-size: 14px; font-weight: 600; color: var(--body); margin-bottom: 4px; }
+.upload-sub { font-size: 11px; color: var(--dim); }
+#file-input { display: none; }
+
+/* ── Textarea ── */
+.resume-textarea {
+  width: 100%; min-height: 220px; padding: 14px 16px;
+  background: var(--paper2); border: 1px solid var(--rule);
+  color: var(--body); font-family: var(--mono); font-size: 11px; line-height: 1.7;
+  border-radius: 4px; resize: vertical; transition: border-color 0.12s;
+}
+.resume-textarea:focus { outline: none; border-color: var(--teal-mid); }
+.resume-textarea::placeholder { color: var(--dim); }
+
+/* ── Divider ── */
+.or-divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--dim); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+.or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
+/* ── Buttons ── */
+.btn-primary {
+  padding: 11px 24px; background: var(--teal); color: #fff;
+  border: none; border-radius: 4px; font-family: var(--sans); font-size: 12px;
+  font-weight: 600; letter-spacing: 0.06em; cursor: pointer; transition: background 0.12s;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-primary:hover { background: var(--teal2); }
+.btn-primary:disabled { opacity: 0.4; pointer-events: none; }
+.btn-secondary {
+  padding: 9px 18px; background: transparent; color: var(--muted);
+  border: 1px solid var(--rule); border-radius: 4px; font-family: var(--sans);
+  font-size: 11px; cursor: pointer; transition: all 0.12s;
+}
+.btn-secondary:hover { border-color: var(--rule2); color: var(--body); }
+
+/* ── Profile card ── */
+.profile-card {
+  background: var(--teal-pale); border: 1px solid var(--teal-mid);
+  border-left: 3px solid var(--teal); border-radius: 4px; padding: 20px 24px;
+  margin-bottom: 28px;
+}
+.profile-name { font-family: var(--serif); font-size: 22px; color: var(--head); margin-bottom: 4px; }
+.profile-headline { font-size: 12px; color: var(--teal); font-weight: 600; margin-bottom: 16px; }
+.profile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.profile-field { }
+.profile-field-label { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.profile-field-value { font-size: 12px; color: var(--body); line-height: 1.4; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.chip {
+  padding: 2px 8px; background: var(--paper); border: 1px solid var(--rule);
+  border-radius: 2px; font-family: var(--mono); font-size: 10px; color: var(--muted);
+}
+.chip.highlight { background: var(--teal-pale); border-color: var(--teal-mid); color: var(--teal); font-weight: 500; }
+
+/* ── Job input ── */
+.job-input-area {
+  background: var(--paper2); border: 1px solid var(--rule); border-radius: 4px;
+  overflow: hidden; margin-bottom: 20px;
+}
+.job-input-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--rule); background: var(--paper3);
+}
+.job-input-title { font-size: 11px; font-weight: 600; color: var(--body); }
+.job-textarea {
+  width: 100%; min-height: 140px; padding: 14px 16px;
+  background: transparent; border: none;
+  color: var(--body); font-family: var(--mono); font-size: 11px; line-height: 1.7;
+  resize: vertical;
+}
+.job-textarea:focus { outline: none; }
+.job-textarea::placeholder { color: var(--dim); }
+
+/* ── Score card ── */
+.score-card {
+  border: 1px solid var(--rule); border-radius: 4px; overflow: hidden;
+  margin-bottom: 14px; transition: box-shadow 0.15s;
+}
+.score-card:hover { box-shadow: var(--shadow); }
+.score-header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 18px; border-bottom: 1px solid var(--paper3);
+  cursor: pointer;
+}
+.score-badge {
+  width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-family: var(--serif); font-size: 18px;
+  font-weight: 700; flex-shrink: 0;
+}
+.score-9, .score-10 { background: var(--p3-pale); color: var(--p3); border: 2px solid #a0c4a0; }
+.score-7, .score-8  { background: var(--teal-pale); color: var(--teal); border: 2px solid var(--teal-mid); }
+.score-5, .score-6  { background: var(--p2-pale); color: var(--p2); border: 2px solid #d4c080; }
+.score-1, .score-2, .score-3, .score-4 { background: var(--p1-pale); color: var(--p1); border: 2px solid #d4a0a0; }
+.score-title { flex: 1; }
+.score-job-title { font-size: 14px; font-weight: 600; color: var(--head); margin-bottom: 2px; }
+.score-company { font-size: 11px; color: var(--muted); }
+.score-verdict { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+.score-9 .score-verdict, .score-10 .score-verdict { color: var(--p3); }
+.score-7 .score-verdict, .score-8 .score-verdict  { color: var(--teal); }
+.score-5 .score-verdict, .score-6 .score-verdict  { color: var(--p2); }
+.score-1 .score-verdict, .score-2 .score-verdict,
+.score-3 .score-verdict, .score-4 .score-verdict  { color: var(--p1); }
+.score-mode-badge {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 2px 7px; border-radius: 2px;
+  border: 1px solid var(--rule); color: var(--dim); background: var(--paper2);
+}
+
+.score-body { padding: 16px 18px; background: var(--paper); display: none; }
+.score-body.open { display: block; }
+.score-section { margin-bottom: 14px; }
+.score-section:last-child { margin-bottom: 0; }
+.score-section-label { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; }
+.score-text { font-size: 12px; color: var(--body); line-height: 1.6; }
+.strength-list, .gap-list { list-style: none; }
+.strength-list li::before { content: '✓ '; color: var(--p3); font-weight: 700; }
+.gap-list li::before { content: '△ '; color: var(--p2); font-weight: 700; }
+.strength-list li, .gap-list li { font-size: 12px; color: var(--body); padding: 2px 0; }
+.cover-block {
+  background: var(--paper2); border: 1px solid var(--rule); border-radius: 3px;
+  padding: 14px 16px; font-family: var(--mono); font-size: 11px; line-height: 1.8;
+  color: var(--body); white-space: pre-wrap; margin-top: 8px;
+}
+.copy-btn {
+  padding: 5px 12px; background: transparent; border: 1px solid var(--rule);
+  font-family: var(--sans); font-size: 10px; color: var(--muted); cursor: pointer;
+  border-radius: 3px; float: right; margin-top: -2px; transition: all 0.12s;
+}
+.copy-btn:hover { border-color: var(--teal-mid); color: var(--teal); }
+
+/* ── Progress ── */
+.progress-wrap {
+  background: var(--paper2); border: 1px solid var(--rule); border-radius: 4px;
+  padding: 32px; text-align: center; margin-bottom: 20px;
+}
+.progress-step { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.progress-bar-bg { height: 3px; background: var(--paper3); border-radius: 2px; overflow: hidden; }
+.progress-bar-fill { height: 3px; background: var(--teal); border-radius: 2px; transition: width 0.4s ease; }
+.spinner {
+  width: 20px; height: 20px; border: 2px solid var(--rule); border-top-color: var(--teal);
+  border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; background: var(--paper);
+  border: 1px solid var(--rule); border-left: 3px solid var(--teal);
+  border-radius: 4px; padding: 11px 18px; font-size: 12px; color: var(--body);
+  box-shadow: var(--shadow); transform: translateY(60px); opacity: 0;
+  transition: all 0.22s cubic-bezier(.22,1,.36,1); z-index: 999;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { border-left-color: var(--p1); }
+
+/* ── Utility ── */
+.hidden { display: none; }
+.flex-row { display: flex; align-items: center; gap: 12px; }
+.step { margin-bottom: 32px; }
+.step-number {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--head); color: var(--paper); font-size: 10px; font-weight: 700;
+  margin-right: 8px; flex-shrink: 0;
+}
+.step-title { font-size: 13px; font-weight: 700; color: var(--head); display: flex; align-items: center; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div style="display:flex;align-items:baseline;gap:20px">
+    <div class="wordmark">S<em>T</em>AT</div>
+    <div class="sub">Resume Intelligence</div>
+  </div>
+</header>
+<div class="header-rule"></div>
+
+<div class="container">
+
+  <!-- Step 0: Mode selection -->
+  <div class="step" id="step-mode">
+    <div class="step-title">
+      <span class="step-number">0</span>
+      Select scoring mode
+    </div>
+    <div class="mode-bar">
+      <button class="mode-btn active" id="mode-btn-epic" onclick="setMode('epic')">Epic / Healthcare IT</button>
+      <button class="mode-btn" id="mode-btn-general" onclick="setMode('general')">General</button>
+    </div>
+    <div class="mode-note" id="mode-note">
+      <strong>Epic / Healthcare IT:</strong> Extracts Epic modules, EHR certifications, and clinical informatics context. Scores and gaps evaluated against healthcare IT criteria. Best for EHR analyst, clinical informatics, and healthcare IT roles.
+    </div>
+  </div>
+
+  <!-- Step 1: Resume input -->
+  <div class="step" id="step-resume">
+    <div class="step-title">
+      <span class="step-number">1</span>
+      Upload or paste your resume
+    </div>
+
+    <div class="upload-zone" id="upload-zone">
+      <div class="upload-icon">R</div>
+      <div class="upload-title">Drop a PDF or text file here</div>
+      <div class="upload-sub">or click to browse</div>
+      <input type="file" id="file-input" accept=".pdf,.txt,.doc,.docx">
+    </div>
+
+    <div class="or-divider">or paste text</div>
+
+    <textarea
+      class="resume-textarea"
+      id="resume-text"
+      placeholder="Paste your resume text here…&#10;&#10;Name, contact, work history, education, certifications, skills — everything Claude needs to understand your background and build a match profile."
+    ></textarea>
+
+    <div class="flex-row" style="margin-top:16px">
+      <button class="btn-primary" id="btn-analyze">
+        <span>Analyze Resume</span>
+      </button>
+      <button class="btn-secondary hidden" id="btn-clear-resume">Clear &amp; start over</button>
+    </div>
+  </div>
+
+  <!-- Progress indicator -->
+  <div class="progress-wrap hidden" id="progress">
+    <div class="spinner"></div>
+    <div class="progress-step" id="progress-step">Reading resume…</div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Step 2: Profile -->
+  <div class="step hidden" id="step-profile">
+    <div class="step-title">
+      <span class="step-number">2</span>
+      Your match profile
+    </div>
+    <div class="profile-card" id="profile-card"><!-- rendered by JS --></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+      <button class="btn-secondary" id="btn-edit-profile">Edit profile JSON</button>
+      <span style="font-size:11px;color:var(--dim)">Profile is used to score every job below</span>
+    </div>
+    <div class="hidden" id="profile-edit-wrap">
+      <textarea class="resume-textarea" id="profile-json-edit" style="min-height:180px;font-size:10px"></textarea>
+      <div class="flex-row" style="margin-top:10px">
+        <button class="btn-primary" id="btn-save-profile">Save profile</button>
+        <button class="btn-secondary" id="btn-cancel-edit">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Job matching -->
+  <div class="step hidden" id="step-jobs">
+    <div class="step-title">
+      <span class="step-number">3</span>
+      Score a job against your profile
+    </div>
+
+    <div class="job-input-area">
+      <div class="job-input-header">
+        <span class="job-input-title">Paste job description</span>
+        <button class="btn-secondary" id="btn-score" style="padding:6px 14px;font-size:10px">Score this job →</button>
+      </div>
+      <textarea class="job-textarea" id="job-text" placeholder="Paste the full job description here. Include title, company, location, requirements, responsibilities, and salary if shown. The more detail, the better the score."></textarea>
+    </div>
+
+    <div id="scores-list"><!-- score cards rendered here --></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Mode ─────────────────────────────────────────────────────────────────────
+let currentMode = 'epic'; // 'epic' | 'general'
+
+const MODE_NOTES = {
+  epic: '<strong>Epic / Healthcare IT:</strong> Extracts Epic modules, EHR certifications, and clinical informatics context. Scores and gaps evaluated against healthcare IT criteria. Best for EHR analyst, clinical informatics, and healthcare IT roles.',
+  general: '<strong>General:</strong> Industry-agnostic extraction and scoring. Works for any role — tech, data, product, operations, finance, consulting. Evaluates fit based on skills, experience, and role requirements without healthcare-specific framing.'
+};
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-btn-epic').classList.toggle('active', mode === 'epic');
+  document.getElementById('mode-btn-general').classList.toggle('active', mode === 'general');
+  document.getElementById('mode-note').innerHTML = MODE_NOTES[mode];
+
+  // If profile already exists, warn that re-analysis is needed
+  if (profile) {
+    toast('Mode changed — re-analyze your resume to update the profile', '');
+  }
+}
+
+// ─── Prompts by mode ──────────────────────────────────────────────────────────
+function getExtractPrompt(mode) {
+  if (mode === 'epic') {
+    return `You are a healthcare IT hiring specialist with deep knowledge of Epic EHR implementations.
+Extract a structured candidate profile from the resume provided.
+Respond ONLY with valid JSON — no markdown fences, no preamble.
+
+JSON schema:
+{
+  "name": "string",
+  "headline": "string (3-8 words summarizing their role)",
+  "yearsExperience": number,
+  "epicModules": ["array of Epic module names they have experience with — empty array if none"],
+  "otherSystems": ["other EHR/HIT systems — empty array if none"],
+  "certifications": ["Epic certifications and other relevant certs — empty array if none"],
+  "skills": ["top 6-10 technical and analytical skills"],
+  "targetRoles": ["3-5 inferred job titles they'd be suited for"],
+  "environments": ["remote", "hybrid", or "onsite" — inferred preferences, can include multiple"],
+  "locationContext": "string — current city/state or 'not specified'",
+  "targetSalary": "string — inferred range based on experience and role, or 'not specified'",
+  "experienceSummary": "2-3 sentence summary of their background for job matching",
+  "matchStrengths": ["3-5 key competitive advantages for healthcare IT roles"],
+  "potentialGaps": ["2-3 areas that may be missing or weak for healthcare IT analyst roles"]
+}`;
+  }
+
+  return `You are an expert career advisor and talent analyst.
+Extract a structured candidate profile from the resume provided.
+Be industry-agnostic — do not assume healthcare, tech, or any specific sector.
+Respond ONLY with valid JSON — no markdown fences, no preamble.
+
+JSON schema:
+{
+  "name": "string",
+  "headline": "string (3-8 words summarizing their role and seniority)",
+  "yearsExperience": number,
+  "industry": "string — primary industry/sector based on their background",
+  "domain": ["2-4 functional domains they work in, e.g. 'Data Analysis', 'Project Management', 'Software Engineering'"],
+  "tools": ["top tools, platforms, and technologies they use"],
+  "skills": ["top 6-10 transferable and technical skills"],
+  "certifications": ["relevant certifications and credentials — empty array if none"],
+  "targetRoles": ["3-5 inferred job titles they'd be suited for"],
+  "environments": ["remote", "hybrid", or "onsite" — inferred preferences, can include multiple"],
+  "locationContext": "string — current city/state or 'not specified'",
+  "targetSalary": "string — inferred range based on experience and seniority, or 'not specified'",
+  "experienceSummary": "2-3 sentence summary of their background for job matching",
+  "matchStrengths": ["3-5 key competitive advantages that would stand out to employers"],
+  "potentialGaps": ["2-3 areas that are commonly required in their target roles but may be missing or weak"]
+}`;
+}
+
+function getScorePrompt(mode) {
+  if (mode === 'epic') {
+    return `You are a senior healthcare IT career advisor who specializes in Epic EHR roles.
+Score how well a candidate matches a job posting. Be rigorous and honest — a 9 or 10 should be rare.
+Respond ONLY with valid JSON, no markdown fences.
+
+JSON schema:
+{
+  "score": number (1-10),
+  "verdict": "string (2-3 words: e.g. 'Strong Match', 'Good Fit', 'Partial Match', 'Weak Match', 'Poor Fit')",
+  "jobTitle": "string — parsed job title",
+  "company": "string — company name",
+  "summary": "string — 2 sentence overall assessment",
+  "strengths": ["3-5 specific reasons this candidate is a good fit for this role"],
+  "gaps": ["2-4 specific gaps or concerns for this role"],
+  "salaryAssessment": "string — how the posted/expected salary aligns with their background, or 'salary not disclosed'",
+  "coverLetterOpener": "string — a strong, specific 2-sentence opener for a cover letter for THIS job. Reference the actual job requirements and the candidate's relevant experience. No generic phrases."
+}`;
+  }
+
+  return `You are an expert career advisor and professional recruiter.
+Score how well a candidate matches a job posting. Evaluate based on skills, experience level, domain fit, and stated requirements.
+Do NOT penalize for lack of healthcare or EHR experience unless the job requires it.
+Be rigorous and honest — a 9 or 10 should be rare.
+Respond ONLY with valid JSON, no markdown fences.
+
+JSON schema:
+{
+  "score": number (1-10),
+  "verdict": "string (2-3 words: e.g. 'Strong Match', 'Good Fit', 'Partial Match', 'Weak Match', 'Poor Fit')",
+  "jobTitle": "string — parsed job title",
+  "company": "string — company name",
+  "summary": "string — 2 sentence overall assessment without healthcare framing unless the job is healthcare",
+  "strengths": ["3-5 specific reasons this candidate is a good fit for this particular role"],
+  "gaps": ["2-4 specific gaps or concerns relative to this role's requirements"],
+  "salaryAssessment": "string — how the posted/expected salary aligns with their experience level and market rate for this type of role, or 'salary not disclosed'",
+  "coverLetterOpener": "string — a strong, specific 2-sentence opener for a cover letter for THIS job. Reference actual job requirements and the candidate's directly relevant experience. No generic phrases. No healthcare framing unless the job is healthcare."
+}`;
+}
+
+// ─── Anthropic API call ───────────────────────────────────────────────────────
+async function callClaude(systemPrompt, userMessage) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      stream: true,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+    }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${response.status}`);
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let full = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    for (const line of chunk.split('\n')) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(data);
+        const text = parsed.delta?.text || '';
+        if (text) full += text;
+      } catch {}
+    }
+  }
+  return full;
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let profile = null;
+let profileMode = null; // which mode was used to extract the profile
+let scores = [];
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// ─── Progress ─────────────────────────────────────────────────────────────────
+function showProgress(step, pct) {
+  document.getElementById('progress').classList.remove('hidden');
+  document.getElementById('progress-step').textContent = step;
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+function hideProgress() {
+  document.getElementById('progress').classList.add('hidden');
+}
+
+// ─── File reader ──────────────────────────────────────────────────────────────
+document.getElementById('upload-zone').addEventListener('click', () =>
+  document.getElementById('file-input').click());
+
+document.getElementById('upload-zone').addEventListener('dragover', e => {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.add('drag-over');
+});
+document.getElementById('upload-zone').addEventListener('dragleave', () =>
+  document.getElementById('upload-zone').classList.remove('drag-over'));
+document.getElementById('upload-zone').addEventListener('drop', e => {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+document.getElementById('file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
+});
+
+async function handleFile(file) {
+  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result.split(',')[1];
+      document.getElementById('resume-text').value = `[PDF uploaded: ${file.name}]`;
+      document.getElementById('upload-zone').querySelector('.upload-title').textContent = `✓ ${file.name}`;
+      window._pdfBase64 = base64;
+      window._pdfName = file.name;
+      toast(`PDF loaded: ${file.name}`);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('resume-text').value = e.target.result;
+      document.getElementById('upload-zone').querySelector('.upload-title').textContent = `✓ ${file.name}`;
+      window._pdfBase64 = null;
+      toast(`File loaded: ${file.name}`);
+    };
+    reader.readAsText(file);
+  }
+}
+
+// ─── Analyze resume ───────────────────────────────────────────────────────────
+document.getElementById('btn-analyze').addEventListener('click', analyzeResume);
+
+async function analyzeResume() {
+  const resumeText = document.getElementById('resume-text').value.trim();
+  if (!resumeText && !window._pdfBase64) {
+    toast('Please paste your resume or upload a file first', 'error');
+    return;
+  }
+
+  document.getElementById('btn-analyze').disabled = true;
+  showProgress('Parsing resume…', 15);
+
+  const systemPrompt = getExtractPrompt(currentMode);
+
+  try {
+    let messageContent;
+    if (window._pdfBase64) {
+      messageContent = JSON.stringify([
+        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: window._pdfBase64 } },
+        { type: 'text', text: 'Extract a candidate profile from this resume PDF.' }
+      ]);
+    } else {
+      messageContent = `Resume:\n\n${resumeText}`;
+    }
+
+    showProgress('Extracting profile…', 40);
+    const raw = await callClaude(systemPrompt, messageContent);
+
+    showProgress('Building profile…', 80);
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    profile = JSON.parse(cleaned);
+    profileMode = currentMode;
+
+    showProgress('Done', 100);
+    await new Promise(r => setTimeout(r, 300));
+    hideProgress();
+
+    renderProfile();
+    document.getElementById('step-profile').classList.remove('hidden');
+    document.getElementById('step-jobs').classList.remove('hidden');
+    document.getElementById('btn-clear-resume').classList.remove('hidden');
+    document.getElementById('step-profile').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (e) {
+    hideProgress();
+    toast('Error analyzing resume: ' + e.message, 'error');
+    console.error(e);
+  }
+
+  document.getElementById('btn-analyze').disabled = false;
+}
+
+// ─── Render profile ────────────────────────────────────────────────────────────
+function renderProfile() {
+  if (!profile) return;
+  const card = document.getElementById('profile-card');
+  const mode = profileMode || currentMode;
+  const modeLabel = mode === 'epic' ? 'Epic / Healthcare IT' : 'General';
+
+  // Build primary chips — Epic mode uses epicModules, general uses domain/tools
+  let primaryChipsHtml = '';
+  let primaryLabel = '';
+  if (mode === 'epic') {
+    primaryLabel = 'Epic Modules';
+    primaryChipsHtml = (profile.epicModules || []).map(m =>
+      `<span class="chip highlight">${m}</span>`).join('') ||
+      '<span style="font-size:11px;color:var(--dim)">None specified</span>';
+  } else {
+    primaryLabel = 'Domain';
+    primaryChipsHtml = (profile.domain || []).map(d =>
+      `<span class="chip highlight">${d}</span>`).join('') ||
+      '<span style="font-size:11px;color:var(--dim)">Not specified</span>';
+  }
+
+  const toolsOrSystems = mode === 'epic'
+    ? (profile.otherSystems || [])
+    : (profile.tools || []);
+  const toolsLabel = mode === 'epic' ? 'Other Systems' : 'Tools & Platforms';
+
+  const skillChips = (profile.skills || []).map(s => `<span class="chip">${s}</span>`).join('');
+  const certChips = (profile.certifications || []).map(c => `<span class="chip">${c}</span>`).join('');
+  const toolChips = toolsOrSystems.map(t => `<span class="chip">${t}</span>`).join('');
+
+  card.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+      <div class="profile-name">${profile.name || 'Candidate'}</div>
+      <span class="score-mode-badge">${modeLabel}</span>
+    </div>
+    <div class="profile-headline">${profile.headline || (mode === 'epic' ? '' : (profile.industry || ''))}</div>
+    <div class="profile-grid">
+      <div class="profile-field">
+        <div class="profile-field-label">Experience</div>
+        <div class="profile-field-value">${profile.yearsExperience || '—'} years</div>
+      </div>
+      <div class="profile-field">
+        <div class="profile-field-label">Location</div>
+        <div class="profile-field-value">${profile.locationContext || '—'}</div>
+      </div>
+      <div class="profile-field">
+        <div class="profile-field-label">Environment</div>
+        <div class="profile-field-value">${(profile.environments || []).join(', ') || '—'}</div>
+      </div>
+      <div class="profile-field">
+        <div class="profile-field-label">Target Salary</div>
+        <div class="profile-field-value">${profile.targetSalary || '—'}</div>
+      </div>
+      <div class="profile-field" style="grid-column:1/-1">
+        <div class="profile-field-label">${primaryLabel}</div>
+        <div class="chip-list">${primaryChipsHtml}</div>
+      </div>
+      ${toolChips ? `
+      <div class="profile-field" style="grid-column:1/-1">
+        <div class="profile-field-label">${toolsLabel}</div>
+        <div class="chip-list">${toolChips}</div>
+      </div>` : ''}
+      ${certChips ? `
+      <div class="profile-field" style="grid-column:1/-1">
+        <div class="profile-field-label">Certifications</div>
+        <div class="chip-list">${certChips}</div>
+      </div>` : ''}
+      <div class="profile-field" style="grid-column:1/-1">
+        <div class="profile-field-label">Skills</div>
+        <div class="chip-list">${skillChips}</div>
+      </div>
+      <div class="profile-field" style="grid-column:1/-1">
+        <div class="profile-field-label">Background</div>
+        <div class="profile-field-value" style="font-size:12px;line-height:1.6">${profile.experienceSummary || ''}</div>
+      </div>
+    </div>`;
+}
+
+// ─── Profile edit ─────────────────────────────────────────────────────────────
+document.getElementById('btn-edit-profile').addEventListener('click', () => {
+  document.getElementById('profile-json-edit').value = JSON.stringify(profile, null, 2);
+  document.getElementById('profile-edit-wrap').classList.remove('hidden');
+});
+document.getElementById('btn-cancel-edit').addEventListener('click', () =>
+  document.getElementById('profile-edit-wrap').classList.add('hidden'));
+document.getElementById('btn-save-profile').addEventListener('click', () => {
+  try {
+    profile = JSON.parse(document.getElementById('profile-json-edit').value);
+    renderProfile();
+    document.getElementById('profile-edit-wrap').classList.add('hidden');
+    toast('Profile updated');
+  } catch (e) {
+    toast('Invalid JSON: ' + e.message, 'error');
+  }
+});
+
+// ─── Clear ────────────────────────────────────────────────────────────────────
+document.getElementById('btn-clear-resume').addEventListener('click', () => {
+  profile = null; profileMode = null; scores = [];
+  document.getElementById('resume-text').value = '';
+  document.getElementById('step-profile').classList.add('hidden');
+  document.getElementById('step-jobs').classList.add('hidden');
+  document.getElementById('scores-list').innerHTML = '';
+  document.getElementById('btn-clear-resume').classList.add('hidden');
+  document.getElementById('upload-zone').querySelector('.upload-title').textContent = 'Drop a PDF or text file here';
+  window._pdfBase64 = null;
+  toast('Cleared');
+});
+
+// ─── Score job ─────────────────────────────────────────────────────────────────
+document.getElementById('btn-score').addEventListener('click', scoreJob);
+
+async function scoreJob() {
+  const jobText = document.getElementById('job-text').value.trim();
+  if (!jobText) { toast('Paste a job description first', 'error'); return; }
+  if (!profile)  { toast('Analyze your resume first', 'error'); return; }
+
+  // Use the mode that was active when the profile was extracted
+  const scoringMode = profileMode || currentMode;
+
+  const btn = document.getElementById('btn-score');
+  btn.textContent = 'Scoring…'; btn.disabled = true;
+
+  const systemPrompt = getScorePrompt(scoringMode);
+  const userMsg = `CANDIDATE PROFILE:\n${JSON.stringify(profile, null, 2)}\n\nJOB DESCRIPTION:\n${jobText}`;
+
+  try {
+    const raw = await callClaude(systemPrompt, userMsg);
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(cleaned);
+
+    scores.unshift({ result, jobText, ts: new Date(), mode: scoringMode });
+    renderScoreCard(result, scores.length - 1, scoringMode);
+    document.getElementById('job-text').value = '';
+    document.getElementById('scores-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast(`Scored: ${result.score}/10 — ${result.verdict}`);
+  } catch (e) {
+    toast('Scoring error: ' + e.message, 'error');
+    console.error(e);
+  }
+
+  btn.textContent = 'Score this job →'; btn.disabled = false;
+}
+
+// ─── Render score card ─────────────────────────────────────────────────────────
+let cardIdx = 0;
+
+function renderScoreCard(r, idx, mode) {
+  const list = document.getElementById('scores-list');
+  const id = cardIdx++;
+  const scoreClass = `score-${Math.min(10, Math.max(1, r.score))}`;
+  const modeLabel = mode === 'epic' ? 'Epic / HIT' : 'General';
+
+  const strengthsHtml = (r.strengths || []).map(s => `<li>${s}</li>`).join('');
+  const gapsHtml = (r.gaps || []).map(g => `<li>${g}</li>`).join('');
+
+  const card = document.createElement('div');
+  card.className = 'score-card';
+  card.innerHTML = `
+    <div class="score-header" onclick="toggleScoreBody('sb-${id}')">
+      <div class="score-badge ${scoreClass}">${r.score}</div>
+      <div class="score-title">
+        <div class="score-job-title">${r.jobTitle || 'Unknown Role'}</div>
+        <div class="score-company">${r.company || 'Unknown Company'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div class="score-verdict ${scoreClass}">${r.verdict || ''}</div>
+        <span class="score-mode-badge">${modeLabel}</span>
+      </div>
+    </div>
+    <div class="score-body open" id="sb-${id}">
+      <div class="score-section">
+        <div class="score-section-label">Assessment</div>
+        <div class="score-text">${r.summary || ''}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="score-section">
+          <div class="score-section-label">Strengths</div>
+          <ul class="strength-list">${strengthsHtml}</ul>
+        </div>
+        <div class="score-section">
+          <div class="score-section-label">Gaps / concerns</div>
+          <ul class="gap-list">${gapsHtml}</ul>
+        </div>
+      </div>
+      <div class="score-section">
+        <div class="score-section-label">Salary alignment</div>
+        <div class="score-text">${r.salaryAssessment || '—'}</div>
+      </div>
+      <div class="score-section">
+        <div class="score-section-label">
+          Cover letter opener
+          <button class="copy-btn" onclick="copyText('cover-${id}', event)">Copy</button>
+        </div>
+        <div class="cover-block" id="cover-${id}">${r.coverLetterOpener || ''}</div>
+      </div>
+    </div>`;
+
+  list.insertBefore(card, list.firstChild);
+}
+
+function toggleScoreBody(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+function copyText(id, e) {
+  e.stopPropagation();
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent.trim())
+    .then(() => toast('Copied to clipboard'))
+    .catch(() => toast('Copy failed', 'error'));
+}
+</script>
+</body>
+</html>
