@@ -657,6 +657,13 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
     </div>
 
     <div class="sidebar-section">
+      <div class="sidebar-label">Watchers</div>
+      <div id="do-status" style="font-size:10px;font-family:var(--mono);color:var(--dim)">
+        <p style="font-size:10px;color:var(--dim)">Loading…</p>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
       <div class="sidebar-label">Operations</div>
       <button class="sbar-btn" id="btn-trigger">HiringCafe scan now</button>
       <button class="sbar-btn" id="btn-bootstrap">Bootstrap watchers</button>
@@ -959,9 +966,45 @@ async function loadStatus() {
 async function loadCompanies() {
   const { ok, data } = await api('/companies');
   if (!ok) return;
-  companies = data.companies ?? [];
+  // /companies returns { platforms: [{ats, count, doActive, companies:[name,...]}] }
+  // Flatten into the shape renderCompanies() and renderAts() expect:
+  //   [{name, ats, token:'', watching: bool}]
+  companies = (data.platforms ?? []).flatMap(p =>
+    (p.companies ?? []).map(name => ({
+      name,
+      ats: p.ats,
+      token: '',
+      watching: p.doActive ?? false,
+    }))
+  );
   renderCompanies();
   renderAts();
+  renderDoStatus();
+}
+
+async function renderDoStatus() {
+  const el = document.getElementById('do-status');
+  const platforms = ['greenhouse','lever','ashby','workday','icims','successfactors','taleo'];
+  const rows = await Promise.all(platforms.map(async ats => {
+    try {
+      const { ok, data } = await api('/platform/' + ats + '/status');
+      if (!ok) return null;
+      const lastRun = data.lastRun
+        ? new Date(data.lastRun).toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'})
+        : 'never';
+      const next = data.nextAlarm
+        ? Math.max(0, Math.round((data.nextAlarm - Date.now()) / 1000)) + 's'
+        : '—';
+      const status = data.lastRun ? '●' : '○';
+      const color = data.lastRun ? 'var(--teal)' : 'var(--dim)';
+      return `<div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="color:${color}">${status} ${ats.slice(0,6)}</span>
+        <span style="color:var(--dim)">${lastRun} +${next}</span>
+      </div>`;
+    } catch { return null; }
+  }));
+  const html = rows.filter(Boolean).join('');
+  el.innerHTML = html || '<p style="font-size:10px;color:var(--dim)">No data</p>';
 }
 
 function renderAts() {
