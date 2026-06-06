@@ -28,6 +28,7 @@ import { bootstrapSalaryDO } from './salary.js';
 import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
+import puppeteer from '@cloudflare/puppeteer';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEEN IDs — global KV helpers
@@ -352,6 +353,7 @@ async function handleFetch(request, env) {
         'DELETE /profile':     'Remove stored profile',
         'GET /learning':       'Auto-discovered companies + promotion status',
         'GET /batch-status':   'BatchPollerDO cycle status + cursor position',
+        'GET /br-test?url=&ats=': 'Browser Rendering diagnostic — test against iCIMS/Taleo SPAs',
         'POST /reset-seen':    'Clear seen job IDs',
         'POST /reset-all':     'Nuclear reset',
       },
@@ -527,6 +529,113 @@ async function handleFetch(request, env) {
     await env.STAT_KV.put(KV.match_counts, JSON.stringify({}));
     await env.STAT_KV.delete(KV.company_list);
     return json({ ok: true, message: 'Full reset — POST /bootstrap to re-initialize all platform DOs' });
+  }
+
+  // ── GET /br-test?url={url}&ats={ats} ──────────────────────────────────────
+  // Browser Rendering diagnostic endpoint.
+  // Runs headless Chromium against any URL, waits for JS to execute,
+  // then extracts: og:description, page title, job links, DOM text excerpt.
+  // Used to verify Browser Rendering works against iCIMS/Taleo SPAs and
+  // to harvest real job URLs from their rendered DOM for further testing.
+  //
+  // Usage:
+  //   curl "https://stat-job-watcher.*.workers.dev/br-test?url=https://careers-vhchealth.icims.com/jobs/search&ats=icims"
+  //
+  if (url.pathname === '/br-test' && request.method === 'GET') {
+    const targetUrl = url.searchParams.get('url');
+    const ats       = url.searchParams.get('ats') ?? 'unknown';
+    if (!targetUrl) return json({ error: 'url param required' }, 400);
+    if (!env.MYBROWSER) return json({ error: 'MYBROWSER binding not available' }, 500);
+
+    const t0 = Date.now();
+    let browser = null;
+    try {
+      // Try session reuse first
+      const sessions = await puppeteer.sessions(env.MYBROWSER);
+      const idle = sessions.filter(s => !s.connectionId);
+      if (idle.length > 0) {
+        try { browser = await puppeteer.connect(env.MYBROWSER, idle[0].sessionId); } catch {}
+      }
+      if (!browser) browser = await puppeteer.launch(env.MYBROWSER);
+
+      const page = await browser.newPage();
+
+      // Suppress heavy resources to speed up SPA load
+      await page.setRequestInterception(true);
+      page.on('request', req => {
+        const t = req.resourceType();
+        if (['image', 'font', 'media', 'stylesheet'].includes(t)) req.abort();
+        else req.continue();
+      });
+
+      await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 20_000 });
+
+      // Extract everything useful from the rendered DOM
+      const extracted = await page.evaluate(() => {
+        // og:description or meta description
+        const og = document.querySelector(
+          'meta[property="og:description"], meta[name="og:description"], meta[name="description"]'
+        );
+        const ogDesc = og?.content ?? '';
+
+        // Page title
+        const title = document.title ?? '';
+
+        // All job-like links (iCIMS: /jobs/{id}/..., Taleo: jobdetail.ftl?job=...)
+        const allLinks = [...document.querySelectorAll('a[href]')]
+          .map(a => a.href)
+          .filter(h => h && (
+            h.includes('/jobs/') ||
+            h.includes('jobdetail') ||
+            h.includes('jobId=') ||
+            h.includes('job=') ||
+            h.includes('requisition')
+          ))
+          .slice(0, 20);
+
+        // Visible text from likely job containers
+        const jobText = [...document.querySelectorAll(
+          '[class*="job"], [class*="position"], [class*="listing"], ' +
+          '[id*="job"], [id*="search-results"], main, article'
+        )]
+          .map(el => el.innerText?.trim())
+          .filter(t => t && t.length > 30)
+          .slice(0, 3)
+          .join('\n---\n');
+
+        // DOM text excerpt from body (first 1000 chars of visible text)
+        const bodyText = document.body?.innerText?.trim().slice(0, 1000) ?? '';
+
+        // Count of elements that look like job cards
+        const cardCount = document.querySelectorAll(
+          '[class*="job-card"], [class*="job_card"], [class*="jobCard"], ' +
+          '[class*="result-item"], [class*="posting"]'
+        ).length;
+
+        return { ogDesc, title, allLinks, jobText, bodyText, cardCount };
+      });
+
+      await page.close();
+      await browser.disconnect();
+
+      const elapsed = Date.now() - t0;
+      return json({
+        ok:       true,
+        ats,
+        url:      targetUrl,
+        elapsed_ms: elapsed,
+        title:    extracted.title,
+        og_description: extracted.ogDesc,
+        job_links: extracted.allLinks,
+        job_card_count: extracted.cardCount,
+        dom_text_excerpt: extracted.bodyText.slice(0, 500),
+        job_container_text: extracted.jobText.slice(0, 500),
+      });
+
+    } catch (e) {
+      if (browser) { try { await browser.close(); } catch {} }
+      return json({ ok: false, ats, url: targetUrl, error: e.message, elapsed_ms: Date.now() - t0 }, 500);
+    }
   }
 
   return json({ error: 'Not found' }, 404);
