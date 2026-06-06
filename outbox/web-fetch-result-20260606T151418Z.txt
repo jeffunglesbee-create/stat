@@ -1,0 +1,115 @@
+=== Web Fetch Probe [20260606T151418Z] ===
+URL: https://careers-vhchealth.icims.com/jobs/feed
+Extract mode: raw
+
+HTTP Status: 200
+Body length: 97383 chars
+
+=== Response body (first 5000 bytes) ===
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en-US">
+
+
+
+<head id="VsMasterPage_HtmlHeader">
+    <!-- End of iCIMS Pre Header --><script type="text/javascript">
+function icims_stripIFrameParameter(url) {
+url = url.replace(/\?in_iframe=1\&?/, '?');
+url = url.replace(/\&in_iframe=1\&?/, '&');
+url = url.replace(/(\?|&)$/, '');
+return url;
+}
+
+document.cookie = "i18next=en;SameSite=None;Secure";
+var icimsWindow = false;
+try {
+icimsWindow = window.top.location.href.indexOf('') >= 0;
+} catch (e) {}
+
+if (icimsWindow) {
+try {
+
+if (window.history.replaceState) {
+parent.updateUrl(icims_stripIFrameParameter(window.location.href));
+}
+} catch (e) {}
+
+try {
+
+var windowUrl = window.top.location.href;
+if (windowUrl.match(/\?in_iframe=1\&?/) || windowUrl.match(/\&in_iframe=1\&?/)) {
+document.cookie = 'icims_iframeRedirReferer=' + encodeURIComponent(document.referrer) + ';SameSite=None;Secure;path=/';
+window.top.location.href = icims_stripIFrameParameter(windowUrl);
+}
+} catch (e) {}
+
+}
+</script>
+<script src="https://widget.altrulabs.com/main.js" data-altru-widget-id="9278"></script>
+<title>VHC Health | Careers Center | Welcome</title>
+<link rel="stylesheet" type="text/css" href="https://careers-vhchealth.icims.com/hostedcontent/platform_183.0.0.260529-0a4e935a411-11-5/css/fonts.css" />
+<link rel="preload" as="style" type="text/css" href="https://cdn02.icims.com/platform_183.0.0.260529-0a4e935a411-11-5/provider.icims.com/staticcontent/css/social-portal.css" />
+<link rel="stylesheet" type="text/css" href="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/css/icims.blue.ranked.css" data-theme-dark="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/css/icims.dark.css" data-theme-light="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/css/icims.blue.ranked.css" id="theme-icims" />
+<link rel="stylesheet" type="text/css" href="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/css/bootstrap.blue.ranked.css" data-theme-dark="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/css/bootstrap.dark.css" data-theme-light="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/css/bootstrap.blue.ranked.css" id="theme-bootstrap" />
+<link rel="stylesheet" type="text/css" href="https://cdn02.icims.com/platform_183.0.0.260529-0a4e935a411-11-5/virginiahospitalcenter.icims.com/icims2/servlet/icims2?module=AppInert&action=renderDynamicPortalCss&a=0&portal=17&page=new_intro&group=new_base%2Cnew_searchBox%2Cnew_search_agent_create&asv=1780542662756&type=adaptive" />
+<script type="text/javascript" src="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/script/lib/jquery/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/script/lib/jquery/jquery-migrate-3.5.2.min.js"></script>
+<script type="text/javascript" src="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/script/lib/domreplacement/domReplacement.js"></script>
+<script type="text/javascript" src="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/script/common/icims.js"></script>
+<script type="text/javascript" src="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/script/portal/utils.js"></script>
+<script type="text/javascript" src="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/script/portal/login.js"></script>
+<script type="text/javascript" src="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/script/portal/geolocation.js"></script>
+<script type="text/javascript" src="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/script/icims.application.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no">
+<script type="text/javascript">
+var isMobile = false;
+
+var redirectUrl = 'https:\/\/careers-vhchealth.icims.com\/jobs\/intro?hashed=-626008757';
+try {
+if (isMobile) {
+document.cookie = 'icims_iframeRedirReferer=' + encodeURIComponent(document.referrer) + ';SameSite=None;Secure;path=/';
+}
+} catch (e) {}
+</script>
+<script type="text/javascript" src="https://cdn02.icims.com/a/images.icims.com/content/platform_183.0.0.260529-0a4e935a411-11-5/script/portal/mobileDetect.js"></script>
+<meta name="description" content="Welcome to the Careers Center for VHC Health. Please browse all of our available job and career opportunities. Apply to any positions you believe you are a fit for and contact us today!"/>
+
+<meta name="robots" content="index,follow" />
+<link rel="canonical" href=
+=== End ===
