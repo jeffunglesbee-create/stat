@@ -1,0 +1,11 @@
+=== Web Fetch Probe [20260606T203915Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/platform/greenhouse/status
+Extract mode: raw
+
+HTTP Status: 200
+Body length: 135 chars
+
+=== Response body (first 2000 bytes) ===
+{"ats":"greenhouse","lastRun":"2026-06-06T20:31:40.281Z","totalPolled":615,"totalMatches":39,"seenCount":653,"nextAlarm":1780779100303}
+
+=== End ===
