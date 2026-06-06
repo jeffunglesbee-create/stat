@@ -685,6 +685,94 @@ async function handleFetch(request, env) {
     return json({ stored: true, profile });
   }
 
+  // POST /score-job — score a job description against a stored profile via Gemini
+  // Called by ui.html Resume tab "Score This Job". Keeps API keys server-side.
+  if (url.pathname === '/score-job' && request.method === 'POST') {
+    if (!env.GEMINI_KEY) return json({ error: 'GEMINI_KEY not configured' }, 503);
+    let body;
+    try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+    const { profile, jd } = body;
+    if (!profile || !jd) return json({ error: 'profile and jd required' }, 400);
+
+    const systemPrompt = `You are a senior healthcare IT career advisor specializing in Epic EHR roles.
+Score this candidate profile against the job description. Return ONLY valid JSON:
+{
+  "score": number 1-10,
+  "verdict": "2-4 word verdict",
+  "strengths": ["top 3 match points"],
+  "gaps": ["top 2-3 gaps"],
+  "salaryNote": "brief salary alignment note or null",
+  "coverOpener": "2-sentence job-specific cover letter opener. Must reference the specific role and company."
+}`;
+    const userText = 'CANDIDATE PROFILE:\n' + JSON.stringify(profile, null, 2) + '\n\nJOB DESCRIPTION:\n' + jd.slice(0, 4000);
+
+    try {
+      const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + env.GEMINI_KEY;
+      const geminiRes = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ parts: [{ text: userText }] }],
+          generationConfig: { maxOutputTokens: 600, temperature: 0.2 },
+        }),
+      });
+      const geminiData = await geminiRes.json();
+      const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+      const result = JSON.parse(cleaned);
+      return json({ ok: true, result });
+    } catch (e) {
+      return json({ error: 'Scoring failed: ' + e.message }, 500);
+    }
+  }
+
+  // POST /extract-profile — extract structured profile from raw resume text via Gemini
+  // Called by ui.html Resume tab. Keeps API keys server-side.
+  if (url.pathname === '/extract-profile' && request.method === 'POST') {
+    if (!env.GEMINI_KEY) return json({ error: 'GEMINI_KEY not configured' }, 503);
+    let body;
+    try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+    const resumeText = (body.text || '').slice(0, 8000);
+    if (!resumeText) return json({ error: 'No text provided' }, 400);
+
+    const systemPrompt = `You are a healthcare IT hiring specialist with deep knowledge of Epic EHR implementations.
+Extract the candidate profile as JSON with EXACTLY these fields (use empty arrays/null if not present):
+{
+  "headline": "2-3 word professional summary",
+  "yearsExperience": number or null,
+  "epicModules": ["array of Epic module names"],
+  "otherSystems": ["other EHR/HIT systems"],
+  "certifications": ["Epic and other certs"],
+  "skills": ["top 6 technical skills"],
+  "targetRoles": ["appropriate job titles"],
+  "environments": ["remote","hybrid","onsite"],
+  "matchStrengths": ["3 strongest selling points"],
+  "potentialGaps": ["2-3 areas that may be missing"]
+}
+Return ONLY the JSON object, no markdown, no explanation.`;
+
+    try {
+      const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + env.GEMINI_KEY;
+      const geminiRes = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ parts: [{ text: resumeText }] }],
+          generationConfig: { maxOutputTokens: 800, temperature: 0.1 },
+        }),
+      });
+      const geminiData = await geminiRes.json();
+      const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+      const profile = JSON.parse(cleaned);
+      return json({ ok: true, profile });
+    } catch (e) {
+      return json({ error: 'Extraction failed: ' + e.message }, 500);
+    }
+  }
+
   // POST /profile — store resume profile for fit scoring
   if (url.pathname === '/profile' && request.method === 'POST') {
     let profile;

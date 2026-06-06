@@ -1233,61 +1233,26 @@ const GEMINI_EXTRACT_URL = 'https://generativelanguage.googleapis.com/v1beta/mod
 // The Worker's GEMINI_KEY is not exposed to the client — we use claude.ai's
 // built-in Anthropic API access via the artifact proxy.
 
-async function callAnthropic(system, userText) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+// extractProfile calls the Worker's /extract-profile endpoint (Gemini server-side).
+// No API key in the browser. Worker holds GEMINI_KEY.
+async function extractProfile(resumeText) {
+  const { ok, data } = await api('/extract-profile', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1500,
-      system,
-      messages: [{ role: 'user', content: userText }],
-    }),
+    body: JSON.stringify({ text: resumeText }),
   });
-  const data = await res.json();
-  return data.content?.[0]?.text || '';
-}
-
-async function extractProfile(resumeText) {
-  const system = `You are a healthcare IT hiring specialist with deep knowledge of Epic EHR implementations.
-Extract the candidate profile as JSON with EXACTLY these fields (use empty arrays/null if not present):
-{
-  "headline": "2-3 word professional summary",
-  "yearsExperience": number or null,
-  "epicModules": ["array of Epic module names"],
-  "otherSystems": ["other EHR/HIT systems"],
-  "certifications": ["Epic and other certs"],
-  "skills": ["top 6 technical skills"],
-  "targetRoles": ["appropriate job titles"],
-  "environments": ["remote","hybrid","onsite"],
-  "matchStrengths": ["3 strongest selling points"],
-  "potentialGaps": ["2-3 areas that may be missing"]
-}
-Return ONLY the JSON object, no markdown, no explanation.`;
-  const raw = await callAnthropic(system, resumeText);
-  const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
-  return JSON.parse(cleaned);
+  if (!ok || !data.profile) throw new Error(data.error || 'Extraction failed');
+  return data.profile;
 }
 
 async function scoreJobDescription(profile, jd) {
-  const system = `You are a senior healthcare IT career advisor specializing in Epic EHR roles.
-Score this candidate profile against the job description. Return ONLY valid JSON:
-{
-  "score": number 1-10,
-  "verdict": "2-4 word verdict",
-  "strengths": ["top 3 match points"],
-  "gaps": ["top 2-3 gaps"],
-  "salaryNote": "brief salary alignment note or null",
-  "coverOpener": "2-sentence job-specific cover letter opener. Must reference the specific role and company."
-}`;
-  const userText = `CANDIDATE PROFILE:
-${JSON.stringify(profile, null, 2)}
-
-JOB DESCRIPTION:
-${jd}`;
-  const raw = await callAnthropic(system, userText);
-  const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
-  return JSON.parse(cleaned);
+  const { ok, data } = await api('/score-job', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ profile, jd }),
+  });
+  if (!ok || !data.result) throw new Error(data.error || 'Scoring failed');
+  return data.result;
 }
 
 function renderProfile(profile) {
@@ -1355,24 +1320,80 @@ document.getElementById('pdf-input').addEventListener('change', async (e) => {
     };
     reader.readAsArrayBuffer(file);
   } else if (file.name.toLowerCase().endsWith('.docx')) {
-    // DOCX is a ZIP of XML — file.text() returns binary garbage.
-    // Extract readable strings from the raw bytes (catches most resume text).
+    // DOCX is a ZIP archive of XML files. Parse it properly:
+    // word/document.xml contains the actual resume text inside <w:t> tags.
     const reader = new FileReader();
     reader.onload = async (ev) => {
-      const raw = new Uint8Array(ev.target.result);
-      const text = new TextDecoder('utf-8', { fatal: false }).decode(raw);
-      // Pull readable ASCII runs out of the binary — DOCX XML text nodes are plain UTF-8
-      const runs = text.match(/[\x20-\x7E]{20,}/g) || [];
-      const extracted = runs
-        .filter(r => !r.startsWith('PK') && !r.includes('<?xml') && !r.includes('xmlns'))
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      if (extracted.length > 100) {
-        document.getElementById('resume-text').value = extracted.slice(0, 8000);
-        status.textContent = 'DOCX text extracted (' + extracted.length + ' chars). Review and click Analyze.';
-      } else {
-        status.textContent = 'DOCX could not be parsed. Please paste resume text manually.';
+      try {
+        // Use the DecompressionStream API (available in modern browsers + Cloudflare Workers)
+        // to decompress the ZIP entry for word/document.xml, then extract <w:t> text nodes.
+        const zipBytes = new Uint8Array(ev.target.result);
+
+        // Scan for the word/document.xml entry in the ZIP central directory
+        // ZIP local file header: PK\x03\x04 + 26 bytes of metadata + filename
+        let extracted = '';
+        let offset = 0;
+        while (offset < zipBytes.length - 4) {
+          // Look for local file header signature
+          if (zipBytes[offset]===0x50 && zipBytes[offset+1]===0x4B &&
+              zipBytes[offset+2]===0x03 && zipBytes[offset+3]===0x04) {
+            const compMethod   = zipBytes[offset+8]  | (zipBytes[offset+9]  << 8);
+            const compSize     = zipBytes[offset+18] | (zipBytes[offset+19] << 8) |
+                                 (zipBytes[offset+20]<< 16)| (zipBytes[offset+21]<< 24);
+            const fnLen        = zipBytes[offset+26] | (zipBytes[offset+27] << 8);
+            const extraLen     = zipBytes[offset+28] | (zipBytes[offset+29] << 8);
+            const fnBytes      = zipBytes.slice(offset+30, offset+30+fnLen);
+            const filename     = new TextDecoder().decode(fnBytes);
+            const dataStart    = offset + 30 + fnLen + extraLen;
+
+            if (filename === 'word/document.xml') {
+              const compData = zipBytes.slice(dataStart, dataStart + compSize);
+              let xmlText = '';
+              if (compMethod === 8) {
+                // deflate compressed
+                const ds = new DecompressionStream('deflate-raw');
+                const writer = ds.writable.getWriter();
+                const reader2 = ds.readable.getReader();
+                writer.write(compData);
+                writer.close();
+                const chunks = [];
+                while (true) {
+                  const { done, value } = await reader2.read();
+                  if (done) break;
+                  chunks.push(value);
+                }
+                const total = chunks.reduce((a,c) => a+c.length, 0);
+                const merged = new Uint8Array(total);
+                let pos = 0;
+                for (const c of chunks) { merged.set(c, pos); pos += c.length; }
+                xmlText = new TextDecoder('utf-8', { fatal: false }).decode(merged);
+              } else {
+                // stored uncompressed
+                xmlText = new TextDecoder('utf-8', { fatal: false }).decode(compData);
+              }
+              // Extract text from <w:t> nodes — these are the actual text runs in DOCX
+              const wtMatches = xmlText.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || [];
+              extracted = wtMatches
+                .map(m => m.replace(/<[^>]+>/g, ''))
+                .join(' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+              break;
+            }
+            offset = dataStart + compSize;
+          } else {
+            offset++;
+          }
+        }
+
+        if (extracted.length > 100) {
+          document.getElementById('resume-text').value = extracted.slice(0, 8000);
+          status.textContent = 'DOCX parsed (' + extracted.length + ' chars). Click Analyze.';
+        } else {
+          status.textContent = 'DOCX could not be parsed. Please paste resume text manually.';
+        }
+      } catch(err) {
+        status.textContent = 'DOCX parse error: ' + err.message + '. Please paste manually.';
       }
     };
     reader.readAsArrayBuffer(file);
