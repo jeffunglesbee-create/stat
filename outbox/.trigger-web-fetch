@@ -1,4 +1,4 @@
-url=https://performancemanager4.successfactors.com/acme?bplte_company=SFHUP&fbacme_n=recruiting&recruiting_ns=joblisting%20detail&recruiting_mode=669390&selected_lang=en_US&jobAlertController_jobAlertId=&jobAlertController_jobAlertName=&browserTimeZone=America/New_York&_s.crb=8sNCHiTQvndJYisBqpVhT2fG5%2feUfNIvaJXYvlBSnRk%3d
+url=https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst&searchLocation=
 accept=text/html,*/*
 extract=raw
-max_bytes=15000
+max_bytes=8000
