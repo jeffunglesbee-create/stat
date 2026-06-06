@@ -1,0 +1,23 @@
+=== Web Fetch Probe [20260606T171427Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https%3A%2F%2Fcareers-vhchealth.icims.com%2Fjobs%2Fsearch%3Fss%3D1%26searchKeyword%3Danalyst
+Extract mode: json
+
+HTTP Status: 200
+Body length: 594 chars
+
+=== JSON response ===
+{
+    "ok": true,
+    "url": "https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst",
+    "http_status": 200,
+    "elapsed_ms": 355,
+    "body_bytes": 73947,
+    "is_blocked": false,
+    "title": "",
+    "og_description": "",
+    "job_ids": [],
+    "job_hrefs": [],
+    "body_text_excerpt": "--> Skip to Content Expand Menu Expand Search Careers Pay My Bill Contact Us Donate MyVHC Patient Portal 703.558.5000 Main Navigation Find a Doctor Medical Services Locations &amp; Directions Patients &amp; Visitors Search for a Doctor Popular Searches: Gastroenterology Obstetrics &amp; Gynecology P"
+}
+
+=== End ===
