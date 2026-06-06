@@ -94,9 +94,82 @@ const MD_EXCLUDE = [
  * signals: array of strings explaining what was found
  * badge:   null | '📍 MD likely' | '📍 MD possible' | '🚫 MD excluded'
  */
+// ─────────────────────────────────────────────────────────────────────────────
+// STRUCTURED STATE CHECK (Source 0 — highest confidence)
+// Used when job.hc is present (HiringCafe jobs with v5_processed_job_data).
+// workplace_states and boundless_workplace_states are already parsed arrays.
+// ─────────────────────────────────────────────────────────────────────────────
+const MD_STATE_PATTERNS = [
+  /maryland/i,
+  /^md$/i,
+];
+
+function stateListIncludesMD(states) {
+  if (!Array.isArray(states) || states.length === 0) return null; // unknown
+  return states.some(s => MD_STATE_PATTERNS.some(p => p.test(String(s))));
+}
+
 export function scoreMarylandEligibility(job, companyMeta = null) {
   let score = 0;
   const signals = [];
+
+  // ── Source 0: HiringCafe structured state data (most reliable) ────────────
+  // Only present on jobs fetched via fetchHiringCafe with v5_processed_job_data
+  if (job.hc) {
+    const { workplaceStates, boundlessStates, isWorldwide, workplaceType } = job.hc;
+
+    if (isWorldwide) {
+      score += 3;
+      signals.push('worldwide remote (no state restriction)');
+    } else if (boundlessStates.length > 0) {
+      // Explicit boundless (fully remote) state list
+      const mdInBoundless = stateListIncludesMD(boundlessStates);
+      if (mdInBoundless === true) {
+        score += 5;
+        signals.push(`MD in boundless states: ${boundlessStates.join(', ')}`);
+      } else if (mdInBoundless === false) {
+        score -= 8;
+        signals.push(`MD not in boundless states: ${boundlessStates.slice(0,5).join(', ')}`);
+        return { score, signals, badge: '🚫 MD excluded' };
+      }
+    } else if (workplaceStates.length > 0) {
+      // Workplace states — where the role is located/approved
+      const mdInWorkplace = stateListIncludesMD(workplaceStates);
+      if (workplaceType?.toLowerCase() === 'remote' || workplaceType?.toLowerCase().includes('remote')) {
+        // Remote role with explicit state list
+        if (mdInWorkplace === true) {
+          score += 4;
+          signals.push(`remote + MD in workplace states: ${workplaceStates.join(', ')}`);
+        } else if (mdInWorkplace === false && workplaceStates.length <= 15) {
+          // Short list that doesn't include MD
+          score -= 6;
+          signals.push(`remote role, state list excludes MD: ${workplaceStates.slice(0,5).join(', ')}`);
+          return { score, signals, badge: '🚫 MD excluded' };
+        }
+        // Long state list without MD is ambiguous — don't suppress
+      } else {
+        // Onsite/hybrid with state list — location signal only
+        if (mdInWorkplace === true) {
+          score += 2;
+          signals.push(`workplace state includes MD: ${workplaceStates.join(', ')}`);
+        }
+      }
+    } else if (workplaceType?.toLowerCase() === 'remote') {
+      // Remote with NO state list = nationwide by default
+      score += 2;
+      signals.push('remote, no state restriction listed');
+    }
+
+    // If we got a strong signal from structured data, skip text analysis
+    if (Math.abs(score) >= 3) {
+      let badge = null;
+      if (score >= 4)      badge = '📍 MD likely';
+      else if (score >= 1) badge = '📍 MD possible';
+      else if (score < 0)  badge = '🚫 MD excluded';
+      return { score, signals, badge };
+    }
+    // Weak signal from structured data — fall through to location + description
+  }
 
   // ── Source 1: Company seed tag ─────────────────────────────────────────────
   if (companyMeta?.mdApproved === true) {

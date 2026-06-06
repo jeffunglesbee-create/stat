@@ -414,7 +414,24 @@ export async function fetchTaleo(company) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HIRINGCAFE
-// SSR __NEXT_DATA__ payload scrape (wide-net fallback)
+// ─────────────────────────────────────────────────────────────────────────────
+// HIRINGCAFE — wide-net scrape with full v5_processed_job_data extraction
+//
+// The __NEXT_DATA__ SSR payload contains far more than just title/location.
+// HiringCafe's AI enrichment layer (v5_processed_job_data) provides:
+//   workplace_states          — structured array of approved US states (GOLD)
+//   boundless_workplace_states — states where fully remote is approved (GOLD)
+//   is_workplace_worldwide_ok  — boolean: truly location-agnostic
+//   workplace_type            — 'Remote' | 'Hybrid' | 'Onsite'
+//   description               — full HTML job body (from job_information)
+//   source + board_token      — original ATS + slug for DO promotion
+//   salary fields             — yearly_min/max_compensation (structured)
+//   requirements_summary      — AI-generated 1-sentence summary
+//   seniority_level           — 'Entry' | 'Mid' | 'Senior' etc.
+//   is_compensation_transparent — boolean: salary disclosed
+//
+// These fields are available at search-results list level (not just detail page)
+// so STAT captures them on every HiringCafe scrape with zero extra HTTP requests.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchHiringCafe(keyword, environment) {
   const params = new URLSearchParams({ q: keyword, environment });
@@ -431,17 +448,81 @@ export async function fetchHiringCafe(keyword, environment) {
     const pp = data?.props?.pageProps ?? {};
     const jobs = pp.jobs ?? pp.jobListings ?? pp.results ?? pp.data?.jobs ?? [];
     if (!Array.isArray(jobs)) return [];
-    return jobs.map(j => makeJob({
-      id:          String(j.id ?? j.jobId ?? j.uid ?? JSON.stringify(j).slice(0, 32)),
-      title:       j.title ?? j.jobTitle ?? '',
-      company:     j.company?.name ?? j.companyName ?? '',
-      location:    j.location?.display ?? j.locationDisplay ?? j.location ?? '',
-      environment: j.workplaceType ?? j.workplace_type ?? j.environment ?? '',
-      salary:      normalizeSalary(j.salary?.min ?? j.salaryMin, j.salary?.max ?? j.salaryMax),
-      url:         j.applicationUrl ?? j.applyUrl ?? `https://hiring.cafe/job/${j.id}`,
-      postedAt:    j.postedAt ?? j.posted_at ?? j.createdAt ?? null,
-      atsSource:  'hiringcafe',
-    }));
+
+    return jobs.map(j => {
+      // v5_processed_job_data is HiringCafe's AI enrichment layer — the gold mine
+      const v5  = j.v5_processed_job_data ?? {};
+      const inf = j.job_information ?? {};
+
+      // Structured salary from v5 (yearly preferred, falls back to other frequencies)
+      const salMin = v5.yearly_min_compensation ?? v5.monthly_min_compensation * 12
+                     ?? v5.hourly_min_compensation * 2080 ?? j.salaryMin ?? null;
+      const salMax = v5.yearly_max_compensation ?? v5.monthly_max_compensation * 12
+                     ?? v5.hourly_max_compensation * 2080 ?? j.salaryMax ?? null;
+
+      // State eligibility — the most valuable field for Maryland scoring
+      // workplace_states = states where the role is located/approved
+      // boundless_workplace_states = states explicitly approved for remote work
+      // Empty boundless + workplace_type=Remote = likely nationwide
+      const workplaceStates     = v5.workplace_states     ?? [];   // e.g. ["Maryland, US", "Virginia, US"]
+      const boundlessStates     = v5.boundless_workplace_states ?? [];
+      const isWorldwide         = v5.is_workplace_worldwide_ok ?? false;
+      const workplaceType       = v5.workplace_type ?? j.workplaceType ?? j.workplace_type ?? '';
+
+      // Derive environment from v5 (more reliable than raw field)
+      const envRaw = workplaceType || v5.workplace_physical_environment || '';
+
+      // ATS source info — enables auto-promotion to direct DO watching
+      const atsSource   = j.source ?? 'hiringcafe';
+      const boardToken  = j.board_token ?? j.board_token ?? '';
+      const applyUrl    = j.apply_url ?? j.applicationUrl ?? j.applyUrl
+                          ?? `https://hiring.cafe/job/${j.requisition_id ?? j.id}`;
+
+      // Full description from job_information (same HTML as job detail page)
+      const description = inf.description ?? inf.descriptionHtml ?? '';
+
+      // Location: prefer formatted string from v5
+      const location = v5.formatted_workplace_location
+                       ?? j.location?.display ?? j.locationDisplay ?? j.location ?? '';
+
+      const job = makeJob({
+        id:          String(j.id ?? j.requisition_id ?? j.objectID
+                            ?? JSON.stringify(j).slice(0, 32)),
+        title:       inf.title ?? inf.job_title_raw ?? j.title ?? j.jobTitle ?? '',
+        company:     j.enriched_company_data?.name ?? j.company?.name ?? j.companyName ?? '',
+        location,
+        environment: envRaw,
+        salary:      normalizeSalary(salMin, salMax),
+        salaryRaw:   (salMin || salMax) ? { min: salMin, max: salMax } : null,
+        url:         applyUrl,
+        postedAt:    v5.estimated_publish_date ?? j.postedAt ?? j.posted_at ?? null,
+        atsSource:   'hiringcafe',
+        description,
+      });
+
+      // Attach HiringCafe-specific enrichment fields to the job object
+      // These are used by the Maryland scorer and future enrichment layers
+      job.hc = {
+        workplaceStates,          // ["Maryland, US"] — structured state list
+        boundlessStates,          // explicitly approved remote states
+        isWorldwide,              // true = no state restriction
+        workplaceType,            // 'Remote' | 'Hybrid' | 'Onsite'
+        requirementsSummary: v5.requirements_summary ?? '',
+        seniorityLevel:     v5.seniority_level ?? '',
+        salaryTransparent:  v5.is_compensation_transparent ?? false,
+        visaSponsorship:    v5.visa_sponsorship ?? false,
+        minYoe:             v5.min_industry_and_role_yoe ?? null,
+        certifications:     v5.licenses_or_certifications ?? [],
+        technicalTools:     v5.technical_tools ?? [],
+        atsSource,            // original ATS (greenhouse/workday/etc.)
+        boardToken,           // ATS board slug for DO auto-promotion
+        companySize:        j.enriched_company_data?.nb_employees ?? null,
+        companyFounded:     j.enriched_company_data?.year_founded ?? null,
+        companyIndustries:  j.enriched_company_data?.industries ?? [],
+      };
+
+      return job;
+    });
   } catch { return []; }
 }
 

@@ -169,6 +169,19 @@ export function buildEmailHtml(newMatches) {
       const detail = job.mdSignals?.length ? ` · ${job.mdSignals.join(', ')}` : '';
       return `<div style="color:${color};background:${bg};font-size:11px;margin-top:4px;padding:2px 8px;border-radius:3px;display:inline-block">${job.mdBadge}${detail}</div>`;
     })();
+    const hcRow = (() => {
+      if (!job.hc) return '';
+      const parts = [];
+      if (job.hc.seniorityLevel)      parts.push(job.hc.seniorityLevel);
+      if (job.hc.minYoe != null)      parts.push(`${job.hc.minYoe}+ yrs`);
+      if (job.hc.certifications?.length) parts.push(job.hc.certifications.slice(0,2).join(', '));
+      if (job.hc.visaSponsorship)     parts.push('visa ok');
+      if (job.hc.requirementsSummary) parts.push(
+        `<span style="color:#7a6e5e;font-style:italic">${job.hc.requirementsSummary.slice(0,120)}</span>`
+      );
+      if (!parts.length) return '';
+      return `<div style="font-size:11px;color:#64748b;margin-top:3px">${parts.join(' · ')}</div>`;
+    })();
     const ghost = ghostLabel(job);
     const sal   = job.salary ? `<span style="color:#16a34a;font-weight:600">${job.salary}</span>` : '';
     const envBadge = job.environment
@@ -209,6 +222,7 @@ export function buildEmailHtml(newMatches) {
           ${salaryDisplay}
           ${fitRow}
           ${mdRow}
+          ${hcRow}
           ${ghostRow}${daysRow}${livenessRow}
           <a href="${job.url}" style="display:inline-block;background:#111;color:#fff;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;margin-top:8px">Apply Now →</a>
         </td>

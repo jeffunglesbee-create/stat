@@ -237,20 +237,28 @@ async function maybeAddOrPromoteCompany(env, job) {
   const counts    = await loadMatchCounts(env.STAT_KV);
 
   let ats = null, token = null;
-  try {
-    const u = new URL(job.url), h = u.hostname;
-    if (h.includes('greenhouse.io') || h.includes('boards.greenhouse')) {
-      ats = 'greenhouse'; token = u.pathname.split('/')[1] || h.split('.')[0];
-    } else if (h.includes('lever.co')) {
-      ats = 'lever'; token = u.pathname.split('/')[1];
-    } else if (h.includes('ashbyhq.com')) {
-      ats = 'ashby'; token = u.pathname.split('/')[1];
-    } else if (h.includes('myworkdayjobs.com')) {
-      ats = 'workday'; token = h.split('.')[0];
-    } else if (h.includes('icims.com')) {
-      ats = 'icims'; token = h.split('.')[0].replace('careers-', '').replace('careers', '');
-    }
-  } catch { return; }
+
+  // HiringCafe jobs carry structured ATS info in job.hc — use it first
+  if (job.hc?.atsSource && job.hc.atsSource !== 'hiringcafe' && job.hc?.boardToken) {
+    ats   = job.hc.atsSource;
+    token = job.hc.boardToken;
+  } else {
+    // Fall back to URL parsing for non-HiringCafe or missing hc data
+    try {
+      const u = new URL(job.url), h = u.hostname;
+      if (h.includes('greenhouse.io') || h.includes('boards.greenhouse')) {
+        ats = 'greenhouse'; token = u.pathname.split('/')[1] || h.split('.')[0];
+      } else if (h.includes('lever.co')) {
+        ats = 'lever'; token = u.pathname.split('/')[1];
+      } else if (h.includes('ashbyhq.com')) {
+        ats = 'ashby'; token = u.pathname.split('/')[1];
+      } else if (h.includes('myworkdayjobs.com')) {
+        ats = 'workday'; token = h.split('.')[0];
+      } else if (h.includes('icims.com')) {
+        ats = 'icims'; token = h.split('.')[0].replace('careers-', '').replace('careers', '');
+      }
+    } catch { return; }
+  }
   if (!ats || !token) return;
 
   const doKey = `${ats}:${token}`;
