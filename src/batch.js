@@ -102,12 +102,18 @@ export class BatchPollerDO {
             if (job.daysAgo > GHOST.warn_after_days) job.ghostFlag = 'warn';
           }
           if (job.ghostFlag === 'suppress') continue;
+          // Browse capture: env-filter BEFORE dedup (same fix as platform-do.js)
+          if (passesEnvFilter(job) && !matchJob(job)) {
+            unmatchedJobs.push(job);
+          }
+
+          // Dedup: alert path only
           if (seenIds.has(job.id)) continue;
           seenIds.add(job.id);
 
           if (!passesEnvFilter(job)) continue;
           const match = matchJob(job);
-          if (!match) { unmatchedJobs.push(job); continue; }
+          if (!match) continue; // already captured above
 
           const liveness = await checkJobLiveness(job);
           if (liveness === 'dead') continue;

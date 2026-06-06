@@ -133,14 +133,22 @@ class PlatformDO {
           }
           if (job.ghostFlag === 'suppress') continue;
 
-          // Dedup: check both local and global seen-set
+          // Browse capture: env-filter BEFORE dedup so Browse populates on
+          // every poll cycle, not just the first. Seen-set dedup is for alert
+          // dedup only — Browse is a "jobs you might have missed" surface and
+          // intentionally ignores seen status.
+          if (passesEnvFilter(job) && !matchJob(job)) {
+            unmatchedJobs.push(job);
+          }
+
+          // Dedup: check both local and global seen-set (alert path only)
           if (seenIds.has(job.id) || globalSeen.has(job.id)) continue;
           seenIds.add(job.id);
           globalSeen.add(job.id);
 
           if (!passesEnvFilter(job)) continue;
           const match = matchJob(job);
-          if (!match) { unmatchedJobs.push(job); continue; }
+          if (!match) continue; // already captured above
 
           const liveness = await checkJobLiveness(job);
           if (liveness === 'dead') continue;
