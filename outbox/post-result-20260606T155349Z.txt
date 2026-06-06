@@ -1,0 +1,10 @@
+URL: https://tuhs.taleo.net/careersection/rest/jobboard/v1/job/list  [20260606T155349Z]
+=== Request body ===
+{"companyCode":"tuhs_ex","locale":"en","pageNo":0,"pageSize":10,"searchCriteria":{"sortField":"POSTING_DATE","sortOrder":"DESC"}}
+
+=== Custom headers ===
+(none)
+
+=== Response (status + body, first 4000 chars) ===
+HTTP 404 Not Found
+HTTP_STATUS:404
