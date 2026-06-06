@@ -1,0 +1,190 @@
+# .github/workflows/umiami-verify.yml
+#
+# STAT — University of Miami Health ATS Verification
+#
+# UMiami Health is not in the seed list. Need to find what ATS they use
+# and determine whether to add a Workday, BrassRing, Avature, or other entry.
+#
+# Probes:
+#   1. careers.umiamihealth.org — official UHealth careers page (ground truth)
+#   2. umiamihealth.wd5.myworkdayjobs.com — Workday (common for health systems)
+#   3. sjobs.brassring.com with UMiami partner IDs — BrassRing check
+#   4. umiami.avature.net — Avature check
+#   5. um.taleo.net — Taleo check (University of Miami uses Taleo for some roles)
+#
+# Run: GitHub Actions → STAT — UMiami Health ATS Verify → Run workflow
+# Results: outbox/umiami-verify-{ts}.txt [skip ci]
+
+name: STAT — UMiami Health ATS Verify
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe UMiami Health career sites
+        run: |
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/umiami-verify-${TS}.txt"
+          mkdir -p outbox
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          probe_get() {
+            local LABEL="$1"
+            local URL="$2"
+            echo "" >> "$OUT"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$OUT"
+            echo "TEST: $LABEL" >> "$OUT"
+            echo "URL:  $URL" >> "$OUT"
+            RESP=$(curl -s --max-time 15 -L \
+              -w "\n__STATUS__%{http_code}__FINAL__%{url_effective}" \
+              -H "User-Agent: $UA" \
+              -H "Accept: text/html,application/xhtml+xml,application/json,*/*;q=0.8" \
+              "$URL" 2>&1)
+            STATUS=$(echo "$RESP" | grep -o '__STATUS__[0-9]*' | grep -o '[0-9]*')
+            FINAL_URL=$(echo "$RESP" | grep -o '__FINAL__.*' | sed 's/__FINAL__//')
+            BODY=$(echo "$RESP" | sed 's/__STATUS__.*$//')
+            echo "HTTP: $STATUS | Final URL: $FINAL_URL" >> "$OUT"
+            # ATS fingerprints
+            ATS_SIGNALS=$(echo "$BODY" | python3 -c "
+          import sys
+          body = sys.stdin.read().lower()
+          signals = []
+          if 'workday' in body or 'myworkdayjobs' in body or 'wday.com' in body: signals.append('WORKDAY')
+          if 'brassring' in body or 'tgnewui' in body: signals.append('BRASSRING')
+          if 'avature' in body: signals.append('AVATURE')
+          if 'taleo' in body or 'careersection' in body: signals.append('TALEO')
+          if 'icims' in body: signals.append('iCIMS')
+          if 'greenhouse' in body or 'greenhouse.io' in body: signals.append('GREENHOUSE')
+          if 'lever.co' in body: signals.append('LEVER')
+          if 'ashby' in body or 'ashbyhq' in body: signals.append('ASHBY')
+          if 'successfactors' in body or 'sap' in body and 'career' in body: signals.append('SUCCESSFACTORS')
+          if 'oracle' in body and ('hcm' in body or 'fusion' in body): signals.append('ORACLE_HCM')
+          if 'servicenow' in body and 'career' in body: signals.append('SERVICENOW')
+          if signals: print('ATS SIGNALS:', ', '.join(signals))
+          else: print('ATS SIGNALS: none detected')
+          " 2>&1)
+            echo "$ATS_SIGNALS" >> "$OUT"
+            echo "Body (first 2500):" >> "$OUT"
+            echo "$BODY" | head -c 2500 >> "$OUT"
+            echo "" >> "$OUT"
+          }
+
+          probe_post_json() {
+            local LABEL="$1"
+            local URL="$2"
+            local BODY="$3"
+            echo "" >> "$OUT"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$OUT"
+            echo "TEST: $LABEL" >> "$OUT"
+            echo "URL:  $URL" >> "$OUT"
+            RESP=$(curl -s --max-time 15 -L \
+              -w "\n__STATUS__%{http_code}" \
+              -X POST \
+              -H "User-Agent: $UA" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d "$BODY" \
+              "$URL" 2>&1)
+            STATUS=$(echo "$RESP" | grep -o '__STATUS__[0-9]*' | grep -o '[0-9]*')
+            RBODY=$(echo "$RESP" | sed 's/__STATUS__.*$//')
+            echo "HTTP: $STATUS" >> "$OUT"
+            JOB_COUNT=$(echo "$RBODY" | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              jobs = d.get('jobPostings', d.get('jobs', []))
+              print(f'jobPostings: {len(jobs)}')
+              if jobs:
+                  print('First title:', jobs[0].get('title','?'))
+                  print('First path:', jobs[0].get('externalPath','?'))
+          except Exception as e:
+              print(f'Not JSON or error: {e}')
+          " 2>&1)
+            echo "$JOB_COUNT" >> "$OUT"
+            echo "Body (first 1000):" >> "$OUT"
+            echo "$RBODY" | head -c 1000 >> "$OUT"
+            echo "" >> "$OUT"
+          }
+
+          echo "STAT — University of Miami Health ATS Verification" > "$OUT"
+          echo "Run: $TS" >> "$OUT"
+          echo "QUESTION: What ATS does UMiami Health use?" >> "$OUT"
+          echo "QUESTION: What is the correct URL/token for STAT config?" >> "$OUT"
+
+          echo "" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "SECTION 1: Official UHealth careers page (ground truth)" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+
+          probe_get "careers.umiamihealth.org" \
+            "https://careers.umiamihealth.org"
+
+          probe_get "umiamihealth.org/careers" \
+            "https://umiamihealth.org/careers"
+
+          echo "" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "SECTION 2: Workday" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+
+          probe_get "Workday umiamihealth domain" \
+            "https://umiamihealth.wd5.myworkdayjobs.com/"
+
+          probe_get "Workday umiami domain" \
+            "https://umiami.wd5.myworkdayjobs.com/"
+
+          API_BODY='{"appliedFacets":{},"limit":5,"offset":0,"searchText":""}'
+          probe_post_json "Workday API umiamihealth" \
+            "https://umiamihealth.wd1.myworkdayjobs.com/wday/cxs/umiamihealth/UMH_External/jobs" \
+            "$API_BODY"
+
+          echo "" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "SECTION 3: Taleo" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+
+          probe_get "Taleo um.taleo.net" \
+            "https://um.taleo.net/careersection/10041/jobsearch.ftl"
+
+          probe_get "Taleo umhealth.taleo.net" \
+            "https://umhealth.taleo.net/careersection/ex/jobsearch.ftl"
+
+          echo "" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "SECTION 4: BrassRing / Avature" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+
+          probe_get "Avature umiami.avature.net" \
+            "https://umiami.avature.net/careers"
+
+          probe_get "Avature umiamihealth.avature.net" \
+            "https://umiamihealth.avature.net/careers"
+
+          echo "" >> "$OUT"
+          echo "════════════════════════════════════════" >> "$OUT"
+          echo "DONE" >> "$OUT"
+
+          echo "OUT=$OUT" >> $GITHUB_ENV
+          cat "$OUT"
+
+      - name: Push results
+        run: |
+          git config user.email "stat-probe@stat"
+          git config user.name "STAT-UMiami-Verify"
+          git add "$OUT"
+          git diff --cached --quiet && echo "Nothing to commit" && exit 0
+          git commit -m "umiami-verify results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break
+            sleep $((i * 5))
+          done
+        env:
+          OUT: ${{ env.OUT }}
