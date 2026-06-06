@@ -1,0 +1,18 @@
+=== Web Fetch Probe [20260606T141653Z] ===
+URL: https://msmc.wd12.myworkdayjobs.com/wday/cxs/msmc/msmc_careers/jobs
+Extract mode: json
+
+HTTP Status: 400
+Body length: 135 chars
+
+=== JSON response ===
+{
+    "errorCode": "HTTP_400",
+    "errorCaseId": "B60AE3MQ2FSNFS",
+    "httpStatus": 400,
+    "locale": "en-US,en;q=0.9",
+    "message": "",
+    "messageParams": {}
+}
+
+=== End ===
