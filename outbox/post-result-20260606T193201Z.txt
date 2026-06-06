@@ -1,0 +1,13 @@
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/reset-all  [20260606T193201Z]
+=== Request body ===
+{}
+
+=== Custom headers ===
+(none)
+
+=== Response (status + body, first 4000 chars) ===
+{
+  "ok": true,
+  "message": "Full reset — POST /bootstrap to re-initialize all platform DOs"
+}
+HTTP_STATUS:200
