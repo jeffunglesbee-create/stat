@@ -544,6 +544,57 @@ async function handleFetch(request, env) {
     });
   }
 
+  // POST /backfill-browse — one-shot: re-polls all companies, saves env-filtered
+  // non-matches to the browse store WITHOUT writing to seenIds (read-only).
+  // Needed because dedup fires before unmatchedJobs capture in the alarm loop.
+  // Safe to run multiple times — saveUnmatchedJobs dedupes by job.id.
+  if (url.pathname === '/backfill-browse' && request.method === 'POST') {
+    const companies = await loadCompanyList(env) ?? SEED_COMPANIES;
+    const unmatchedJobs = [];
+    let polled = 0;
+    let errors = 0;
+
+    // Load global seen set so we know what's already matched
+    let globalSeen;
+    try {
+      const raw = await env.STAT_KV.get(KV.seen_jobs);
+      globalSeen = raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { globalSeen = new Set(); }
+
+    for (const company of companies) {
+      try {
+        const jobs = await fetchCompanyJobs(company);
+        polled++;
+        for (const job of jobs) {
+          if (!passesEnvFilter(job)) continue;
+          const match = matchJob(job);
+          if (!match) {
+            // Only add if NOT already a matched job (don't mix stores)
+            if (!globalSeen.has(job.id)) {
+              unmatchedJobs.push(job);
+            }
+          }
+        }
+        // Polite delay
+        await new Promise(r => setTimeout(r, 150));
+      } catch(e) {
+        errors++;
+      }
+    }
+
+    if (unmatchedJobs.length > 0) {
+      await saveUnmatchedJobs(getStatStore(env), unmatchedJobs);
+    }
+
+    return json({
+      ok: true,
+      companies_polled: polled,
+      unmatched_found: unmatchedJobs.length,
+      errors,
+      message: 'Browse store populated. Reload /browse to see results.',
+    });
+  }
+
   // GET /profile
   if (url.pathname === '/profile' && request.method === 'GET') {
     const profile = await loadProfile(env);

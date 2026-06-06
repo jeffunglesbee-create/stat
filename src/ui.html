@@ -657,6 +657,7 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
       <button class="sbar-btn" id="btn-trigger">HiringCafe scan now</button>
       <button class="sbar-btn" id="btn-bootstrap">Bootstrap watchers</button>
       <button class="sbar-btn" id="btn-refresh">Refresh status</button>
+      <button class="sbar-btn" id="btn-backfill">Backfill Browse tab</button>
       <button class="sbar-btn danger" id="btn-reset">Clear seen IDs</button>
     </div>
 
@@ -1053,6 +1054,20 @@ document.getElementById('btn-bootstrap').onclick = async () => {
 };
 
 document.getElementById('btn-refresh').onclick = async () => { await loadStatus(); toast('Refreshed'); };
+
+document.getElementById('btn-backfill').onclick = async () => {
+  const b = document.getElementById('btn-backfill');
+  b.textContent = 'Backfilling…'; b.disabled = true;
+  log('Backfilling Browse tab — polling all companies…');
+  try {
+    const { ok, data } = await api('/backfill-browse', { method: 'POST' });
+    if (ok) {
+      log('Backfill done: ' + data.unmatched_found + ' unmatched jobs from ' + data.companies_polled + ' companies', 'match');
+      toast('Browse populated: ' + data.unmatched_found + ' jobs', 'success');
+    }
+  } catch(e) { toast('Backfill failed: ' + e.message, 'error'); }
+  b.textContent = 'Backfill Browse tab'; b.disabled = false;
+};
 
 document.getElementById('btn-reset').onclick = async () => {
   if (!confirm('Clear all seen job IDs? STAT will re-alert on all currently live matching jobs on the next poll.')) return;
