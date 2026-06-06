@@ -1,0 +1,11 @@
+=== Web Fetch Probe [20260606T155003Z] ===
+URL: https://hca.taleo.net/careersection/rss?id=0hca&lang=en
+Extract mode: raw
+
+HTTP Status: 000
+Body length: 0 chars
+
+=== Response body (first 8000 bytes) ===
+
+
+=== End ===
