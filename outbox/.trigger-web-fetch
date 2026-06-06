@@ -1,4 +1,4 @@
-url=https://careers-dignityhealth.icims.com/jobs/sitemap.xml
-accept=text/xml,*/*
+url=https://careers-encompasshealth.icims.com/jobs/search?in_iframe=1&hireVueEnabled=false
+accept=text/html,*/*
 extract=raw
-max_bytes=3000
+max_bytes=5000
