@@ -407,6 +407,10 @@ export const SEED_COMPANIES = [
     url: 'https://careers-encompasshealth.icims.com/jobs/search?in_iframe=1' },
 
   // ── Health systems — SAP SuccessFactors ───────────────────────────────────
+  // XML feed confirmed working 2026-06-06. Full job description in <Job-Description> CDATA.
+  // No second-pass fetch needed — description available at list level.
+  { name: 'Johns Hopkins Health System', ats: 'successfactors', token: 'SFHUP',
+    url: 'https://career4.successfactors.com/career?company=SFHUP&career_ns=job_listing_summary&resultType=XML', mdApproved: true },
   { name: 'Baylor Scott & White',      ats: 'successfactors', token: 'bswh',
     url: 'https://career4.successfactors.com/career?company=bswh&career_ns=job_listing_summary&resultType=XML' },
   { name: 'Providence Health',         ats: 'successfactors', token: 'providence',

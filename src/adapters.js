@@ -332,36 +332,92 @@ export async function fetchICIMS(company) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SAP SUCCESSFACTORS
-// Public XML feed — no auth required
-// URL pattern: career4.successfactors.com/career?company={id}&career_ns=job_listing_summary&resultType=XML
+// Public XML feed — no auth required.
+//
+// Verified endpoint (SAP KBA 2428902 + probe confirmed 2026-06-06):
+//   https://career4.successfactors.com/career?company={id}&career_ns=job_listing_summary&resultType=XML
+//
+// Verified XML structure from Hopkins SFHUP feed (8MB, ~1000+ jobs):
+//   <Job-Listing>
+//     <Job>
+//       <JobTitle><![CDATA[...]]></JobTitle>
+//       <ReqId>669439</ReqId>         ← unique job ID
+//       <Job-Description><![CDATA[full HTML description]]></Job-Description>
+//       <filter1> <label>Job Category</label> <value>...</value> </filter1>
+//       <filter2> <label>Affiliate</label>    <value>...</value> </filter2>
+//       <filter3> <label>Shift</label>        <value>...</value> </filter3>
+//       <filter7> <label>Location</label>     <value>City, ST</value> </filter7>
+//       <filter8> <label>Work Setting</label> <value>Hybrid|On-site|Remote</value> </filter8>
+//       <filter10><label>Job Status</label>   <value>Full Time|Part Time</value></filter10>
+//     </Job>
+//   </Job-Listing>
+//
+// Job apply URL constructed from: company.url base + reqId
+//   career4.successfactors.com/career?company={id}&career_job_req_id={reqId}&career_ns=job_listing&navBarLevel=JOB_SEARCH
+//
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchSuccessFactors(company) {
   if (!company.url) return [];
   try {
-    const res = await fetch(company.url, { headers: { 'User-Agent': UA } });
+    const res = await fetch(company.url, {
+      headers: { 'User-Agent': UA, 'Accept': 'text/xml,application/xml,*/*;q=0.9' },
+    });
     if (!res.ok) return [];
     const xml = await res.text();
-    // Parse job items from XML — SAP SF uses <item> or <job> elements
-    const itemMatches = [...xml.matchAll(/<(item|job)>([\s\S]*?)<\/(item|job)>/g)];
-    return itemMatches.map(m => {
-      const block = m[2];
-      const title    = (block.match(/<title[^>]*>(.*?)<\/title>/)    ?? [])[1] ?? '';
-      const id       = (block.match(/<jobId[^>]*>(.*?)<\/jobId>/)    ?? [])[1]
-                    ?? (block.match(/<guid[^>]*>(.*?)<\/guid>/)       ?? [])[1]
-                    ?? String(Math.random());
-      const location = (block.match(/<location[^>]*>(.*?)<\/location>/) ?? [])[1] ?? '';
-      const url      = (block.match(/<link[^>]*>(.*?)<\/link>/)      ?? [])[1]
-                    ?? (block.match(/<url[^>]*>(.*?)<\/url>/)         ?? [])[1] ?? '';
-      const pubDate  = (block.match(/<pubDate[^>]*>(.*?)<\/pubDate>/)  ?? [])[1] ?? null;
+
+    // Parse <Job> blocks — the verified SF XML root element
+    const jobMatches = [...xml.matchAll(/<Job>([\s\S]*?)<\/Job>/g)];
+    if (!jobMatches.length) return [];
+
+    // Extract company ID from URL for building apply links
+    const companyId = new URL(company.url).searchParams.get('company') ?? company.token ?? '';
+    const sfBase    = \`https://career4.successfactors.com/career?company=\${companyId}\`;
+
+    return jobMatches.map(m => {
+      const block = m[1];
+      const cdata = (tag) => {
+        const m2 = block.match(new RegExp(\`<\${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></\${tag}>\`));
+        return m2 ? m2[1].trim() : '';
+      };
+      const plain = (tag) => {
+        const m2 = block.match(new RegExp(\`<\${tag}[^>]*>([^<]*)</\${tag}>\`));
+        return m2 ? m2[1].trim() : '';
+      };
+      const filterVal = (num) => {
+        const m2 = block.match(new RegExp(\`<filter\${num}>[\\s\\S]*?<value>([^<]*)</value>[\\s\\S]*?</filter\${num}>\`));
+        return m2 ? m2[1].trim() : '';
+      };
+
+      const title       = cdata('JobTitle') || plain('JobTitle');
+      const reqId       = plain('ReqId');
+      const description = cdata('Job-Description');
+      const location    = filterVal(7);   // "City, ST"
+      const workSetting = filterVal(8);   // "Hybrid|On-site: 90-100%|Remote"
+      const affiliate   = filterVal(2);   // "Johns Hopkins Hospital" etc.
+
+      // Build apply URL using reqId
+      const applyUrl = reqId
+        ? \`\${sfBase}&career_job_req_id=\${reqId}&career_ns=job_listing&navBarLevel=JOB_SEARCH\`
+        : sfBase;
+
+      // Normalise environment from Work Setting field (more reliable than location)
+      const envRaw = workSetting.toLowerCase();
+      const environment = envRaw.includes('remote')  ? 'remote'
+                        : envRaw.includes('hybrid')  ? 'hybrid'
+                        : envRaw.includes('on-site') ? 'onsite'
+                        : '';
+
       return makeJob({
-        id, title: title.replace(/<!\[CDATA\[|\]\]>/g, '').trim(),
-        company:   company.name,
-        location:  location.replace(/<!\[CDATA\[|\]\]>/g, '').trim(),
-        environment: normalizeEnv(location),
-        salary:    null,
-        url:       url.replace(/<!\[CDATA\[|\]\]>/g, '').trim(),
-        postedAt:  pubDate,
-        atsSource: 'successfactors',
+        id:          reqId || \`sf-\${company.token}-\${Math.random().toString(36).slice(2)}\`,
+        title,
+        company:     affiliate || company.name,
+        location,
+        environment,
+        salary:      null,
+        url:         applyUrl,
+        postedAt:    null,     // SF XML feed does not include post date
+        atsSource:   'successfactors',
+        description,           // FULL HTML description — no second-pass fetch needed!
       });
     });
   } catch { return []; }

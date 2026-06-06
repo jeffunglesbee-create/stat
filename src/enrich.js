@@ -196,7 +196,7 @@ export async function fetchJobDescription(job, env) {
     return fetchBrowserDescription(job, env);
   }
 
-  return ''; // SuccessFactors — no direct path, handled via HiringCafe
+  return ''; // SuccessFactors — description already in XML feed (fetched in adapters.js)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
