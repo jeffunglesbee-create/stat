@@ -273,3 +273,132 @@ src/ui.html:
 5. git push
 6. Update STAT-CURRENT-STATE.txt if any capability changed
 ```
+
+---
+
+## Rule 13 — Automation is architecture, not a feature
+
+STAT's core promise: monitor 181+ employers every 30–120 seconds,
+infer salary from four verifiable sources, and alert the moment a
+matching role appears. That promise is only true if the system runs
+without human intervention.
+
+Every component of the data pipeline must be self-sustaining:
+
+**Automated paths (non-negotiable):**
+- ATS polling → alert: DO alarm loops reschedule themselves forever
+- Salary inference: SalaryInferenceDO enriches every job at alert time
+- Salary cache freshness: maybeRefreshSalaryCaches() in cron —
+  BLS TTL 365 days, LCA TTL 90 days, fire-and-forget non-blocking
+- HiringCafe wide-net: cron every minute
+- DO bootstrap: bootstrapDOs() in cron, idempotent
+- Browse population: alarm loops capture unmatched jobs every cycle
+- UI data freshness: loadStatus every 30s + tab activation loads
+
+**Legitimately manual (intentional user action only):**
+- Resume upload and profile analysis (user submits their own data)
+- Add/remove company from watchlist (user decision)
+- Clear seen IDs (nuclear reset — deliberate, destructive)
+- Clear profile (user deliberately removing their resume)
+
+**Recovery escape hatches (manual buttons that exist for emergencies):**
+- Bootstrap watchers: cron already handles this — button for cold recovery
+- HiringCafe scan now: cron already handles this — button for immediate trigger
+- Backfill Browse: alarm loops already handle this — button for store recovery
+- Salary refresh: cron already handles this — button for immediate trigger
+
+The test: if a user installs STAT, sets their keywords, uploads their
+resume, and never opens the dashboard again — alerts should still fire
+correctly six months later. If they would not, something in the
+automated pipeline is broken or missing.
+
+When building a new feature: ask whether it needs a human to trigger it.
+If yes, that is a design failure. Build the automated path first.
+The manual button, if it exists at all, is always secondary.
+
+---
+
+## Rule 14 — The system contract is holistic
+
+STAT is not a collection of independent features. It is one pipeline:
+
+```
+ATS source
+  → adapter (normalize job)
+  → ghost filter (suppress stale)
+  → Browse capture (env-filtered non-matches, before dedup)
+  → dedup (alert path only)
+  → env filter
+  → keyword match
+  → liveness check (confirm URL live at alert time)
+  → salary enrichment (peer → LCA employer → LCA SOC → BLS → transparency flag)
+  → fit scoring (Gemini resume match, non-blocking)
+  → alert (Pushover P1 + email with full context)
+  → store (rolling match history, Browse store, peer pool)
+  → UI (Matches tab, Browse tab, salary sidebar row, status panel)
+```
+
+Every stage of this pipeline must work correctly for the system to
+deliver on its purpose. A broken stage anywhere silently degrades
+the output — wrong salary, missed jobs, stale Browse, empty alerts.
+
+When changing any component: trace the full pipeline. Ask:
+- Does this change affect upstream stages? (data it receives)
+- Does this change affect downstream stages? (data it produces)
+- Does the UI correctly reflect the new state?
+- Does the cron cycle keep this component fresh automatically?
+
+Specific cross-cutting invariants:
+
+**Salary is part of every alert, not a separate feature.**
+If BLS and LCA caches are cold, salary falls back to P5 (transparency
+flag only). This is correct behavior — it does not suppress the alert.
+But cold caches mean every job shows no salary until caches warm.
+The cron auto-refresh (Rule 13) ensures this never persists past
+the first TTL cycle after bootstrap.
+
+**Browse and Matches are not independent stores.**
+A job either matches keywords (→ Matches + alert) or it passes the
+env filter and does not match (→ Browse). No job should appear in
+both. The dedup gate separates them — Browse capture runs BEFORE
+dedup, Matches path runs AFTER. Violating this order corrupts both.
+
+**Salary peer pool is fed by every alerted job.**
+Whenever enrichJobWithSalary() processes a job with a disclosed
+salary (salaryRaw.min or salaryRaw.max set), it records to the peer
+pool. The peer pool's value grows with every alert. A system that
+has been running for 2+ weeks should have peer inference for the
+most common ATS platforms and keyword groups.
+
+**The UI is a read surface, not a control surface.**
+All writes happen in the automated pipeline. The UI reads and
+displays. The only write the user performs through the UI is:
+profile upload, company add/remove, and deliberate resets.
+Everything else the UI shows is produced by the pipeline.
+
+When the UI shows something unexpected, the correct response is to
+read the pipeline code — not to add another manual button.
+
+---
+
+## Rule 15 — UI labels must reflect live pipeline state
+
+A UI label that looks like a system status report must actually
+reflect live system state. A hardcoded string that mimics a dynamic
+status label is a lying UI — and lying UIs produce false diagnoses.
+
+This session's violation: "remote/hybrid, no keyword match" was
+baked into the Browse status line unconditionally. It looked like
+an active filter description. It was a static string. It caused
+a false diagnosis that non-Greenhouse DOs were not polling.
+
+Requirements:
+- Every status indicator (conn-dot, salary row, ATS breakdown, alerts
+  today) must read from a live data source updated by the pipeline.
+- Filter descriptions must reflect the actual active filters, not
+  a hardcoded description of what the filters usually are.
+- Cache age (BLS, LCA) must show real timestamps, not labels like
+  "up to date" that are only true at build time.
+
+Before shipping any UI status element: verify it updates when the
+underlying state changes. A status that never changes is not a status.
