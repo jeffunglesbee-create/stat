@@ -1,0 +1,11 @@
+=== Web Fetch Probe [20260606T152732Z] ===
+URL: https://jhhs.jobs.hr.cloud.sap/sitemal.xml
+Extract mode: raw
+
+HTTP Status: 000
+Body length: 0 chars
+
+=== Response body (first 5000 bytes) ===
+
+
+=== End ===
