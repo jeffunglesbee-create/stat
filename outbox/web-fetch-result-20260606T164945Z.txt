@@ -1,0 +1,718 @@
+=== Web Fetch Probe [20260606T164945Z] ===
+URL: https://hiring.cafe/?q=epic+analyst+healthcare&ats_source=icims
+Extract mode: next_data
+
+HTTP Status: 200
+Body length: 1206329 chars
+
+=== __NEXT_DATA__ extraction ===
+{
+  "props": {
+    "pageProps": {
+      "ssrHits": [
+        {
+          "id": "icims2___sprouts___364298",
+          "board_token": "sprouts",
+          "source": "icims2",
+          "apply_url": "https://jobs.sprouts.com/jobs/364298?lang=en-us",
+          "source_and_board_token": "icims2_sprouts",
+          "job_information": {
+            "title": "Cashier",
+            "job_title_raw": "Cashier"
+          },
+          "v5_processed_job_data": {
+            "core_job_title": "Cashier",
+            "requirements_summary": "Must be 18+, high school diploma/GED, 1+ year recent cashiering experience; able to operate register/scanner, handle cash, lift up to 30 lbs, work flexible schedule including nights, weekends, and holidays.",
+            "technical_tools": [
+              "register",
+              "calculator",
+              "scanner",
+              "DailyPay"
+            ],
+            "licenses_or_certifications": [],
+            "associates_degree_requirement": "Not Mentioned",
+            "associates_degree_fields_of_study": [],
+            "bachelors_degree_requirement": "Not Mentioned",
+            "bachelors_degree_fields_of_study": [],
+            "masters_degree_requirement": "Not Mentioned",
+            "masters_degree_fields_of_study": [],
+            "doctorate_degree_requirement": "Not Mentioned",
+            "doctorate_degree_fields_of_study": [],
+            "licenses_or_certifications_not_mentioned": true,
+            "min_industry_and_role_yoe": 1,
+            "401k_matching": true,
+            "is_min_industry_and_role_yoe_not_mentioned": false,
+            "min_management_and_leadership_yoe": null,
+            "is_min_management_and_leadership_yoe_not_mentioned": true,
+            "job_category": "Customer Service",
+            "role_activities": [
+              "processing orders",
+              "handling payments",
+              "assisting customers"
+            ],
+            "commitment": [
+              "Part Time"
+            ],
+            "role_type": "Individual Contributor",
+            "seniority_level": "Entry Level",
+            "workplace_countries": [
+              "US"
+            ],
+            "boundless_workplace_states": [],
+            "boundless_workplace_countries": [],
+            "boundless_workplace_continents": [],
+            "workplace_continents": [
+              "North America"
+            ],
+            "workplace_states": [
+              "Texas, US"
+            ],
+            "workplace_cities": [
+              "New Braunfels, Texas, US"
+            ],
+            "workplace_counties": [
+              "Comal County, Texas, US"
+            ],
+            "workplace_type": "Onsite",
+            "workplace_physical_environment": "Customer-Facing",
+            "oral_communication_level": "High",
+            "physical_labor_intensity": "Medium",
+            "physical_position": "Standing",
+            "computer_usage": "Medium",
+            "cognitive_demand": "Medium",
+            "air_travel_requirement": "None",
+            "land_travel_requirement": "None",
+            "morning_shift_work": "Not Indicated",
+            "evening_shift_work": "Required",
+            "overnight_work": "Not Indicated",
+            "formatted_workplace_location": "New Braunfels, Texas, United States",
+            "on_call_requirement": "None",
+            "weekend_availability_required": true,
+            "holiday_availability_required": true,
+            "generous_paid_time_off": false,
+            "four_day_work_week": false,
+            "overtime_required": false,
+            "is_workplace_worldwide_ok": false,
+            "language_requirements": [
+              "English"
+            ],
+            "num_language_requirements": 1,
+            "number_of_workplace_cities": 1,
+            "number_of_workplace_counties": 1,
+            "number_of_workplace_states": 1,
+            "number_of_workplace_countries": 1,
+            "number_of_workplace_continents": 1,
+            "yearly_max_compensation": null,
+            "yearly_min_compensation": null,
+            "monthly_max_compensation": null,
+            "monthly_min_compensation": null,
+            "weekly_max_compensation": null,
+            "weekly_min_compensation": null,
+            "hourly_max_compensation": null,
+            "hourly_min_compensation": null,
+            "bi-weekly_min_compensation": null,
+            "bi-weekly_max_compensation": null,
+            "daily_min_compensation": null,
+            "daily_max_compensation": null,
+            "estimated_publish_date": "2026-06-06T15:46:22.000Z",
+            "estimated_publish_date_millis": 1780760782000,
+            "fair_chance": true,
+            "visa_sponsorship": false,
+            "relocation_assistance": false,
+            "military_veterans": false,
+            "tuition_reimbursement": false,
+            "retirement_plan": true,
+            "generous_parental_leave": true,
+            "is_high_school_required": true,
+            "is_driver_license_required": false,
+            "is_compensation_transparent": false,
+            "listed_compensation_currency": "USD",
+            "listed_compensation_frequency": "Hourly",
+            "security_clearance": "None",
+            "position_employer_type": "Internal Position",
+            "company_name": "Sprouts Farmers Market",
+            "company_website": "sprouts.com",
+            "company_sector_and_industry": "Retail and Wholesale",
+            "company_activities": [
+              "grocery retail",
+              "natural foods"
+            ],
+            "company_tagline": "A neighborhood grocery retailer offering fresh produce, natural meats, bulk goods, and a customer-focused shopping experience."
+          },
+          "enriched_company_data": {
+            "enriched_at": "2026-05-02T03:12:49.406Z",
+            "status": "VALID_COMPANY",
+            "name": "Sprouts Farmers Market",
+            "homepage_uri": "sprouts.com",
+            "hq_country": "US",
+            "parent_company": null,
+            "subsidiaries": [],
+            "industries": [
+              "Grocery Retail",
+              "Natural Food Retail"
+            ],
+            "activities": [
+              "Grocery retail",
+              "Fresh produce sales",
+              "Organic food sales",
+              "Natural food retail",
+              "Vitamins and supplements"
+            ],
+            "nb_employees": 36000,
+            "year_founded": 2002,
+            "tagline": "Grocery retailer specializing in fresh, natural, and organic foods.",
+            "organization_type": "Public",
+            "latest_funding_investors": null,
+            "latest_funding_type": null,
+            "latest_funding_year": null,
+            "latest_funding_amount": null,
+            "stock_exchange": "NASDAQ",
+            "stock_symbol": "SFM"
+          },
+          "_geoloc": [
+            {
+              "lat": 29.703,
+              "lon": -98.12445
+            }
+          ],
+          "requisition_id": "wed6n830mlen1yl0",
+          "collapse_key": "399c50cdd1f58cc263511c7a0b4da7306a63a532f35ef067a7aed0c60f8263e0",
+          "is_expired": false,
+          "objectID": "icims2___sprouts___364298"
+        },
+        {
+          "id": "icims2___sprouts___364470",
+          "board_token": "sprouts",
+          "source": "icims2",
+          "apply_url": "https://jobs.sprouts.com/jobs/364470?lang=en-us",
+          "source_and_board_token": "icims2_sprouts",
+          "job_information": {
+            "title": "In-Store Shopping Clerk",
+            "job_title_raw": "In-Store Shopping Clerk"
+          },
+          "v5_processed_job_data": {
+            "core_job_title": "In-Store Shopping Clerk",
+            "requirements_summary": "Must be 21+, have a high school diploma or equivalent, strong communication and customer-service skills, ability to operate front-end equipment (register, scanner), and perform physical tasks including standing/walking/bending and maneuvering carts up to 20 lbs.",
+            "technical_tools": [
+              "Instacart Shopper App",
+              "POS system",
+              "DailyPay",
+              "register",
+              "scanner",
+              "calculator",
+              "mobile device"
+            ],
+            "licenses_or_certifications": [],
+            "associates_degree_requirement": "Not Mentioned",
+            "associates_degree_fields_of_study": [],
+            "bachelors_degree_requirement": "Not Mentioned",
+            "bachelors_degree_fields_of_study": [],
+            "masters_degree_requirement": "Not Mentioned",
+            "masters_degree_fields_of_study": [],
+            "doctorate_degree_requirement": "Not Mentioned",
+            "doctorate_degree_fields_of_study": [],
+            "licenses_or_certifications_not_mentioned": true,
+            "min_industry_and_role_yoe": null,
+            "401k_matching": true,
+            "is_min_industry_and_role_yoe_not_mentioned": null,
+            "min_management_and_leadership_yoe": null,
+            "is_min_management_and_leadership_yoe_not_mentioned": true,
+            "job_category": "Customer Service",
+            "role_activities": [
+              "fulfilling orders",
+              "providing service",
+              "processing transactions"
+            ],
+            "commitment": [
+              "Part Time"
+            ],
+            "role_type": "Individual Contributor",
+            "seniority_level": "Entry Level",
+            "workplace_countries": [
+              "US"
+            ],
+            "boundless_workplace_states": [],
+            "boundless_workplace_countries": [],
+            "boundless_workplace_continents": [],
+            "workplace_continents": [
+              "North America"
+            ],
+            "workplace_states": [
+              "Nevada, US"
+            ],
+            "workplace_cities": [
+              "Las Vegas, Nevada, US"
+            ],
+            "workplace_counties": [
+              "Clark County, Nevada, US"
+            ],
+            "workplace_type": "Onsite",
+            "workplace_physical_environment": "Customer-Facing",
+            "oral_communication_level": "High",
+            "physical_labor_intensity": "High",
+            "physical_position": "Standing",
+            "computer_usage": "Medium",
+            "cognitive_demand": "Medium",
+            "air_travel_requirement": "None",
+            "land_travel_requirement": "None",
+            "morning_shift_work": "Not Indicated",
+            "evening_shift_work": "Not Indicated",
+            "overnight_work": "Not Indicated",
+            "formatted_workplace_location": "Las Vegas, Nevada, United States",
+            "on_call_requirement": "None",
+            "weekend_availability_required": false,
+            "holiday_availability_required": false,
+            "generous_paid_time_off": false,
+            "four_day_work_week": false,
+            "overtime_required": false,
+            "is_workplace_worldwide_ok": false,
+            "language_requirements": [
+              "English"
+            ],
+            "num_language_requirements": 1,
+            "number_of_workplace_cities": 1,
+            "number_of_workplace_counties": 1,
+            "number_of_workplace_states": 1,
+            "number_of_workplace_countries": 1,
+            "number_of_workplace_continents": 1,
+            "yearly_max_compensation": null,
+            "yearly_min_compensation": null,
+            "monthly_max_compensation": null,
+            "monthly_min_compensation": null,
+            "weekly_max_compensation": null,
+            "weekly_min_compensation": null,
+            "hourly_max_compensation": null,
+            "hourly_min_compensation": null,
+            "bi-weekly_min_compensation": null,
+            "bi-weekly_max_compensation": null,
+            "daily_min_compensation": null,
+            "daily_max_compensation": null,
+            "estimated_publish_date": "2026-06-06T15:41:24.000Z",
+            "estimated_publish_date_millis": 1780760484000,
+            "fair_chance": true,
+            "visa_sponsorship": false,
+            "relocation_assistance": false,
+            "military_veterans": false,
+            "tuition_reimbursement": false,
+            "retirement_plan": true,
+            "generous_parental_leave": false,
+            "is_high_school_required": true,
+            "is_driver_license_required": false,
+            "is_compensation_transparent": false,
+            "listed_compensation_currency": "USD",
+            "listed_compensation_frequency": "Hourly",
+            "security_clearance": "None",
+            "position_employer_type": "Internal Position",
+            "company_name": "Sprouts Farmers Market",
+            "company_website": "sprouts.com",
+            "company_sector_and_industry": "Retail and Wholesale",
+            "company_activities": [
+              "grocery retail",
+              "natural foods"
+            ],
+            "company_tagline": "A neighborhood natural foods retailer offering fresh produce and grocery products in a farmer's market setting."
+          },
+          "enriched_company_data": {
+            "enriched_at": "2026-05-02T03:12:49.406Z",
+            "status": "VALID_COMPANY",
+            "name": "Sprouts Farmers Market",
+            "homepage_uri": "sprouts.com",
+            "hq_country": "US",
+            "parent_company": null,
+            "subsidiaries": [],
+            "industries": [
+              "Grocery Retail",
+              "Natural Food Retail"
+            ],
+            "activities": [
+              "Grocery retail",
+              "Fresh produce sales",
+              "Organic food sales",
+              "Natural food retail",
+              "Vitamins and supplements"
+            ],
+            "nb_employees": 36000,
+            "year_founded": 2002,
+            "tagline": "Grocery retailer specializing in fresh, natural, and organic foods.",
+            "organization_type": "Public",
+            "latest_funding_investors": null,
+            "latest_funding_type": null,
+            "latest_funding_year": null,
+            "latest_funding_amount": null,
+            "stock_exchange": "NASDAQ",
+            "stock_symbol": "SFM"
+          },
+          "_geoloc": [
+            {
+              "lat": 36.17497,
+              "lon": -115.13722
+            }
+          ],
+          "requisition_id": "ahfpoudmr67hw1zh",
+          "collapse_key": "399c50cdd1f58cc263511c7a0b4da7306a63a532f35ef067a7aed0c60f8263e0",
+          "is_expired": false,
+          "objectID": "icims2___sprouts___364470"
+        },
+        {
+          "id": "icims2___sprouts___364440",
+          "board_token": "sprouts",
+          "source": "icims2",
+          "apply_url": "https://jobs.sprouts.com/jobs/364440?lang=en-us",
+          "source_and_board_token": "icims2_sprouts",
+          "job_information": {
+            "title": "Sales Ambassador",
+            "job_title_raw": "Sales Ambassador"
+          },
+          "v5_processed_job_data": {
+            "core_job_title": "Sales Ambassador",
+            "requirements_summary": "Must be 18+, high school diploma or equivalent; customer-facing sales experience preferred; able to stand up to 8 hours, follow cooking directions, suggestively sell products, and use intermediate computer skills.",
+            "technical_tools": [
+              "SharePoint"
+            ],
+            "licenses_or_certifications": [],
+            "associates_degree_requirement": "Not Mentioned",
+            "associates_degree_fields_of_study": [],
+            "bachelors_degree_requirement": "Not Mentioned",
+            "bachelors_degree_fields_of_study": [],
+            "masters_degree_requirement": "Not Mentioned",
+            "masters_degree_fields_of_study": [],
+            "doctorate_degree_requirement": "Not Mentioned",
+            "doctorate_degree_fields_of_study": [],
+            "licenses_or_certifications_not_mentioned": true,
+            "min_industry_and_role_yoe": null,
+            "401k_matching": true,
+            "is_min_industry_and_role_yoe_not_mentioned": null,
+            "min_management_and_leadership_yoe": null,
+            "is_min_management_and_leadership_yoe_not_mentioned": true,
+            "job_category": "Sales",
+            "role_activities": [
+              "engaging customers",
+              "preparing samples",
+              "coordinating events"
+            ],
+            "commitment": [
+              "Full Time"
+            ],
+            "role_type": "Individual Contributor",
+            "seniority_level": "Entry Level",
+            "workplace_countries": [
+              "US"
+            ],
+            "boundless_workplace_states": [],
+            "boundless_workplace_countries": [],
+            "boundless_workplace_continents": [],
+            "workplace_continents": [
+              "North America"
+            ],
+            "workplace_states": [
+              "California, US"
+            ],
+            "workplace_cities": [
+              "Santa Barbara, California, US"
+            ],
+            "workplace_counties": [
+              "Santa Barbara County, California, US"
+            ],
+            "workplace_type": "Onsite",
+            "workplace_physical_environment": "Customer-Facing",
+            "oral_communication_level": "High",
+            "physical_labor_intensity": "Medium",
+            "physical_position": "Standing",
+            "computer_usage": "Medium",
+            "cognitive_demand": "Medium",
+            "air_travel_requirement": "None",
+            "land_travel_requirement": "None",
+            "morning_shift_work": "Not Indicated",
+            "evening_shift_work": "Not Indicated",
+            "overnight_work": "Not Indicated",
+            "formatted_workplace_location": "Santa Barbara, California, United States",
+            "on_call_requirement": "None",
+            "weekend_availability_required": false,
+            "holiday_availability_required": false,
+            "generous_paid_time_off": false,
+            "four_day_work_week": false,
+            "overtime_required": false,
+            "is_workplace_worldwide_ok": false,
+            "language_requirements": [
+              "English"
+            ],
+            "num_language_requirements": 1,
+            "number_of_workplace_cities": 1,
+            "number_of_workplace_counties": 1,
+            "number_of_workplace_states": 1,
+            "number_of_workplace_countries": 1,
+            "number_of_workplace_continents": 1,
+            "yearly_max_compensation": 50336,
+            "yearly_min_compensation": 35984,
+            "monthly_max_compensation": 4194.666666666667,
+            "monthly_min_compensation": 2998.6666666666665,
+            "weekly_max_compensation": 968,
+            "weekly_min_compensation": 692,
+            "hourly_max_compensation": 24.2,
+            "hourly_min_compensation": 17.3,
+            "bi-weekly_min_compensation": 1384,
+            "bi-weekly_max_compensation": 1936,
+            "daily_min_compensation": 138.4,
+            "daily_max_compensation": 193.6,
+            "estimated_publish_date": "2026-06-06T15:37:26.000Z",
+            "estimated_publish_date_millis": 1780760246000,
+            "fair_chance": true,
+            "visa_sponsorship": false,
+            "relocation_assistance": false,
+            "military_veterans": false,
+            "tuition_reimbursement": false,
+            "retirement_plan": true,
+            "generous_parental_leave": true,
+            "is_high_school_required": true,
+            "is_driver_license_required": false,
+            "is_compensation_transparent": true,
+            "listed_compensation_currency": "USD",
+            "listed_compensation_frequency": "Hourly",
+            "security_clearance": "None",
+            "position_employer_type": "Internal Position",
+            "company_name": "Sprouts Farmers Market",
+            "company_website": "sprouts.com",
+            "company_sector_and_industry": "Retail and Wholesale",
+            "company_activities": [
+              "grocery retail",
+              "product sampling"
+            ],
+            "company_tagline": "A neighborhood grocery chain focused on fresh, natural, and organic products in a farmer's market setting."
+          },
+          "enriched_company_data": {
+            "enriched_at": "2026-05-02T03:12:49.406Z",
+            "status": "VALID_COMPANY",
+            "name": "Sprouts Farmers Market",
+            "homepage_uri": "sprouts.com",
+            "hq_country": "US",
+            "parent_company": null,
+            "subsidiaries": [],
+            "industries": [
+              "Grocery Retail",
+              "Natural Food Retail"
+            ],
+            "activities": [
+              "Grocery retail",
+              "Fresh produce sales",
+              "Organic food sales",
+              "Natural food retail",
+              "Vitamins and supplements"
+            ],
+            "nb_employees": 36000,
+            "year_founded": 2002,
+            "tagline": "Grocery retailer specializing in fresh, natural, and organic foods.",
+            "organization_type": "Public",
+            "latest_funding_investors": null,
+            "latest_funding_type": null,
+            "latest_funding_year": null,
+            "latest_funding_amount": null,
+            "stock_exchange": "NASDAQ",
+            "stock_symbol": "SFM"
+          },
+          "_geoloc": [
+            {
+              "lat": 34.42083,
+              "lon": -119.69819
+            }
+          ],
+          "requisition_id": "3y8ldshqccwjv09r",
+          "collapse_key": "399c50cdd1f58cc263511c7a0b4da7306a63a532f35ef067a7aed0c60f8263e0",
+          "is_expired": false,
+          "objectID": "icims2___sprouts___364440"
+        },
+        {
+          "id": "icims2___sprouts___364114",
+          "board_token": "sprouts",
+          "source": "icims2",
+          "apply_url": "https://jobs.sprouts.com/jobs/364114?lang=en-us",
+          "source_and_board_token": "icims2_sprouts",
+          "job_information": {
+            "title": "Cashier",
+            "job_title_raw": "Cashier"
+          },
+          "v5_processed_job_data": {
+            "core_job_title": "Cashier",
+            "requirements_summary": "Must be 18+, HS diploma/GED, 1-2 years recent cashiering experience, ability to operate register/scanner, strong cash handling and math skills, lift up to 30 lbs, and work flexible schedule including nights, weekends, and holidays.",
+            "technical_tools": [
+              "register",
+              "calculator",
+              "scanner",
+              "DailyPay"
+            ],
+            "licenses_or_certifications": [],
+            "associates_degree_requirement": "Not Mentioned",
+            "associates_degree_fields_of_study": [],
+            "bachelors_degree_requirement": "Not Mentioned",
+            "bachelors_degree_fields_of_study": [],
+            "masters_degree_requirement": "Not Mentioned",
+            "masters_degree_fields_of_study": [],
+            "doctorate_degree_requirement": "Not Mentioned",
+            "doctorate_degree_fields_of_study": [],
+            "licenses_or_certifications_not_mentioned": true,
+            "min_industry_and_role_yoe": 1,
+            "401k_matching": true,
+            "is_min_industry_and_role_yoe_not_mentioned": false,
+            "min_management_and_leadership_yoe": null,
+            "is_min_management_and_leadership_yoe_not_mentioned": true,
+            "job_category": "Customer Service",
+            "role_activities": [
+              "processing orders",
+              "handling payments",
+              "assisting customers"
+            ],
+            "commitment": [
+              "Part Time"
+            ],
+            "role_type": "Individual Contributor",
+            "seniority_level": "Entry Level",
+            "workplace_countries": [
+              "US"
+            ],
+            "boundless_workplace_states": [],
+            "boundless_workplace_countries": [],
+            "boundless_workplace_continents": [],
+            "workplace_continents": [
+              "North America"
+            ],
+            "workplace_states": [
+              "California, US"
+            ],
+            "workplace_cities": [
+              "Roseville, California, US"
+            ],
+            "workplace_counties": [
+              "Placer County, California, US"
+            ],
+            "workplace_type": "Onsite",
+            "workplace_physical_environment": "Customer-Facing",
+            "oral_communication_level": "High",
+            "physical_labor_intensity": "Medium",
+            "physical_position": "Standing",
+            "computer_usage": "Medium",
+            "cognitive_demand": "Medium",
+            "air_travel_requirement": "None",
+            "land_travel_requirement": "None",
+            "morning_shift_work": "Not Indicated",
+            "evening_shift_work": "Required",
+            "overnight_work": "Not Indicated",
+            "formatted_workplace_location": "Roseville, California, United States",
+            "on_call_requirement": "None",
+            "weekend_availability_required": true,
+            "holiday_availability_required": true,
+            "generous_paid_time_off": false,
+            "four_day_work_week": false,
+            "overtime_required": false,
+            "is_workplace_worldwide_ok": false,
+            "language_requirements": [
+              "English"
+            ],
+            "num_language_requirements": 1,
+            "number_of_workplace_cities": 1,
+            "number_of_workplace_counties": 1,
+            "number_of_workplace_states": 1,
+            "number_of_workplace_countries": 1,
+            "number_of_workplace_continents": 1,
+            "yearly_max_compensation": 44200,
+            "yearly_min_compensation": 35464,
+            "monthly_max_compensation": 3683.3333333333335,
+            "monthly_min_compensation": 2955.3333333333335,
+            "weekly_max_compensation": 850,
+            "weekly_min_compensation": 682,
+            "hourly_max_compensation": 21.25,
+            "hourly_min_compensation": 17.05,
+            "bi-weekly_min_compensation": 1364,
+            "bi-weekly_max_compensation": 1700,
+            "daily_min_compensation": 136.4,
+            "daily_max_compensation": 170,
+            "estimated_publish_date": "2026-06-06T15:25:25.000Z",
+            "estimated_publish_date_millis": 1780759525000,
+            "fair_chance": true,
+            "visa_sponsorship": false,
+            "relocation_assistance": false,
+            "military_veterans": false,
+            "tuition_reimbursement": false,
+            "retirement_plan": true,
+            "generous_parental_leave": false,
+            "is_high_school_required": true,
+            "is_driver_license_required": false,
+            "is_compensation_transparent": true,
+            "listed_compensation_currency": "USD",
+            "listed_compensation_frequency": "Hourly",
+            "security_clearance": "None",
+            "position_employer_type": "Internal Position",
+            "company_name": "Sprouts Farmers Market",
+            "company_website": "sprouts.com",
+            "company_sector_and_industry": "Retail and Wholesale",
+            "company_activities": [
+              "grocery retail",
+              "natural foods"
+            ],
+            "company_tagline": "A neighborhood grocery chain focused on fresh, natural and organic products in a farmer's market-style shopping experience."
+          },
+          "enriched_company_data": {
+            "enriched_at": "2026-05-02T03:12:49.406Z",
+            "status": "VALID_COMPANY",
+            "name": "Sprouts Farmers Market",
+            "homepage_uri": "sprouts.com",
+            "hq_country": "US",
+            "parent_company": null,
+            "subsidiaries": [],
+            "industries": [
+              "Grocery Retail",
+              "Natural Food Retail"
+            ],
+            "activities": [
+              "Grocery retail",
+              "Fresh produce sales",
+              "Organic food sales",
+              "Natural food retail",
+              "Vitamins and supplements"
+            ],
+            "nb_employees": 36000,
+            "year_founded": 2002,
+            "tagline": "Grocery retailer specializing in fresh, natural, and organic foods.",
+            "organization_type": "Public",
+            "latest_funding_investors": null,
+            "latest_funding_type": null,
+            "latest_funding_year": null,
+            "latest_funding_amount": null,
+            "stock_exchange": "NASDAQ",
+            "stock_symbol": "SFM"
+          },
+          "_geoloc": [
+            {
+              "lat": 38.75212,
+              "lon": -121.28801
+            }
+          ],
+          "requisition_id": "guv09k56ahd9dhyb",
+          "collapse_key": "399c50cdd1f58cc263511c7a0b4da7306a63a532f35ef067a7aed0c60f8263e0",
+          "is_expired": false,
+          "objectID": "icims2___sprouts___364114"
+        },
+        {
+          "id": "icims2___emory___163755",
+          "board_token": "emory",
+          "source": "icims2",
+          "apply_url": "https://emory.jibeapply.com/jobs/163755",
+          "source_and_board_token": "icims2_emory",
+          "job_information": {
+            "title": "PACU Registered Nurse",
+            "job_title_raw": "PACU Registered Nurse"
+          },
+          "v5_processed_job_data": {
+            "core_job_title": "Registered Nurse",
+            "requirements_summary": "Graduate of BSN (with 12 months recent experience) or ADN (with 2 years recent experience). Valid Georgia RN license, BLS required, ACLS may be required, maintain required contact hours and department-specific certifications.",
+            "technical_tools": [
+              "clinical lattice PLAN system"
+            ],
+            "licenses_or_certifications": [
+              "rn",
+              "bls",
+              "acls",
+              "compact multistate (enlc)",
+              "wound and ostomy"
+            ],
+            "associates_degree_requirement": "
+
+=== End ===
