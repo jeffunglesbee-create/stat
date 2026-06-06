@@ -1,0 +1,10 @@
+URL: https://bswh.wd1.myworkdayjobs.com/wday/cxs/bswh/BSWH/jobs  [20260606T143540Z]
+=== Request body ===
+{"limit":5,"offset":0,"searchText":"analyst","appliedFacets":{}}
+
+=== Custom headers ===
+(none)
+
+=== Response (status + body, first 4000 chars) ===
+{"errorCode":"HTTP_422","errorCaseId":"C4C950MQ2GGS8K","httpStatus":422,"message":"","messageParams":{}}
+HTTP_STATUS:422
