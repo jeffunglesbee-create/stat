@@ -1,0 +1,43 @@
+=== Web Fetch Probe [20260606T161952Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/br-test?url=https%3A%2F%2Ftuhs.taleo.net%2Fcareersection%2Ftuhs_ex%2Fjobsearch.ftl&ats=taleo
+Extract mode: json
+
+HTTP Status: 200
+Body length: 3710 chars
+
+=== JSON response ===
+{
+    "ok": true,
+    "ats": "taleo",
+    "url": "https://tuhs.taleo.net/careersection/tuhs_ex/jobsearch.ftl",
+    "elapsed_ms": 3817,
+    "title": "Job Search",
+    "og_description": "Temple University Health System career center provides a listing of current open positions at    Temple University Hospital,    Fox Chase Cancer Center,    Jeanes Hospital, and ReadyCare urgent care centers.    We invite you to join our dedicated team of healthcare providers.",
+    "job_links": [
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262000&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=261083&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=253920&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=254214&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262509&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262017&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=253200&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262549&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=252010&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=261099&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=260357&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262457&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262037&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262553&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262348&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=250508&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262274&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262329&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=262281&tz=GMT%2B00%3A00&tzname=UTC",
+        "https://tuhs.taleo.net/careersection/tuhs_ex/jobdetail.ftl?job=256158&tz=GMT%2B00%3A00&tzname=UTC"
+    ],
+    "job_card_count": 0,
+    "dom_text_excerpt": "Temple Health\n|\nCareers\nWelcome. You are not signed in.\nSign In\nJob Search\nMy Jobpage\nThis service is set to disconnect automatically after 60 minutes of inactivity. Your session will end in 20 minutes.\n\n\nClick OK to reset the timer to 60 minutes.\nOK\nYou have been signed out.\n\n\nThis service is set to sign out after 60 minutes of inactivity.\nOK\nSearch Tips\nYou can search jobs by entering relevant data in the above search fields and by filtering the job list with additional criteria.\nSaving search",
+    "job_container_text": "Keyword \nJob Number \nJob Title \nView All Jobs\nAdvanced Search\nAdvanced Job Search \u00d7\n\n\nOrganization\nAdd Organization\nLocation\nAdd Location\nJob Field\nAdd Job Field\n\n\nUrgent Jobs\n Urgent Jobs Only\n\nEmployee Status\n Regular\n Temporary\n\n \n\n\nJob Openings 1 - 25 of 545\nOrganization\nBusiness Unit\nBusiness Unit\n\u00a0\nTemple Univ. Hospital(216)\n\u00a0\nTemple Health - Chestnut Hill Hospital(51)\n\u00a0\nFox Chase Cancer Ctr - AOH(48)\n\u00a0\nTUH Episcopal and NE Campuses(43)\n\u00a0\nTemple Faculty Practice Plan(39)\nShow more...\nSee a"
+}
+
+=== End ===
