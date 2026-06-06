@@ -371,20 +371,20 @@ export async function fetchSuccessFactors(company) {
 
     // Extract company ID from URL for building apply links
     const companyId = new URL(company.url).searchParams.get('company') ?? company.token ?? '';
-    const sfBase    = \`https://career4.successfactors.com/career?company=\${companyId}\`;
+    const sfBase    = 'https://career4.successfactors.com/career?company=' + companyId;
 
     return jobMatches.map(m => {
       const block = m[1];
       const cdata = (tag) => {
-        const m2 = block.match(new RegExp(\`<\${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></\${tag}>\`));
+        const m2 = block.match(new RegExp('<' + tag + '[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></' + tag + '>'));
         return m2 ? m2[1].trim() : '';
       };
       const plain = (tag) => {
-        const m2 = block.match(new RegExp(\`<\${tag}[^>]*>([^<]*)</\${tag}>\`));
+        const m2 = block.match(new RegExp('<' + tag + '[^>]*>([^<]*)</' + tag + '>'));
         return m2 ? m2[1].trim() : '';
       };
       const filterVal = (num) => {
-        const m2 = block.match(new RegExp(\`<filter\${num}>[\\s\\S]*?<value>([^<]*)</value>[\\s\\S]*?</filter\${num}>\`));
+        const m2 = block.match(new RegExp('<filter' + num + '>[\\s\\S]*?<value>([^<]*)</value>[\\s\\S]*?</filter' + num + '>'));
         return m2 ? m2[1].trim() : '';
       };
 
@@ -397,7 +397,7 @@ export async function fetchSuccessFactors(company) {
 
       // Build apply URL using reqId
       const applyUrl = reqId
-        ? \`\${sfBase}&career_job_req_id=\${reqId}&career_ns=job_listing&navBarLevel=JOB_SEARCH\`
+        ? sfBase + '&career_job_req_id=' + reqId + '&career_ns=job_listing&navBarLevel=JOB_SEARCH'
         : sfBase;
 
       // Normalise environment from Work Setting field (more reliable than location)
@@ -408,7 +408,7 @@ export async function fetchSuccessFactors(company) {
                         : '';
 
       return makeJob({
-        id:          reqId || \`sf-\${company.token}-\${Math.random().toString(36).slice(2)}\`,
+        id:          reqId || ('sf-' + company.token + '-' + Math.random().toString(36).slice(2)),
         title,
         company:     affiliate || company.name,
         location,
