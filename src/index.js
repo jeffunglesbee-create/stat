@@ -572,6 +572,7 @@ async function handleFetch(request, env) {
     const knownUrls   = new Set(knownCompanies.filter(c => c.url).map(c => c.url.toLowerCase()));
 
     const discovered = new Map(); // key: ats:token → {company, ats, token, hits}
+    const allSeenCompanies = []; // for debug mode
     let totalCalls = 0;
 
     for (const term of HARVEST_TERMS) {
@@ -586,6 +587,9 @@ async function handleFetch(request, env) {
             const applyUrl = job.url || '';
 
             if (!company || company.length < 3) continue;
+            if (atsSource && SUPPORTED.includes(atsSource)) {
+              allSeenCompanies.push({company, ats: atsSource, known: knownNames.has(company.toLowerCase())});
+            }
             if (knownNames.has(company.toLowerCase())) continue;
 
             // Determine ATS and canonical token/url
@@ -622,12 +626,16 @@ async function handleFetch(request, env) {
       byAts[r.ats].push(r.company);
     }
 
+    const debug = url.searchParams.get('debug') === '1';
+    const allSeen = debug ? allSeenCompanies : undefined;
+
     return json({
       ok: true,
       total_calls: totalCalls,
       count: results.length,
       by_ats: Object.fromEntries(Object.entries(byAts).map(([k,v]) => [k, v.length])),
       companies: results,
+      ...(debug ? { all_seen_count: allSeenCompanies.length, all_seen: allSeenCompanies.slice(0,50) } : {}),
     });
   }
 
