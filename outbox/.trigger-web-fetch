@@ -1,4 +1,4 @@
-url=https://jobs.jhu.edu
+url=https://career4.successfactors.com/career?career_job_req_id=149802&career_ns=job_listing&company=SFHUP&navBarLevel=JOB_SEARCH
 accept=text/html,*/*
 extract=raw
-max_bytes=4000
+max_bytes=12000
