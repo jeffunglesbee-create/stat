@@ -307,8 +307,9 @@ export const SEED_COMPANIES = [
     url: 'https://massgeneralbrigham.wd1.myworkdayjobs.com/en-US/MGB_External', mdApproved: true },
   { name: 'Penn Medicine',             ats: 'workday', token: 'pennmedicine',
     url: 'https://uphs.wd5.myworkdayjobs.com/en-US/UPHS' },
-  { name: 'UCSF Health',               ats: 'workday', token: 'ucsf',
-    url: 'https://ucsf.wd5.myworkdayjobs.com/en-US/Search' },  // NOTE: verify — was incorrectly set to BrassRing URL
+  // UCSF Health: on Avature (careers.ucsf.edu) — verified 2026-06-06 via live probe.
+  // NOT Workday, NOT BrassRing. STAT has no Avature adapter.
+  // Covered by HiringCafe wide-net. Do not add to SEED_COMPANIES.
   { name: 'Vanderbilt Health',         ats: 'workday', token: 'vanderbilt',
     url: 'https://vanderbilt.wd5.myworkdayjobs.com/en-US/ext-vumc' },
   { name: 'AdventHealth',              ats: 'workday', token: 'adventhealth',
