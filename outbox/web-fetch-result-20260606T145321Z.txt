@@ -1,0 +1,10 @@
+=== Web Fetch Probe [20260606T145321Z] ===
+URL: https://career4.successfactors.com/odata/v2/JobRequisitionLocale?$filter=JobReqId%20eq%20149802&$select=JobReqId,externalTitle,externalDesc,country,state,city&$format=json
+Extract mode: json
+
+HTTP Status: 404
+Body length: 28168 chars
+
+=== JSON response ===
+
+=== End ===
