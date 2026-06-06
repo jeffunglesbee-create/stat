@@ -30,6 +30,7 @@ import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import { BATCH_WATCHLIST, BATCH_POLLER, KV, GHOST } from './config.js';
 import { applyMarylandScore } from './maryland.js';
+import { enrichDescriptions } from './enrich.js';
 
 export class BatchPollerDO {
   constructor(state, env) {
@@ -118,9 +119,7 @@ export class BatchPollerDO {
 
           job.matchedKeyword = match.matchedKw;
           job._matchGroup    = adjustedMatch.label;
-
-          const mdSuppressed = applyMarylandScore(job, company);
-          if (mdSuppressed) continue;
+          job._company       = company;
 
           newMatches.push({ job, match: adjustedMatch });
         }
@@ -153,6 +152,19 @@ export class BatchPollerDO {
       await this.env.STAT_KV.put(KV.seen_jobs, JSON.stringify(arr));
     } catch (e) {
       console.warn('[STAT Batch] Failed to save seen IDs:', e.message);
+    }
+
+    // Second-pass description fetch + MD batch scoring
+    if (newMatches.length > 0) {
+      await enrichDescriptions(newMatches);
+      const mdFiltered = [];
+      for (const m of newMatches) {
+        const suppressed = applyMarylandScore(m.job, m.job._company);
+        if (!suppressed) mdFiltered.push(m);
+        delete m.job._company;
+      }
+      newMatches.length = 0;
+      newMatches.push(...mdFiltered);
     }
 
     // Score + dispatch

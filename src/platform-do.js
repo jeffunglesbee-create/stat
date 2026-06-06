@@ -37,6 +37,7 @@ import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import { getPollingInterval, KV, GHOST } from './config.js';
 import { applyMarylandScore } from './maryland.js';
+import { enrichDescriptions } from './enrich.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Base class — all platform DOs extend this
@@ -151,11 +152,7 @@ class PlatformDO {
 
           job.matchedKeyword = match.matchedKw;
           job._matchGroup    = adjustedMatch.label;
-
-          // Maryland eligibility scoring
-          // companyMeta = the company config object (has mdApproved if tagged)
-          const mdSuppressed = applyMarylandScore(job, company);
-          if (mdSuppressed) continue; // explicit MD exclusion in description
+          job._company       = company; // carry company meta for batch MD scoring
 
           newMatches.push({ job, match: adjustedMatch });
         }
@@ -166,6 +163,25 @@ class PlatformDO {
       } catch (e) {
         console.warn(`[STAT ${this.ats}] ${company.name} error:`, e.message);
       }
+    }
+
+    // ── Second-pass description fetch + Maryland batch scoring ─────────────
+    // enrichDescriptions fetches og:description for Workday/iCIMS/SF/Taleo matches.
+    // Only fires for genuinely new matches — typically 0-5 requests per alarm cycle.
+    // applyMarylandScore runs after description is available for accurate scoring.
+    if (newMatches.length > 0) {
+      await enrichDescriptions(newMatches);
+
+      // Apply MD scoring now that descriptions are populated
+      // Filter out any explicitly MD-excluded jobs
+      const mdFiltered = [];
+      for (const m of newMatches) {
+        const suppressed = applyMarylandScore(m.job, m.job._company);
+        if (!suppressed) mdFiltered.push(m);
+        delete m.job._company; // clean up temp field
+      }
+      newMatches.length = 0;
+      newMatches.push(...mdFiltered);
     }
 
     // Persist local seen-set (cap at 10,000 per platform)
