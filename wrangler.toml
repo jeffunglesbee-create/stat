@@ -1,6 +1,6 @@
 name = "stat-job-watcher"
 main = "src/index.js"
-compatibility_date = "2024-09-23"
+compatibility_date = "2025-09-15"
 compatibility_flags = ["nodejs_compat"]
 account_id = "b57e9af57ab46c52ca9215804e689c29"
 
@@ -60,6 +60,12 @@ class_name = "BatchPollerDO"
 [[durable_objects.bindings]]
 name = "SALARY_INFERENCE"
 class_name = "SalaryInferenceDO"
+
+# ── Browser Rendering — SPA description extraction (iCIMS / Taleo / SF) ────────
+# Workers Paid: 10 browser-hours/month free (~7,200 fetches at 5s each).
+# Only fires for new keyword-matched jobs from SPA-based ATS — negligible usage.
+[browser]
+binding = "MYBROWSER"
 
 # ── Migrations ────────────────────────────────────────────────────────────────
 # v1: original KV-backend DOs (CompanyWatcherDO, SalaryInferenceDO)

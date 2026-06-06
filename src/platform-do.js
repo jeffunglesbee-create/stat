@@ -170,7 +170,7 @@ class PlatformDO {
     // Only fires for genuinely new matches — typically 0-5 requests per alarm cycle.
     // applyMarylandScore runs after description is available for accurate scoring.
     if (newMatches.length > 0) {
-      await enrichDescriptions(newMatches);
+      await enrichDescriptions(newMatches, this.env);
 
       // Apply MD scoring now that descriptions are populated
       // Filter out any explicitly MD-excluded jobs

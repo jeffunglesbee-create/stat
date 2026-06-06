@@ -156,7 +156,7 @@ export class BatchPollerDO {
 
     // Second-pass description fetch + MD batch scoring
     if (newMatches.length > 0) {
-      await enrichDescriptions(newMatches);
+      await enrichDescriptions(newMatches, this.env);
       const mdFiltered = [];
       for (const m of newMatches) {
         const suppressed = applyMarylandScore(m.job, m.job._company);
