@@ -1,0 +1,318 @@
+# .github/workflows/icims-validate.yml
+#
+# STAT — iCIMS IP Block Validation
+#
+# PURPOSE:
+#   Tests whether GitHub Actions runners (Azure IPs) can bypass iCIMS's
+#   Cloudflare IP block. Cloudflare's Browser Rendering API is blocked by
+#   iCIMS's WAF — this validates whether a CI runner is also blocked or not.
+#
+# WHAT IT DOES:
+#   1. Installs headless Chromium on the runner
+#   2. Fetches VHC Health iCIMS search page (/jobs/search) with JS execution
+#   3. Parses the rendered DOM for job IDs, titles, locations
+#   4. Also fetches UCI Health iCIMS (different tenant, confirmed 403 in BR)
+#   5. Commits structured JSON result to outbox/icims-validate-result-{ts}.json
+#
+# TRIGGER:
+#   Manual only (workflow_dispatch) — do NOT add a cron yet.
+#   Run once to validate. If job data is returned, the IP bypass works.
+#   If 403 or empty DOM, iCIMS blocks Azure IPs too → dead end.
+#
+# VALIDATION CRITERIA:
+#   PASS: job_count > 0 for at least one tenant
+#   FAIL: all tenants return job_count 0 OR http_status 403/blocked
+#
+# NEXT STEPS (if PASS):
+#   Build icims-scrape.yml with 5-min cron + /icims-ingest KV write
+#   Update IcimsDO to read from KV instead of direct fetch
+#
+# Runner: ubuntu-latest (GitHub-hosted, Azure IP range)
+# Chromium: installed via apt (not puppeteer download — faster, ~15s vs 60s)
+# Node script: inline, no package.json needed on runner
+
+name: STAT — iCIMS IP Block Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      tenant_url:
+        description: 'iCIMS tenant URL to test (default: VHC Health)'
+        required: false
+        default: 'https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: iCIMS headless fetch validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Chromium
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq chromium-browser
+          chromium-browser --version
+
+      - name: Install Puppeteer (core only, uses system Chromium)
+        run: |
+          npm install puppeteer-core --no-save 2>&1 | tail -3
+
+      - name: Run iCIMS headless fetch
+        id: fetch
+        run: |
+          mkdir -p outbox
+
+          node << 'NODESCRIPT'
+          const puppeteer = require('puppeteer-core');
+          const fs        = require('fs');
+          const path      = require('path');
+
+          const TS  = new Date().toISOString().replace(/[-:]/g,'').replace(/\..*$/,'') + 'Z';
+          const OUT = `outbox/icims-validate-result-${TS}.json`;
+
+          // Tenants to test
+          // VHC Health: known to return wrapper site in Cloudflare BR
+          // UCI Health: confirmed 403 in Cloudflare BR
+          // Infirmary Health: additional data point
+          const TENANTS = [
+            {
+              name:    'VHC Health',
+              token:   'vhchealth',
+              url:     'https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst',
+              expect:  'job listings page',
+            },
+            {
+              name:    'UCI Health',
+              token:   'uci',
+              url:     'https://careers-uci.icims.com/jobs/search?ss=1&searchKeyword=analyst',
+              expect:  'job listings page',
+            },
+            {
+              name:    'Infirmary Health',
+              token:   'infirmaryhealth',
+              url:     'https://careers-infirmaryhealth.icims.com/jobs/search?ss=1&searchKeyword=analyst',
+              expect:  'job listings page',
+            },
+          ];
+
+          (async () => {
+            const chromePath = '/usr/bin/chromium-browser';
+            const results    = { ts: TS, tenants: [], summary: {} };
+
+            for (const tenant of TENANTS) {
+              console.log(`\n=== Testing ${tenant.name} ===`);
+              const t0 = Date.now();
+              let browser = null;
+
+              try {
+                browser = await puppeteer.launch({
+                  executablePath: chromePath,
+                  headless:       'new',
+                  args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--window-size=1280,800',
+                  ],
+                });
+
+                const page = await browser.newPage();
+
+                // Realistic browser fingerprint
+                await page.setUserAgent(
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ' +
+                  'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+                  'Chrome/124.0.0.0 Safari/537.36'
+                );
+                await page.setViewport({ width: 1280, height: 800 });
+                await page.setExtraHTTPHeaders({
+                  'Accept-Language': 'en-US,en;q=0.9',
+                  'Accept':          'text/html,application/xhtml+xml,*/*;q=0.8',
+                });
+
+                // Block images/fonts to speed up load
+                await page.setRequestInterception(true);
+                page.on('request', req => {
+                  const type = req.resourceType();
+                  if (['image', 'font', 'media', 'stylesheet'].includes(type)) {
+                    req.abort();
+                  } else {
+                    req.continue();
+                  }
+                });
+
+                // Track HTTP status of the main navigation
+                let httpStatus = null;
+                page.on('response', res => {
+                  if (res.url().includes(tenant.token) && !httpStatus) {
+                    httpStatus = res.status();
+                  }
+                });
+
+                let navError = null;
+                try {
+                  await page.goto(tenant.url, {
+                    waitUntil: 'networkidle0',
+                    timeout:   20000,
+                  });
+                } catch (e) {
+                  navError = e.message;
+                  console.log(`  Nav error: ${navError}`);
+                }
+
+                // Extract everything useful from the rendered DOM
+                const extracted = await page.evaluate(() => {
+                  // Job links — iCIMS pattern: /jobs/{id}/
+                  const allLinks = [...document.querySelectorAll('a[href]')]
+                    .map(a => ({ href: a.href, text: a.innerText?.trim() }))
+                    .filter(l => l.href && l.href.includes('/jobs/') &&
+                                 /\/jobs\/\d+\//.test(l.href));
+
+                  // Unique job IDs from URLs
+                  const jobIds = [...new Set(
+                    allLinks
+                      .map(l => { const m = l.href.match(/\/jobs\/(\d+)\//); return m?.[1]; })
+                      .filter(Boolean)
+                  )];
+
+                  // Job titles from link text or nearby elements
+                  const jobTitles = allLinks
+                    .map(l => l.text)
+                    .filter(t => t && t.length > 3 && t.length < 120)
+                    .slice(0, 10);
+
+                  // Page title
+                  const title = document.title;
+
+                  // Any visible text indicating a block/error
+                  const bodyText = document.body?.innerText?.trim().slice(0, 500) ?? '';
+
+                  // iCIMS job card count
+                  const cardCount = document.querySelectorAll(
+                    '[class*="job-card"], [class*="job_card"], [class*="jobCard"], ' +
+                    '[class*="result-item"], [data-job-id]'
+                  ).length;
+
+                  // Check for 403/blocked indicators in DOM
+                  const isBlocked =
+                    title.includes('403') ||
+                    title.includes('Forbidden') ||
+                    title.includes('Access Denied') ||
+                    bodyText.toLowerCase().includes('access denied') ||
+                    bodyText.toLowerCase().includes('forbidden');
+
+                  return {
+                    title,
+                    jobIds,
+                    jobTitles,
+                    jobCount: jobIds.length,
+                    cardCount,
+                    isBlocked,
+                    bodyTextExcerpt: bodyText.slice(0, 300),
+                  };
+                });
+
+                const elapsed = Date.now() - t0;
+
+                const result = {
+                  tenant:      tenant.name,
+                  token:       tenant.token,
+                  url:         tenant.url,
+                  http_status: httpStatus,
+                  nav_error:   navError,
+                  elapsed_ms:  elapsed,
+                  title:       extracted.title,
+                  job_count:   extracted.jobCount,
+                  job_ids:     extracted.jobIds.slice(0, 20),
+                  job_titles:  extracted.jobTitles,
+                  card_count:  extracted.cardCount,
+                  is_blocked:  extracted.isBlocked,
+                  body_excerpt: extracted.bodyTextExcerpt,
+                  // PASS criteria: job_count > 0 and not blocked
+                  pass:        extracted.jobCount > 0 && !extracted.isBlocked,
+                };
+
+                console.log(`  Title: ${result.title}`);
+                console.log(`  HTTP status: ${httpStatus}`);
+                console.log(`  Job count: ${result.job_count}`);
+                console.log(`  Blocked: ${result.is_blocked}`);
+                console.log(`  PASS: ${result.pass}`);
+                if (result.job_ids.length > 0) {
+                  console.log(`  Sample IDs: ${result.job_ids.slice(0, 5).join(', ')}`);
+                }
+                console.log(`  Elapsed: ${elapsed}ms`);
+
+                results.tenants.push(result);
+                await browser.close();
+
+              } catch (e) {
+                console.log(`  FATAL: ${e.message}`);
+                if (browser) { try { await browser.close(); } catch {} }
+                results.tenants.push({
+                  tenant:   tenant.name,
+                  token:    tenant.token,
+                  url:      tenant.url,
+                  error:    e.message,
+                  pass:     false,
+                });
+              }
+            }
+
+            // Summary
+            const passing = results.tenants.filter(t => t.pass);
+            results.summary = {
+              total_tenants:   results.tenants.length,
+              passing_tenants: passing.length,
+              // VALIDATION VERDICT: at least one tenant returns job data
+              verdict: passing.length > 0 ? 'PASS — IP bypass confirmed' : 'FAIL — all tenants blocked',
+              passing_names: passing.map(t => t.tenant),
+            };
+
+            console.log('\n=== SUMMARY ===');
+            console.log(`Verdict: ${results.summary.verdict}`);
+            console.log(`Passing: ${results.summary.passing_names.join(', ') || 'none'}`);
+
+            fs.mkdirSync(path.dirname(OUT), { recursive: true });
+            fs.writeFileSync(OUT, JSON.stringify(results, null, 2));
+            console.log(`\nResult written to: ${OUT}`);
+
+          })().catch(e => {
+            console.error('Fatal error:', e);
+            process.exit(1);
+          });
+          NODESCRIPT
+        shell: bash
+
+      - name: Commit result
+        run: |
+          git config user.email "stat-icims-validate@stat"
+          git config user.name "STAT-iCIMS-Validate"
+
+          RESULT=$(ls -t outbox/icims-validate-result-*.json 2>/dev/null | head -1)
+          if [ -z "$RESULT" ]; then
+            echo "No result file found"
+            exit 1
+          fi
+
+          echo "Result file: $RESULT"
+          cat "$RESULT"
+
+          git add "$RESULT"
+          git diff --cached --quiet && echo "Nothing to commit" && exit 0
+          git commit -m "icims-validate result [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break
+            sleep $((i * 5))
+          done
