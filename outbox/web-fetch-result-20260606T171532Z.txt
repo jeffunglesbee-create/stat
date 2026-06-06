@@ -1,0 +1,23 @@
+=== Web Fetch Probe [20260606T171532Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https%3A%2F%2Fcareers-uci.icims.com%2Fjobs%2Fsearch%3Fss%3D1%26searchKeyword%3Danalyst
+Extract mode: json
+
+HTTP Status: 200
+Body length: 588 chars
+
+=== JSON response ===
+{
+    "ok": true,
+    "url": "https://careers-uci.icims.com/jobs/search?ss=1&searchKeyword=analyst",
+    "http_status": 200,
+    "elapsed_ms": 281,
+    "body_bytes": 57097,
+    "is_blocked": false,
+    "title": "",
+    "og_description": "",
+    "job_ids": [],
+    "job_hrefs": [],
+    "body_text_excerpt": "Skip to Main Content Follow Us English English Espa\u00f1ol ALREADY WORKING AT UCI? APPLY HERE. Already applied? Check your application status. Toggle navigation OUR ORGANIZATION WHY JOIN SEARCH JOBS Administrative Support Athletics Campus/Hospital Support Services Clinical Professional Executive Finance"
+}
+
+=== End ===
