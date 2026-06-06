@@ -1434,7 +1434,10 @@ async function loadBrowse() {
   if (!ok) return;
 
   const totalEl = document.getElementById('browse-total');
-  totalEl.textContent = data.count + ' jobs shown' + (data.total > data.count ? ' of ' + data.total + ' stored' : '') + ' — remote/hybrid, no keyword match';
+  const filterParts = ['remote/hybrid', 'no keyword match'];
+  if (atsFilter) filterParts.unshift(atsFilter);
+  if (q) filterParts.push(`"${q}"`);
+  totalEl.textContent = data.count + ' jobs shown' + (data.total > data.count ? ' of ' + data.total + ' stored' : '') + ' — ' + filterParts.join(', ');
 
   const el = document.getElementById('browse-list');
   if (!data.jobs || !data.jobs.length) {
