@@ -1,4 +1,4 @@
-url=https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https%3A%2F%2Fhiring.cafe%2F%3Fq%3Depic%2Banalyst%26workplace_type%3Dremote
+url=https://stat-job-watcher.jeffunglesbee.workers.dev/harvest
 accept=application/json,*/*
-extract=json
-max_bytes=8000
+extract=raw
+max_bytes=30000
