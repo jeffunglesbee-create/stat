@@ -1,0 +1,81 @@
+=== Web Fetch Probe [20260606T143426Z] ===
+URL: https://career4.successfactors.com/career?company=bswh&career_ns=job_listing_summary&resultType=XML
+Extract mode: raw
+
+HTTP Status: 200
+Body length: 3470 chars
+
+=== Response body (first 5000 bytes) ===
+
+<html>
+<!-- verp-client(1.0.0-20260529165410-850a86e97-3373): modules={
+ajaxservice:"1.0.7",
+extlib:"1.8.0",
+juic:"1.24.60",
+"people-profile-legacy":"4.4.2",
+surj:"1.0.82"
+} -->
+
+<meta id="PerfLog.requestStats" name="pl.rs" content="1U1FMVD0zJkNDT049MCZGV1I9MCZOUkU9MCZDRVhUPTAmU1Q9MTc4MDc1NjQ2Njg5NSZFSUQ9RVZFTlQtUkNNLUNBUkVFUi1vYjU3YWJicTAxMDctMjAyNjA2MDYxNDM0MjYtNDE5ODU4JkNMT0M9MCZDUkVNPTAmTldSPTAmQ1BVPTYmU1ZUPTEzJlNRTEM9NiZTQ1BVPTAmQ1NVUD0yJk1FTT01NzImVUNQVT02JkZSRT0wJlRPSz05RkYzN0Q0RDg4QUZGREU4NEM5Nw==" />
+<script src="/verp/vmod_v1/ui/perflog-lib/resources_1.1.4/perflog-lib.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+/* verp-client: SMRF Globals */!function(w){function set(k,v){Object.assign(k==='window'?w:(w[k]=w[k]||{}),v)}
+/* verp-client: init MSGS */function f(p){return p&&p.replace&&s.call(arguments,1).reduce(function(p,a,i) {return p.replace(new RegExp('\\{'+i+'\\}','g'),a)}, p)}function c() {}c.prototype.format=f;w.MessageFormatter=c;w.sfMessageFormat=new c();var s=Array.prototype.slice;var m=w.MSGS=w.jsSFMessages=w.MSGS||{};m.get=function(k){return f.apply(null,[this[k]].concat(s.call(arguments,1)))},m.MessageFormatter={format:function(){return f.apply(null,arguments)}};
+set("window",{
+dateFormatSymbols:{
+ampm:["AM","PM"],
+firstDayOfWeek:1,
+months:["January","February","March","April","May","June","July","August","September","October","November","December"],
+shortMonths:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+shortWeekdays:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+singleCharWeekdays:["S","M","T","W","T","F","S"],
+weekdays:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+},
+decimalFormatSymbols:{
+currencySymbol:"$",
+exponential:"E",
+infinity:"\u221e",
+nan:"\ufffd",
+patternSeparator:";",
+percent:"%",
+zeroDigit:"0"
+},
+firstDayOfWeek:1
+})
+}(window)
+</script>
+<script src="/verp/vmod_v1/ui/extlib/jshash_2.2/sha256.js" type="text/javascript"></script>
+<script src="/verp/vmod_v1/ui/juic/js/InterstitialUtil_7649472d137fbe6e08c4ad240fcd5722.js" type="text/javascript"></script>
+<script src="/verp/vmod_v1/ui/juic/js/GlobalFunctions_8abd8425f72196be8d1f91faf8b989ba.js" type="text/javascript"></script>
+<script type="text/javascript">
+ var ajaxSecKey="8sjGremOS81%2b4T1GaV8Oa47h60lhiGvjd4gy5XHVeWo%3d";var timeout_redirect_url="";
+</script>
+<link href="/ui/ravcareer/css/careers_362fdb3605068991fa76af388f51c7f7.css" type="text/css" rel="stylesheet" />
+
+<body class="page_gray">
+<div class="round sfpanel">
+    <span class="ct"><span class="cl">&nbsp;</span></span>
+    <div class="bd">
+      <div class="content">
+        <a id="logo" href="https://www.successfactors.com/" title="SuccessFactors home page"><span class="alt">SuccessFactors</span></a>
+        <div class="round sysmsg error">
+          <span class="ct"><span class="cl">&nbsp;</span></span>
+          <dl>
+            <dd class="img">&nbsp;</dd>
+            <dd class="msg">
+              
+              <strong>An error occurred while processing your request. Please go back to your original page and check the URL. Then try your request again. </strong>
+            </dd>
+          </dl>
+          <span class="cb"><span class="cl">&nbsp;</span></span>
+        </div>        
+      </div>
+    </div>   
+    
+  <span class="cb"><span class="cl">&nbsp;</span></span>
+  </div>
+
+<script type="text/javascript">try {PerfLog.addOnloadHook();} catch(err) {}</script>
+</body></html>
+
+=== End ===
