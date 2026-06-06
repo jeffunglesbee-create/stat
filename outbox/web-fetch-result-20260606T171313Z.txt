@@ -1,0 +1,25 @@
+=== Web Fetch Probe [20260606T171313Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https%3A%2F%2Fcareers-vhchealth.icims.com%2Fjobs%2F13916%2Fjob%3Fin_iframe%3D1
+Extract mode: json
+
+HTTP Status: 200
+Body length: 695 chars
+
+=== JSON response ===
+{
+    "ok": true,
+    "url": "https://careers-vhchealth.icims.com/jobs/13916/job?in_iframe=1",
+    "http_status": 200,
+    "elapsed_ms": 429,
+    "body_bytes": 32897,
+    "is_blocked": false,
+    "title": "Senior Medical Imaging Systems Analyst in Alexandria, Virginia | Careers at 3601 Eisenhower Avenue",
+    "og_description": "",
+    "job_ids": [
+        "13916"
+    ],
+    "job_hrefs": [],
+    "body_text_excerpt": "Senior Medical Imaging Systems Analyst in Alexandria, Virginia | Careers at 3601 Eisenhower Avenue Please Enable Cookies to Continue Please enable cookies in your browser to experience all the personalized features of this site, including the ability to apply for a job. Welcome page Returning Candid"
+}
+
+=== End ===
