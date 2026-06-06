@@ -1,0 +1,206 @@
+=== Web Fetch Probe [20260606T140840Z] ===
+URL: https://hiring.cafe/job/zk0i4o7bipl6buaz
+Extract mode: next_data
+
+HTTP Status: 200
+Body length: 72784 chars
+
+=== __NEXT_DATA__ extraction ===
+{
+  "props": {
+    "pageProps": {
+      "job": {
+        "id": "workday___msmc-wd12-msmc_careers___epic-ambulatory-analyst_jr102337",
+        "board_token": "msmc-wd12-msmc_careers",
+        "source": "workday",
+        "apply_url": "https://msmc.wd12.myworkdayjobs.com/msmc_careers/job/Miami-Beach-FL/Epic-Ambulatory-Analyst_JR102337",
+        "source_and_board_token": "workday_msmc-wd12-msmc_careers",
+        "job_information": {
+          "title": "Epic Ambulatory Analyst",
+          "job_title_raw": "Epic Ambulatory Analyst",
+          "description": "<p style=\"text-align:left\"><b><span>As Mount Sinai grows, so does our legacy in high-quality health care.</span></b></p><p style=\"text-align:inherit\"></p><p style=\"text-align:left\"><span>Since 1949, Mount Sinai Medical Center has remained committed to providing access to its diverse community. In delivering an unmatched level of clinical expertise, our medical center is committed to recruiting and training top healthcare workers from across the country. We offer the latest in advanced medicine, technology, and comfort in 12 facilities across Miami-Dade (including our 674-bed main campus facility) and Monroe Counties, with 38 medical services, including cancer care, 24/7 emergency care, orthopedics, cardiovascular care, and more. Mount Sinai takes pride in being South Florida&#39;s largest private independent not-for-profit hospital, dedicated to continuing the training of the next generation of medical pioneers.</span></p><p style=\"text-align:inherit\"></p><p style=\"text-align:left\"><b>Culture of Caring: The Sinai Way</b></p><p style=\"text-align:inherit\"></p><p style=\"text-align:left\"><span>Our hardworking, tight-knit community of more than 4,000 dedicated employees fosters an environment of care and compassion. Each member plays a vital role in our collective mission to deliver excellent healthcare through innovation, education, and research. At Mount Sinai, we take pride in our achievements, aiming to be a beacon of quality healthcare in South Florida. We welcome all healthcare professionals to join our thriving community and contribute to our pursuit for clinical excellence.</span></p><p style=\"text-align:inherit\"></p><p style=\"text-align:left\"><b>Department:</b></p><p></p><p><b>Job Description Summary:</b></p><p></p>Hybrid - Florida residency required or 1099 Contract<br><br>Job Description Summary<br>Our IT department's mission is to provide technology leadership that advances Mount Sinai\u2019s mission, by delivering reliable, secure, and effective solutions with high quality customer service. We are looking for an experienced Epic Ambulatory Analyst to support our hospital network\u2019s clinical information systems.<h2>Position Responsibilities</h2><ul><li><p>The Epic System Analyst under direction of senior team members performs workflow analysis and design with input and guidance from key operational leadership. Facilitates workflow adoption on new processes.</p></li><li><p>\u00a0Provide day-to-day ambulatory operational support, ongoing maintenance and configuration of the EPIC Electronic Health Record software in order to support Mount Sinai Medical Center\u2019s business goals and objectives and to improve patient care.</p></li><li><p>Communicate with end users of the EPIC software to understand issues encountered and develop solutions.</p></li><li><p>Participate and provide support for enterprise initiatives, such as system upgrades, new integrations, and the configuration of new functionality.</p></li><li><p>Participate in the analysis and design of system enhancements.</p></li><li><p>\u00a0Contribute to the analysis, design, configuration, build, testing, and application administration as needed.</p></li><li><p>Perform systems administration activities in the EHR such as new user setup, workspace configurations, role setup, e-prescribing enrollment, etc.</p></li><li><p>Participates in system testing events by executing scripts. Accurately documents and reports any noted errors or deficiencies.</p></li><li><p>Provides support to department/end users during system upgrade and optimization activities</p></li><li><p>Executes assigned tasks under the supervision of senior team members/management. Tasks are completed within specified time frame.</p></li><li><p>Utilizes system knowledge and available resources to address routine issues.</p></li><li><p>Actively participates in departmental and customer team meetings. Provides input and acts as a team resource by taking notes or other support activities.</p></li><li><p>Achieves and maintains up-to-date application knowledge for assigned applications/process areas. Utilizes appropriate resources to further knowledge to address issues or complete assigned tasks.</p></li><li><p>Actively participates in testing of downtime processes. Activities may include executing test scripts working with end users or other tasks to support downtime activities.</p></li><li><p>Participates in discussions related to the development of training content for users. Provides support to formal training classes when necessary in the form of proctoring materials preparation or other tasks as necessary\u00a0</p></li><li>Service Delivery - Takes personal ownership of issues, ensures a high degree of accuracy with all communications/deliverables, completes tasks according to committed timelines, demonstrates excellent service recovery, and communicates with customers in a consistent manner.</li><li>Workflow Analysis - Independently performs workflow analysis and design with input and guidance from key operational leadership. Facilitates workflow adoption on new processes.</li><li>Testing - Participates in system testing events by executing scripts. Accurately documents and reports any noted errors or deficiencies. Provides input for testing scripts with workflow updates/system upgrades/implementations</li><li>Upgrades/Optimizations - Performs system activities related to upgrades and optimization with vendor assistance.</li><li>Projects and New System Implementations - Executes assigned tasks within specified time frame. Able to manage multiple projects while maintaining portfolio of regular support assigments</li><li>Issue Resolution - Utilizes system knowledge and available resources to address routine issues.</li><li>Leadership - Actively participates in departmental and customer team meetings. Prepares and presents substantial portions of meetings on a regular basis. Acts as a team resource by taking notes or other support activities.</li><li>Knowledge - Achieves and maintains up-to-date application knowledge for assigned applications/process areas. Utilizes appropriate resources to further knowledge to address issues or complete assigned tasks.</li><li>Downtime Processes - Reviews and provides input for development of downtime processes. Actively participates in testing of downtime processes. Activities may include executing test scripts, working with end users or other tasks to support downtime activities.</li><li>Training - Provides input related to the development of training content for users. Assist with formal training classes when necessary in the form of teaching, proctoring, materials preparation or other tasks as necessary.</li><li><p></p></li></ul><h2>Qualifications</h2><ul><li><h3>License/Registration/Certification</h3><ul><li><p>Epic Ambulatory Certification required</p></li></ul></li><li><h3>Education</h3><ul><li><p>Bachelor&#39;s Degree or equivalent experience</p></li></ul></li><li><h3>Experience</h3><ul><li><p>2-5&#43; years experience with large hospital applications/systems preferred Relevant application certification desired (when applicable)</p></li></ul></li><li></li></ul><p style=\"text-align:left\"><b>Benefits:</b></p><p style=\"text-align:inherit\"></p><p style=\"text-align:left\"><span>We believe in the physical and mental well-being of our employees and are committed to offering comprehensive benefits that fit their personal needs:</span></p><p style=\"text-align:inherit\"></p><ul><li><span>Health benefits</span></li><li><span>Life insurance</span></li><li><span>Long-term disability coverage</span></li><li><span>Healthcare spending accounts</span></li><li><span>Retirement plan</span></li><li><span>Paid time off</span></li><li><span>Pet Insurance</span></li><li><span>Tuition reimbursement</span></li><li><span>Employee assistance program</span></li><li><span>Wellness program</span></li><li><span>On-site housing for select positions and more!</span></li></ul><p style=\"text-align:left\"><b>Degree Requirements:</b></p><p style=\"text-align:inherit\"></p><p style=\"text-align:left\"><b>Certification:</b></p>",
+          "viewedByUsers": [
+            "wyNgBEJtHOfyCB4mtWqS2i6JYEi2"
+          ]
+        },
+        "v5_processed_job_data": {
+          "core_job_title": "Epic Ambulatory Analyst",
+          "requirements_summary": "Epic Ambulatory Analyst with 2+ years in large hospital IT environments; requires Epic Ambulatory Certification and a Bachelor\u2019s degree or equivalent.",
+          "technical_tools": [
+            "EPIC",
+            "Electronic Health Record (EHR)",
+            "Healthcare IT"
+          ],
+          "licenses_or_certifications": [
+            "epic ambulatory"
+          ],
+          "associates_degree_requirement": "Not Mentioned",
+          "associates_degree_fields_of_study": [],
+          "bachelors_degree_requirement": "Required",
+          "bachelors_degree_fields_of_study": [
+            "Information Technology",
+            "Healthcare",
+            "Health Informatics"
+          ],
+          "masters_degree_requirement": "Not Mentioned",
+          "masters_degree_fields_of_study": [],
+          "doctorate_degree_requirement": "Not Mentioned",
+          "doctorate_degree_fields_of_study": [],
+          "licenses_or_certifications_not_mentioned": false,
+          "min_industry_and_role_yoe": 2,
+          "401k_matching": true,
+          "is_min_industry_and_role_yoe_not_mentioned": false,
+          "min_management_and_leadership_yoe": null,
+          "is_min_management_and_leadership_yoe_not_mentioned": false,
+          "job_category": "Information Technology",
+          "role_activities": [
+            "provide support",
+            "configure system",
+            "test upgrades"
+          ],
+          "commitment": [
+            "Full Time"
+          ],
+          "role_type": "Individual Contributor",
+          "seniority_level": "Mid Level",
+          "workplace_countries": [
+            "US"
+          ],
+          "boundless_workplace_states": [],
+          "boundless_workplace_countries": [],
+          "boundless_workplace_continents": [],
+          "workplace_continents": [
+            "North America"
+          ],
+          "workplace_states": [
+            "Florida, US"
+          ],
+          "workplace_cities": [
+            "Miami Beach, Florida, US"
+          ],
+          "workplace_counties": [
+            "Miami-Dade County, Florida, US"
+          ],
+          "workplace_type": "Hybrid",
+          "workplace_physical_environment": "Office",
+          "oral_communication_level": "High",
+          "physical_labor_intensity": "Low",
+          "physical_position": "Sitting",
+          "computer_usage": "High",
+          "cognitive_demand": "High",
+          "air_travel_requirement": "None",
+          "land_travel_requirement": "None",
+          "morning_shift_work": "Optional",
+          "evening_shift_work": "Optional",
+          "overnight_work": "Optional",
+          "formatted_workplace_location": "Miami Beach, Florida, United States",
+          "on_call_requirement": "None",
+          "weekend_availability_required": false,
+          "holiday_availability_required": false,
+          "generous_paid_time_off": false,
+          "four_day_work_week": false,
+          "overtime_required": false,
+          "is_workplace_worldwide_ok": false,
+          "language_requirements": [
+            "English"
+          ],
+          "num_language_requirements": 1,
+          "number_of_workplace_cities": 1,
+          "number_of_workplace_counties": 1,
+          "number_of_workplace_states": 1,
+          "number_of_workplace_countries": 1,
+          "number_of_workplace_continents": 1,
+          "yearly_max_compensation": null,
+          "yearly_min_compensation": null,
+          "monthly_max_compensation": null,
+          "monthly_min_compensation": null,
+          "weekly_max_compensation": null,
+          "weekly_min_compensation": null,
+          "hourly_max_compensation": null,
+          "hourly_min_compensation": null,
+          "bi-weekly_min_compensation": null,
+          "bi-weekly_max_compensation": null,
+          "daily_min_compensation": null,
+          "daily_max_compensation": null,
+          "estimated_publish_date": "2026-05-27T00:00:00.000Z",
+          "estimated_publish_date_millis": 1779840000000,
+          "fair_chance": true,
+          "visa_sponsorship": false,
+          "relocation_assistance": false,
+          "military_veterans": true,
+          "tuition_reimbursement": true,
+          "retirement_plan": true,
+          "generous_parental_leave": false,
+          "is_high_school_required": true,
+          "is_driver_license_required": false,
+          "is_compensation_transparent": false,
+          "listed_compensation_currency": "USD",
+          "listed_compensation_frequency": "Yearly",
+          "security_clearance": "None",
+          "position_employer_type": "External Position",
+          "company_name": "Mount Sinai Medical Center (MSMC)",
+          "company_website": "msmc.com",
+          "company_sector_and_industry": "Healthcare",
+          "company_activities": [
+            "Hospital",
+            "Healthcare"
+          ],
+          "company_tagline": "Independent, nonprofit hospital network focused on high-quality care"
+        },
+        "enriched_company_data": {
+          "enriched_at": "2026-05-23T05:35:02.840Z",
+          "status": "VALID_COMPANY",
+          "name": "Mount Sinai Medical Center",
+          "homepage_uri": "msmc.com",
+          "hq_country": "US",
+          "parent_company": null,
+          "subsidiaries": null,
+          "industries": [
+            "Healthcare",
+            "Hospital & Health Care"
+          ],
+          "activities": [
+            "Inpatient hospital care",
+            "Emergency medical services",
+            "Clinical diagnostic services",
+            "Medical residency training",
+            "Biomedical research"
+          ],
+          "nb_employees": 4500,
+          "year_founded": 1949,
+          "tagline": "Private independent not-for-profit teaching hospital in South Florida.",
+          "organization_type": "Non-Profit",
+          "latest_funding_investors": null,
+          "latest_funding_type": null,
+          "latest_funding_year": null,
+          "latest_funding_amount": null,
+          "stock_exchange": null,
+          "stock_symbol": null
+        },
+        "_geoloc": [
+          {
+            "lat": 25.7907,
+            "lon": -80.1367
+          }
+        ],
+        "original_source_id": "workday___msmc-wd12-msmc_careers___epic-ambulatory-analyst_jr102337",
+        "requisition_id": "zk0i4o7bipl6buaz",
+        "collapse_key": "e6692d04784e7de4f0153c5383b7b3451795aebd88e2ff1b96c5cab9ac2e7ab5",
+        "is_expired": false,
+        "objectID": "workday___msmc-wd12-msmc_careers___epic-ambulatory-analyst_jr102337"
+      }
+    },
+    "__N_SSG": true
+  },
+  "page": "/job/[requisitionId]",
+  "query": {
+    "requisitionId": "zk0i4o7bipl6buaz"
+  },
+  "buildId": "nNHLR_6aEhf7scqh4Z3NX",
+  "isFallback": false,
+  "isExperimentalCompile": false,
+  "gsp": true,
+  "scriptLoader": []
+}
+
+=== End ===
