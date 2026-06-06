@@ -1,4 +1,4 @@
-url=https://stat-job-watcher.jeffunglesbee.workers.dev/browse
+url=https://careers.umiamhealth.org
+accept=text/html,*/*
 extract=raw
 max_bytes=3000
-triggered 1780778418
