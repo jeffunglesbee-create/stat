@@ -1,0 +1,10 @@
+=== Web Fetch Probe [20260606T165933Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/br-test?url=https%3A%2F%2Fcareers-vhchealth.icims.com%2Fjobs%2F13916%2Fjob%3Fin_iframe%3D1&ats=icims
+Extract mode: json
+
+HTTP Status: 000
+Body length: 0 chars
+
+=== JSON response ===
+
+=== End ===
