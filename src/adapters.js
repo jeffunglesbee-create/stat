@@ -444,45 +444,127 @@ export async function fetchSuccessFactors(company) {
 // ORACLE TALEO
 // HTML parse of the job search page
 // URL pattern: {company}.taleo.net/careersection/{n}/jobsearch.ftl
+//
+// ARCHITECTURE (verified Session Part 1, 2026-06-06):
+//   SEARCH page (/jobsearch.ftl): JavaScript SPA — job data loaded via XHR after
+//     JS executes. Plain fetch() returns the shell HTML with no job data.
+//     Browser Rendering renders the SPA and extracts job IDs from the DOM.
+//     Confirmed: BR returns 20 real job detail URLs from TUHS in ~3.8s.
+//
+//   DETAIL page (/jobdetail.ftl?job={id}): SERVER-RENDERED HTML — full job
+//     description in DOM body text. Plain fetch() works, confirmed 200 + body.
+//     og:description is boilerplate ("Click the link...") — use body text.
+//
+// env.MYBROWSER must be passed in for Browser Rendering.
+// Falls back to [] if MYBROWSER is unavailable.
 // ─────────────────────────────────────────────────────────────────────────────
-export async function fetchTaleo(company) {
+import puppeteer from '@cloudflare/puppeteer';
+
+export async function fetchTaleo(company, env) {
   if (!company.url) return [];
+  if (!env?.MYBROWSER) {
+    // No Browser Rendering available — Taleo SPA cannot be parsed without it
+    console.warn('[STAT Taleo] MYBROWSER not available — skipping', company.name);
+    return [];
+  }
+
+  let browser = null;
   try {
-    const res = await fetch(company.url, { headers: { 'User-Agent': UA } });
-    if (!res.ok) return [];
-    const html = await res.text();
+    const base = new URL(company.url).origin;
+    const searchUrl = company.url; // /careersection/{n}/jobsearch.ftl
 
-    // Taleo embeds job data as JavaScript: var jobData = {...}
-    const jsonMatch = html.match(/var\s+(?:jobData|jobs)\s*=\s*(\[[\s\S]*?\]);/);
-    if (jsonMatch) {
-      const jobs = JSON.parse(jsonMatch[1]);
-      return jobs.map(j => makeJob({
-        id:         j.requisitionId ?? j.id ?? String(Math.random()),
-        title:      j.title ?? j.jobTitle ?? '',
-        company:    company.name,
-        location:   j.location ?? j.city ?? '',
-        environment: '',
-        salary:     null,
-        url:        j.detailUrl ?? j.url ?? company.url,
-        postedAt:   j.postedDate ?? j.openDate ?? null,
-        atsSource:  'taleo',
-      }));
+    // Step 1: Use Browser Rendering to render the SPA and extract job IDs
+    // Session Part 1 confirmed: BR extracts 20 real jobdetail.ftl?job={id} links
+    const sessions = await puppeteer.sessions(env.MYBROWSER);
+    const idle = sessions.filter(s => !s.connectionId);
+    if (idle.length > 0) {
+      try { browser = await puppeteer.connect(env.MYBROWSER, idle[0].sessionId); } catch {}
     }
+    if (!browser) browser = await puppeteer.launch(env.MYBROWSER);
 
-    // Fallback: parse HTML table rows (Taleo classic layout)
-    const rowMatches = [...html.matchAll(/class="resultLink"[^>]*href="([^"]+)"[^>]*>([^<]+)<[\s\S]*?class="jobDate"[^>]*>([^<]+)</g)];
-    return rowMatches.map(m => makeJob({
-      id:         m[1].match(/jobId=(\d+)/)?.[1] ?? m[1],
-      title:      m[2].trim(),
-      company:    company.name,
-      location:   '',
-      environment: '',
-      salary:     null,
-      url:        m[1].startsWith('http') ? m[1] : `${new URL(company.url).origin}${m[1]}`,
-      postedAt:   m[3].trim() || null,
-      atsSource:  'taleo',
-    }));
-  } catch { return []; }
+    const page = await browser.newPage();
+    await page.setRequestInterception(true);
+    page.on('request', req => {
+      const t = req.resourceType();
+      if (['image', 'font', 'media', 'stylesheet'].includes(t)) req.abort();
+      else req.continue();
+    });
+
+    await page.goto(searchUrl, { waitUntil: 'networkidle0', timeout: 15_000 });
+
+    // Extract job IDs from rendered DOM — jobdetail.ftl?job={id} links
+    const jobLinks = await page.evaluate(() => {
+      return [...document.querySelectorAll('a[href]')]
+        .map(a => a.href)
+        .filter(h => h.includes('jobdetail') && h.includes('job='))
+        .slice(0, 50);
+    });
+    await page.close();
+    await browser.disconnect();
+    browser = null;
+
+    if (jobLinks.length === 0) return [];
+
+    // Step 2: Plain fetch() each detail page — server-rendered HTML
+    // og:description is boilerplate; real description is in body text (enrich.js handles)
+    const jobs = [];
+    for (const link of jobLinks) {
+      try {
+        const jobIdMatch = link.match(/[?&]job=(\d+)/);
+        if (!jobIdMatch) continue;
+        const jobId = jobIdMatch[1];
+
+        // Build the detail URL with the same careersection path
+        const detailUrl = link.startsWith('http') ? link
+          : base + link;
+
+        const res = await fetch(detailUrl, {
+          headers: { 'User-Agent': UA, 'Accept': 'text/html' },
+          redirect: 'follow',
+        });
+        if (!res.ok) continue;
+        const html = await res.text();
+
+        // Extract title from <title> tag
+        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        const rawTitle = titleMatch?.[1]?.trim() ?? '';
+        // Taleo titles: "Job Description - {Title} = {Campus}" or just the title
+        const title = rawTitle.replace(/^Job Description\s*[-–]\s*/i, '').replace(/=.*$/, '').trim();
+
+        // Extract location from structured data or meta tags
+        const locMatch = html.match(/class="[^"]*location[^"]*"[^>]*>([^<]+)</i)
+                      || html.match(/<span[^>]*>([^<]*,\s*[A-Z]{2}[^<]*)<\/span>/);
+        const location = locMatch?.[1]?.trim() ?? '';
+
+        // Extract posted date if present
+        const dateMatch = html.match(/(?:posted|opening date)[^>]*>([^<]+)</i);
+        const postedAt = dateMatch?.[1]?.trim() ?? null;
+
+        jobs.push(makeJob({
+          id:          'taleo:' + jobId,
+          title,
+          company:     company.name,
+          location,
+          environment: '',   // populated by enrich.js description fetch
+          salary:      null,
+          url:         detailUrl,
+          postedAt,
+          atsSource:   'taleo',
+          description: '',   // populated by enrich.js (BR handles Taleo detail pages)
+        }));
+
+        await new Promise(r => setTimeout(r, 200)); // polite delay
+      } catch (e) {
+        console.warn('[STAT Taleo] detail fetch failed:', e.message);
+      }
+    }
+    return jobs;
+
+  } catch (e) {
+    console.warn('[STAT Taleo] fetchTaleo error:', company.name, e.message);
+    if (browser) { try { await browser.disconnect(); } catch {} }
+    return [];
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -602,7 +684,7 @@ export async function fetchHiringCafe(keyword, environment) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Dispatcher — routes to the right adapter by ATS type
 // ─────────────────────────────────────────────────────────────────────────────
-export async function fetchCompanyJobs(company) {
+export async function fetchCompanyJobs(company, env) {
   switch (company.ats) {
     case 'greenhouse':     return fetchGreenhouse(company);
     case 'lever':          return fetchLever(company);
@@ -610,7 +692,7 @@ export async function fetchCompanyJobs(company) {
     case 'workday':        return fetchWorkday(company);
     case 'icims':          return fetchICIMS(company);
     case 'successfactors': return fetchSuccessFactors(company);
-    case 'taleo':          return fetchTaleo(company);
+    case 'taleo':          return fetchTaleo(company, env);
     default: return [];
   }
 }

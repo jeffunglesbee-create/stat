@@ -252,7 +252,7 @@ class PlatformDO {
       case 'workday':        return fetchWorkday(company);
       case 'icims':          return fetchICIMS(company);
       case 'successfactors': return fetchSuccessFactors(company);
-      case 'taleo':          return fetchTaleo(company);
+      case 'taleo':          return fetchTaleo(company, this.env);
       default:               return [];
     }
   }

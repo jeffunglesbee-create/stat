@@ -92,7 +92,7 @@ export class BatchPollerDO {
 
     for (const company of chunk) {
       try {
-        const jobs = await fetchCompanyJobs(company);
+        const jobs = await fetchCompanyJobs(company, this.env);
         polledCount++;
 
         for (const job of jobs) {
