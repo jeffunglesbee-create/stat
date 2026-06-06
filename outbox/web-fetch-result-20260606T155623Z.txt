@@ -1,0 +1,179 @@
+=== Web Fetch Probe [20260606T155623Z] ===
+URL: https://tuhs.taleo.net/careersection/tuhs_ex/jobsearch.ftl
+Extract mode: raw
+
+HTTP Status: 200
+Body length: 17471 chars
+
+=== Response body (first 50000 bytes) ===
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+	lang="en">
+
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Job Search</title>
+
+<script type="text/javascript">
+		var CRITERIA_FIELDS_TO_REGISTER = [];
+		
+		var require = {
+			baseUrl : "/careersection/2026PRD.1.1.10.3.0/js/",
+			config: {
+				'fs/FacetedSearchSettings': {
+					waitSeconds: 15,
+					queryString: 'portal=101430233',
+				    resourcesMapAsJSON: {"resultListPanel.mustEnterSearchName":"You must specify a search query name.","helpPanel.candidateProfile":"Candidate Profile","seeAllOlf.filterLocations":"Filter locations","resultListPanel.ascending":"Ascending","resultListPanel.singleLineViewLinkAudibleDescription":"Job list in single line view. Press ENTER to switch to multi line view.","seeAllOlf.loading":"Loading","resultListPanel.referACandidateButton":"Refer a candidate","advancedSearchPanel.clearAll":"Clear All","seeAllOlf.seeLocations":"See all locations","resultListPanel.share":"Share","resultListPanel.descending":"Descending","icons.draftSubmission":"Draft submission","searchPanel.showMoreTT":"Shore more values","resultListPanel.actions":"Actions","resultListPanel.singleLineView":"Single-line","headerPanel.processesTT":"Go to Tasks","filterTopPanel.removeCriterion":"Remove criterion {0}","searchPanel.viewAllJobs":"View All Jobs","headerPanel.submissionsTT":"Access the My Submissions page containing details related to your submissions","headerPanel.messagesTT":"Access the My Messages page containing your messages","resultListPanel.saveSearchLengthError":"The search name exceeds the maximum length allowed ({0}).","advancedSearchPanel.addJobField":"Add Job Field","resultListPanel.saveSearch":"Save this Search","headerPanel.jobSearchTT":"Access the job search page","headerPanel.advancedSearch":"Advanced Search","resultListPanel.pageTitle":"Job Search","resultListPanel.reApplyButtonTT":"Re-apply for this job","accessibility.noMatchFound":"No match found.","resultListPanel.collapseSection":"Collapse this section","resultListPanel.referLinkTT":"Refer a friend's profile","helpPanel.advancedJobSearch":"Advanced Job Search","advancedSearchPanel.title":"Advanced Job Search","advancedSearchPanel.basicSearch":"Basic Search","resultListPanel.multiLineView":"Multi-line","footerPanel.viewStandardCareerSection":"View Full Career Section","headerPanel.offersTT":"Go to Offers","resultListPanel.noResults":"No jobs correspond to the specified criteria.","accessibility.multipleResultAudible":"{0} results are available, use up and down arrow keys to navigate.","resultListPanel.finishDraftSubmissionButton":"Finish Draft Submission","seeAllOlf.showingOrganizations":"Showing all organizations.","footerPanel.viewStandardCareerSectionTT":"Go to Full Career Section","icons.addedToJobCartResource":"Added to the job cart","resultListPanel.saveSearchConfirm":"Confirm","icons.urgentNeedJob":"Urgent need job","helpPanel.submitCandidateProfileLinkTT":"Open the form used to refer a candidate","headerPanel.processes":"Tasks","resultListPanel.sortOrder":"Order","infoPanel.jobOpenings":"Job Openings","helpPanel.savingSearches":"Saving searches","resultListPanel.saveSearchAction":"Save this Search","resultListPanel.jobListReloaded":"The list of job openings has reloaded","resultListPanel.nextPage":"Next","headerPanel.jobsMatchingMyProfileTT":"Access the list of jobs matching your profile","resultListPanel.nextPageTT":"Go to the next page","searchPanel.showLess":"Show less...","seeAllOlf.filterOlfHint":"The list will update after entering a search criterion.","infoPanel.rss":"RSS","resultListPanel.sortBy":"Sort by","resultListPanel.messageLinkJobDescription":"Click the link to view the complete job description.","resultListPanel.multiLineViewLinkAudibleDescription":"Job list in multi line view. Press ENTER to switch to single line view.","resultListPanel.removeFilters":"To improve your search results, remove one or more filters.","resultListPanel.applyButton":"Apply","sessionPanel.warningMessage":"This service is set to disconnect automatically after 60 minutes of inactivity. Your session will end in 20 minutes.","accessibility.helpAndIconLegend":"Help and Icon Legend","seeAllOlf.showingLocations":"Showing all locations.","headerPanel.signOut":"Sign Out","helpPanel.referCandidateDescription":"Tell us about a person who might be interested in working for our organization. All privacy rights will be protected.","resultListPanel.addToJobCartActionTT":"Save this job","resultListPanel.saveSearchDescription":"Save this search so you do not have to select search criteria the next time you are looking for similar jobs.","headerPanel.signInTT":"Log in to the system","resultListPanel.multipleLocations":"Multiple Locations","helpPanel.closeTT":"Close","headerPanel.signIn":"Sign In","helpPanel.savingSearchesDescription":"You can save the current search by clicking \"Save this Search\". Searches are saved in the \"My Saved Searches\" section, under the \"My Jobpage\" tab.","seeAllOlf.emptyFiltering":"No records found","pagerAccessibilityResources.pageNumberLinkTitle":"Go to page {0}","resultListPanel.saveSearchTitle":"Search Name","helpPanel.referFriend":"Refer a friend","resultListPanel.viewEditSubmissionButton":"View\/Edit Submission","icons.completedSubmission":"Completed submission","seeAllOlf.selectionLimitTitle":"Selection limit reached","resultListPanel.previousPage":"Previous","headerPanel.jobpageTT":"Access the My Jobpage page containing your saved searches, submissions, referrals","resultListPanel.applyButtonTT":"Apply for this job","resultListPanel.referAFriendLink":"Refer a friend","seeAllOlf.seeOrganizations":"See all organizations","seeAllOlf.selectionLimitOK":"OK","headerPanel.savedSearches":"Saved Searches","seeAllOlf.filterOrganizations":"Filter organizations","helpPanel.helpTT":"Access the online help","headerPanel.offers":"Offers","resultListPanel.saveSearchTT":"This will save this search with name entered","headerPanel.jobsMatchingMyProfile":"Jobs Matching My Profile","seeAllOlf.selectElement":"Select Element","sessionPanel.timeoutMessage":"You have been signed out.","infoPanel.rssButtonTT":"Create an RSS feed","helpPanel.accessMyProfileLink":"Access my profile","accessibility.jobListReloaded":"The list of jobs has reloaded. {0} – {1} of {2}. Page {3}","advancedSearchPanel.addLocation":"Add Location","seeAllOlf.showingJobFields":"Showing all job fields.","pagerAccessibilityResources.previousPageLinkTitle":"Go to the previous page","searchPanel.noMatchFound":"No match found.","seeAllOlf.add":"Add","filterTopPanel.clearCommand":"Clear","sessionPanel.clickOkResetTimer":"Click OK to reset the timer to 60 minutes.","resultListPanel.accessSaveSearches":"Access My Saved Searches","sessionPanel.okButtonTT":"Reset the timer","resultListPanel.saveSearchConfirmationText":"Are you sure that you want to override it?","icons.iconLegend":"Icon legend","sessionPanel.sessionTerminated":"This service is set to sign out after 60 minutes of inactivity.","searchPanel.showLessTT":"Show less values","headerPanel.submissions":"My Submissions","searchPanel.showMore":"Show more...","helpPanel.submitFriendProfileLink":"Submit a friend's profile","searchPanel.searchIconTT":"Search for jobs","headerPanel.jobSearch":"Job Search","resultListPanel.addToJobCartErrorMessage":"You cannot add this item to the job cart, because you have already reached the maximum number of items allowed in the job cart (25). You must first delete an existing item to be able to add a new one.","resultListPanel.addToJobCartAction":"Save Job","helpPanel.referCandidate":"Refer a candidate","headerPanel.account":"Account","filterTopPanel.clearCriteriaLinkAudible":"Clear search criteria.","pagerAccessibilityResources.nextPageLinkTitle":"Go to the next page","headerPanel.jobsInJobcartHiddenLabel":"jobs in jobcart","seeAllOlf.cancel":"Cancel","helpPanel.searchTips":"Search Tips","headerPanel.referrals":"Referrals","seeAllOlf.filterList":"Filter records:","resultListPanel.previousPageTT":"Go to the previous page","seeAllOlf.showingOrganizationsIn":"Showing all organizations in {0}","searchPanel.viewAllJobsTT":"Access the list of all job openings","resultListPanel.viewAllJobs":"You can also view all available job openings.","helpPanel.accessMyProfileLinkTT":"Open the form used to manage employment profiles","resultListPanel.finishDraftSubmissionButtonTT":"Finish this draft submission","helpPanel.submitCandidateProfileLink":"Submit a candidate's profile","resultListPanel.viewEditSubmissionButtonTT":"View or modify this submission","seeAllOlf.showingLocationsIn":"Showing all locations in {0}","advancedSearchPanel.addOrganization":"Add Organization","headerPanel.jobpage":"My Jobpage","resultListPanel.saveSearchErrorMessage":"You cannot save this search because you have reached the maximum number of saved searches allowed. Please delete or override an existing search query.","sessionPanel.okButton":"OK","resultListPanel.referACandidateButtonTT":"Refer a candidate","seeAllOlf.selectionLimitMsg":"You can't select more than {0} positions.","resultListPanel.icons":"Icons","seeAllOlf.seeJobFieldsIn":"See all job fields in {0}","resultListPanel.accessSaveSearchesTT":"Access the search queries you have saved","helpPanel.candidateProfileDescription":"Take a few minutes to create or modify your employment profile and to specify your preferred working criteria for future openings matching your interests.","seeAllOlf.emptyTable":"No data available","resultListPanel.saveSearchCancel":"Cancel","seeAllOlf.seeLocationsIn":"See all locations in {0}","accessibility.singleResultAudible":"1 result is available, use up and down arrow keys to navigate.","resultListPanel.saveSearchButtonTT":"Expand the 'Save this search' section","resultListPanel.showMoreLocations":"More...","headerPanel.welcomeMessageForSignedOutUser":"Welcome. You are not signed in.","resultListPanel.saveSearchErrorOk":"OK","seeAllOlf.seeJobFields":"See all job fields","resultListPanel.moreActionsButton":"More actions","helpPanel.searchTipsDescription":"You can search jobs by entering relevant data in the above search fields and by filtering the job list with additional criteria.","headerPanel.profile":"Profile","resultListPanel.reApplyButton":"Re-apply","seeAllOlf.showingInfo":"Select up to {0} items to add them to your job search.","resultListPanel.saveSearchConfirmationTitle":"You are about to override a search query and all of its content.","helpPanel.advancedJobSearchDescription":"To perform a job search using advanced search criteria, click the \"Advanced Search\" link on the search bar and select relevant criteria.","seeAllOlf.showingJobFieldsIn":"Showing all job fields in {0}","infoPanel.of":"of","icons.moreInformation":"More information","headerPanel.welcomeMessageForSignedInUser":"Welcome {0} {1}. You are signed in.","helpPanel.submitFriendProfileLinkTT":"Open the form used to refer a friend","resultListPanel.referDescription":"Tell us about a friend who might be interested in working for our organization. All privacy rights will be protected.","headerPanel.signOutTT":"Log out of the system","headerPanel.messages":"My Messages","helpPanel.referFriendDescription":"Tell us about a friend who might be interested in working for our organization. All privacy rights will be protected.","resultListPanel.referLink":"Refer a friend","resultListPanel.view":"View","seeAllOlf.filterJobFields":"Filter job fields","resultListPanel.jobsAvailableIn":"Jobs available in:","seeAllOlf.seeOrganizationsIn":"See all organizations in {0}"},
+					versionNumber: '2026PRD.1.1.10.3.0',
+					lang: 'en',
+					portalNo: '101430233',
+					urlOrigin: 'https://tuhs.taleo.net'	,
+					urlCode: 'tuhs_ex',
+					src: '',
+					urgentJobDisplayed: true,
+					userSignedIn: false,
+					agencyPortal: false,
+					applicationFlowSet: true,
+					addToJobCartLinkDisplayed: true,
+					addThisEnabled: false,
+					multilineLayoutAsJSONArray: [[{type: "field", value: "", index: 0},{type: "staticText", value: " ", index: 0},{type: "staticText", value: "-", index: 0},{type: "staticText", value: " ", index: 0},{type: "field", value: "", index: 1}],[{type: "field", value: "", index: 2},{type: "staticText", value: " ", index: 0},{type: "staticText", value: "-", index: 0},{type: "staticText", value: " ", index: 0},{type: "field", value: "", index: 3}],[{type: "field", value: "", index: 4},{type: "staticText", value: " ", index: 0},{type: "staticText", value: "-", index: 0},{type: "staticText", value: " ", index: 0},{type: "field", value: "", index: 5},{type: "staticText", value: "-", index: 0},{type: "staticText", value: " ", index: 0},{type: "field", value: "", index: 6}]],
+					defaultOrder: false,
+					defaultSortingField: 'RELEVANCY',
+					filterPanelOffLayout: false,
+					jobCartItemCount: 0,
+					searchOnMultilingualRequisition: false,
+					saveSearchPanelDisplayed: true,
+					sessionCSRFTokenName: "csrftoken",
+					sessionCSRFToken: "sPIaaRgesaghy7Z53j1vNO3jrKMyONzsea/82cfuNqE=",
+					timeoutInterval: 3600000,
+					warningInterval: 1200000,
+                    requisitionDescriptionPageDisplayed : true,
+                    logoutServletURL: '/careersection/locallogoutservlet.jss?portal=101430233&portalCode=tuhs_ex&SPID=http%3A%2F%2Fwww.taleo.com%2Fcareersection',
+					criteriaFieldsToRegister : CRITERIA_FIELDS_TO_REGISTER,
+					multilineViewSetAsDefault : false
+				}
+			}
+		};
+		
+		function setWindowLoaded() {
+			window.loaded = true;
+		}
+
+		if (window.addEventListener) {
+			window.addEventListener("load", setWindowLoaded, false);
+		} else if (window.attachEvent) {
+			window.attachEvent("onload", setWindowLoaded);
+		}
+		
+		if(!window.console) {
+			console = {log: function() {}};
+		};
+</script>
+<script
+	data-main="/careersection/2026PRD.1.1.10.3.0/js/facetedsearch/FacetedSearchPage.js"
+	src="/careersection/2026PRD.1.1.10.3.0/js/common/require.js"></script>
+<script
+	src="/careersection/2026PRD.1.1.10.3.0/js/integration/iframes_communication.js"></script>
+<script src="/careersection/2026PRD.1.1.10.3.0/js/common/json2.js"></script>
+
+<link rel="stylesheet"
+	href="/careersection/2026PRD.1.1.10.3.0/css/jquery-ui.css"
+	type="text/css" />
+<link rel="stylesheet"
+	href="/careersection/2026PRD.1.1.10.3.0/css/faceted_search.css"
+	type="text/css" />
+<link rel="stylesheet"
+	href="/careersection/2026PRD.1.1.10.3.0/css/quick_filter_panel.css"
+	type="text/css" />
+<link rel="stylesheet"
+	href="/careersection/2026PRD.1.1.10.3.0/css/result_list_panel.css"
+	type="text/css" />
+<link rel="stylesheet"
+	href="/careersection/2026PRD.1.1.10.3.0/css/header_panel.css"
+	type="text/css" />
+<link rel="stylesheet"
+	href="/careersection/2026PRD.1.1.10.3.0/css/advanced-search-panel.css"
+	type="text/css" />
+<link rel="stylesheet"
+	href="/careersection/2026PRD.1.1.10.3.0/css/see_all_olf_popup.css"
+	type="text/css" />
+<link rel="stylesheet"
+	href="/careersection/2026PRD.1.1.10.3.0/css/footer_panel.css"
+	type="text/css" />
+<link rel="stylesheet"
+	href="/careersection/2026PRD.1.1.10.3.0/UIStyleSheet.dcss?styleSheet=FSStandard_Red&timestamp=1780759215868"
+	type="text/css" />
+
+<title>Temple University Health System Careers</title><link rel="stylesheet" href="/careersection/theme/461/1738354924020/en/theme/css/style.css" type="text/css"></link><link rel="stylesheet" href="/careersection/theme/461/1738354924020/en/theme/css/extension.css" type="text/css"></link><link rel="shortcut icon" href="/careersection/theme/461/1738354924020/en/theme/images/favicon.ico"></link><meta name="description" content="Temple University Health System career center provides a listing of current open positions at    Temple University Hospital,    Fox Chase Cancer Center,    Jeanes Hospital, and ReadyCare urgent care centers.    We invite you to join our dedicated team of healthcare providers."></meta><meta name="keywords" content="Temple University Health System Career Job Fox Chase Cancer Center Jeanes Episcopal Northeastern Hospital ReadyCare Urgent Care"></meta><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"></meta>
+
+
+<style id="antiClickjack">
+body {
+	display: none !important;
+}
+</style>
+<script type="text/javascript">
+        if (self === top) {
+            var antiClickjack = document.getElementById("antiClickjack");
+            antiClickjack.parentNode.removeChild(antiClickjack);
+        } else {
+            top.location = self.location;
+        }
+    </script>
+
+</head>
+<body>
+	<div id="header" class="DivHeader">
+			<div id="headermenu" class="DivHeaderMenu">
+				<ul class="NavHeader"><li id="company"><a href="http://www.templehealth.org/" shape="rect">Temple Health</a></li><li> | </li><li id="services"><a href="http://www.templehealth.org/about/careers" shape="rect">Careers</a></li></ul>
+			</div>
+			<div id="logo" class="DivLogo">
+				<a href="http://www.templehealth.org/" shape="rect">
+					<img class="ImgLogo" alt="Temple Health" src="/careersection/theme/461/1738354924020/en/theme/images/logo.png"></img>
+				</a>
+			</div>
+		</div><div id="headerbar">
+		</div><div class="main_holder">
+			
+
+	<div class="masterbody" id="facetedSearchBody">
+		<div class="header"></div>
+
+		<div class="menu"></div>
+		<div class="mainsection">
+			<div class="headersection">
+				
+
+
+
+=== End ===
