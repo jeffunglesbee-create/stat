@@ -1,3 +1,4 @@
-url=https://hiring.cafe/?q=epic+analyst&source=icims
-extract=next_data
-max_bytes=15000
+url=https://hca.taleo.net/careersection/rss?id=0hca&lang=en
+accept=text/xml,application/xml,*/*
+extract=raw
+max_bytes=8000
