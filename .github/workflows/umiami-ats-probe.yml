@@ -1,0 +1,120 @@
+name: STAT — UMiami ATS Probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run probes
+        shell: bash
+        run: |
+          set +e
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/umiami-probe-${TS}.txt"
+          mkdir -p outbox
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          g() {
+            local LABEL="$1" URL="$2"
+            printf '\n=== %s ===\n' "$LABEL" >> "$OUT"
+            printf 'URL: %s\n' "$URL" >> "$OUT"
+            local TF; TF=$(mktemp)
+            local INFO
+            INFO=$(curl -s --max-time 15 -L \
+              -o "$TF" \
+              -w "HTTP:%{http_code} FINAL:%{url_effective}" \
+              -H "User-Agent: $UA" \
+              -H "Accept: text/html,application/json,*/*" \
+              "$URL" 2>/dev/null)
+            printf '%s\n' "$INFO" >> "$OUT"
+            local B; B=$(cat "$TF")
+            local BL; BL=$(echo "$B" | tr '[:upper:]' '[:lower:]')
+            local S=""
+            echo "$BL" | grep -q 'myworkdayjobs\|wday/cxs\|workdaycdn' && S="$S WORKDAY"
+            echo "$BL" | grep -q 'brassring\|tgnewui' && S="$S BRASSRING"
+            echo "$BL" | grep -q 'avature' && S="$S AVATURE"
+            echo "$BL" | grep -q 'taleo\|careersection' && S="$S TALEO"
+            echo "$BL" | grep -q 'icims\.com' && S="$S iCIMS"
+            echo "$BL" | grep -q 'greenhouse\.io' && S="$S GREENHOUSE"
+            echo "$BL" | grep -q 'lever\.co' && S="$S LEVER"
+            echo "$BL" | grep -q 'ashbyhq\.com' && S="$S ASHBY"
+            echo "$BL" | grep -q 'successfactors' && S="$S SUCCESSFACTORS"
+            echo "$BL" | grep -q 'oracle.*hcm\|fusion.*oracle' && S="$S ORACLE_HCM"
+            [ -n "$S" ] && printf 'SIGNALS:%s\n' "$S" >> "$OUT" || printf 'SIGNALS: none\n' >> "$OUT"
+            printf 'BODY:\n' >> "$OUT"
+            echo "$B" | head -c 2500 >> "$OUT"
+            printf '\n' >> "$OUT"
+            rm -f "$TF"
+          }
+
+          p() {
+            local LABEL="$1" URL="$2" DATA="$3"
+            printf '\n=== POST: %s ===\n' "$LABEL" >> "$OUT"
+            printf 'URL: %s\n' "$URL" >> "$OUT"
+            local TF; TF=$(mktemp)
+            local HC
+            HC=$(curl -s --max-time 15 -L -o "$TF" -w "%{http_code}" \
+              -X POST \
+              -H "User-Agent: $UA" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d "$DATA" "$URL" 2>/dev/null)
+            printf 'HTTP: %s\n' "$HC" >> "$OUT"
+            cat "$TF" | head -c 1000 >> "$OUT"
+            printf '\n' >> "$OUT"
+            rm -f "$TF"
+          }
+
+          printf 'UMiami Health ATS Probe — %s\n' "$TS" > "$OUT"
+
+          printf '\n--- SECTION 1: official careers pages ---\n' >> "$OUT"
+          g "careers.umiamihealth.org" "https://careers.umiamihealth.org"
+          g "umiamihealth.org/en/careers" "https://umiamihealth.org/en/careers"
+
+          printf '\n--- SECTION 2: Workday ---\n' >> "$OUT"
+          g "wd1 umiamihealth" "https://umiamihealth.wd1.myworkdayjobs.com/"
+          g "wd5 umiamihealth" "https://umiamihealth.wd5.myworkdayjobs.com/"
+          g "wd1 umiami" "https://umiami.wd1.myworkdayjobs.com/"
+          p "API wd1 UMH_External" \
+            "https://umiamihealth.wd1.myworkdayjobs.com/wday/cxs/umiamihealth/UMH_External/jobs" \
+            '{"appliedFacets":{},"limit":5,"offset":0,"searchText":""}'
+          p "API wd1 External" \
+            "https://umiamihealth.wd1.myworkdayjobs.com/wday/cxs/umiamihealth/External/jobs" \
+            '{"appliedFacets":{},"limit":5,"offset":0,"searchText":""}'
+
+          printf '\n--- SECTION 3: Taleo ---\n' >> "$OUT"
+          g "um.taleo.net" "https://um.taleo.net/careersection/10041/jobsearch.ftl"
+          g "umhealth.taleo.net" "https://umhealth.taleo.net/careersection/ex/jobsearch.ftl"
+
+          printf '\n--- SECTION 4: Avature ---\n' >> "$OUT"
+          g "umiami.avature.net" "https://umiami.avature.net/careers"
+          g "umiamihealth.avature.net" "https://umiamihealth.avature.net/careers"
+
+          printf '\n--- SECTION 5: BrassRing ---\n' >> "$OUT"
+          g "brassring partnerid=25965" \
+            "https://sjobs.brassring.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=25965&siteid=5172"
+
+          printf '\nDONE\n' >> "$OUT"
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          cat "$OUT"
+          exit 0
+
+      - name: Push results
+        run: |
+          git config user.email "stat@stat" && git config user.name "STAT"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "umiami-probe results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break
+            sleep $((i*5))
+          done
+        env:
+          OUT: ${{ env.OUT }}
