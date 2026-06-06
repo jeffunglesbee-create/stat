@@ -106,14 +106,14 @@ class PlatformDO {
     try {
       const raw = await this.storage.get('seen_ids');
       seenIds = raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch { seenIds = new Set(); }
+    } catch (e) { console.warn(`[STAT ${this.ats}] seenIds load failed (dedup may be incomplete):`, e.message); seenIds = new Set(); }
 
     // Also load global KV seen-set for cross-platform dedup
     let globalSeen;
     try {
       const raw = await storeGet(getStatStore(this.env), 'seen_ids');
       globalSeen = raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch { globalSeen = new Set(); }
+    } catch (e) { console.warn(`[STAT ${this.ats}] globalSeen load failed (cross-platform dedup may be incomplete):`, e.message); globalSeen = new Set(); }
 
     const newMatches    = [];
     const unmatchedJobs = [];   // env-filtered, not keyword-matched

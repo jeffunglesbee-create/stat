@@ -1117,9 +1117,12 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
   t.classList.add('active');
   const tabId = 'tab-' + t.dataset.tab;
   document.getElementById(tabId).classList.add('active');
-  if (t.dataset.tab === 'matches') loadMatches();
-  if (t.dataset.tab === 'browse') loadBrowse();
-  if (t.dataset.tab === 'resume') loadStoredProfile();
+  if (t.dataset.tab === 'matches')   loadMatches();
+  if (t.dataset.tab === 'browse')    loadBrowse();
+  if (t.dataset.tab === 'resume')    loadStoredProfile();
+  if (t.dataset.tab === 'companies') loadCompanies();  // Rule 10: load fresh on activation
+  // config: renders from local config constants — no server fetch needed (Rule 10c)
+  // log: append-only in-session log — no server state to fetch (Rule 10c)
 });
 
 

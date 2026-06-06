@@ -103,7 +103,7 @@ export async function storeSet(stub, key, value) {
       method: 'POST',
       body:   value,
     }));
-  } catch { /* non-critical — log in caller if needed */ }
+  } catch (e) { console.warn('[STAT store] storeSet failed for key=' + key + ':', e.message); }
 }
 
 /** Delete a key from StateStoreDO. */
@@ -112,7 +112,7 @@ export async function storeDel(stub, key) {
     await stub.fetch(new Request(`https://stat-store/delete?key=${key}`, {
       method: 'POST',
     }));
-  } catch { }
+  } catch (e) { console.warn('[STAT store] storeDel failed for key=' + key + ':', e.message); }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

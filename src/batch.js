@@ -82,7 +82,7 @@ export class BatchPollerDO {
     try {
       const raw = await storeGet(getStatStore(this.env), 'seen_ids');
       seenIds = raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch { seenIds = new Set(); }
+    } catch (e) { console.warn('[STAT batch] seenIds load failed (dedup may be incomplete):', e.message); seenIds = new Set(); }
 
     const list  = BATCH_WATCHLIST;
     const chunk = list.slice(cursor, cursor + BATCH_POLLER.companies_per_cycle);

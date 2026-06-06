@@ -29,7 +29,7 @@ import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
-import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches, loadUnmatchedJobs } from './store.js';
+import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches, loadUnmatchedJobs, saveUnmatchedJobs } from './store.js';
 export { StateStoreDO } from './store.js';
 import UI_HTML from './ui.html';
 
@@ -184,6 +184,7 @@ async function bootstrapDOs(env) {
 async function runHiringCafeScrape(env) {
   const seenIds = await loadSeenIds(env);
   const newMatches = [];
+  const unmatchedJobsHC = [];  // env-filtered HC jobs with no keyword match — Browse capture
   const seenThisRun = new Set();
 
   for (const term of HIRINGCAFE.search_terms) {
@@ -199,6 +200,10 @@ async function runHiringCafeScrape(env) {
         seenIds.add(job.id);
 
         if (job.ghostFlag === 'suppress') continue;
+        // Browse capture for HiringCafe path (Rule 8 — all paths capture unmatched)
+        if (passesEnvFilter(job) && !matchJob(job)) {
+          unmatchedJobsHC.push(job);
+        }
         if (!passesEnvFilter(job)) continue;
         const match = matchJob(job);
         if (!match) continue;
@@ -218,6 +223,10 @@ async function runHiringCafeScrape(env) {
   }
 
   await saveSeenIds(env, seenIds);
+
+  if (unmatchedJobsHC.length > 0) {
+    await saveUnmatchedJobs(getStatStore(env), unmatchedJobsHC);
+  }
 
   if (newMatches.length > 0) {
     const profile = await loadProfile(env);
@@ -562,13 +571,16 @@ async function handleFetch(request, env) {
     try {
       const raw = await env.STAT_KV.get(KV.seen_jobs);
       globalSeen = raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch { globalSeen = new Set(); }
+    } catch (e) { console.warn('[STAT backfill] globalSeen load failed (dedup may be incomplete):', e.message); globalSeen = new Set(); }
 
     for (const company of companies) {
       try {
         const jobs = await fetchCompanyJobs(company);
         polled++;
         for (const job of jobs) {
+          // Ghost filter — canonical order per Rule 8 (must match alarm loop)
+          if (job.daysAgo !== null && job.daysAgo > GHOST.suppress_after_days) continue;
+          if (job.ghostFlag === 'suppress') continue;
           if (!passesEnvFilter(job)) continue;
           const match = matchJob(job);
           if (!match) {
