@@ -161,6 +161,14 @@ export function buildEmailHtml(newMatches) {
       const color = job.fitScore >= 8 ? '#16a34a' : job.fitScore >= 6 ? '#d97706' : '#dc2626';
       return `<div style="color:${color};font-size:12px;margin-top:4px;font-weight:600">Fit: ${job.fitScore}/10 — ${job.fitVerdict || ''}<span style="color:#64748b;font-weight:400"> · ${job.fitReasoning || ''}</span></div>`;
     })();
+    const coverRow = (() => {
+      if (!job.coverLetterOpener) return '';
+      // Shown only when fit score >= 7 (Gemini returns null below that threshold)
+      return `<div style="margin-top:10px;padding:10px 12px;background:#f8fafc;border-left:3px solid #cbd5e1;border-radius:0 4px 4px 0">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:4px">Cover Letter Opener</div>
+        <div style="font-size:13px;color:#374151;line-height:1.5">${job.coverLetterOpener}</div>
+      </div>`;
+    })();
     const mdRow = (() => {
       if (!job.mdBadge) return '';
       const color = job.mdBadge.includes('likely')   ? '#1a6b6b'
@@ -224,6 +232,7 @@ export function buildEmailHtml(newMatches) {
           <div style="margin-bottom:6px">${envBadge}</div>
           ${salaryDisplay}
           ${fitRow}
+          ${coverRow}
           ${mdRow}
           ${hcRow}
           ${ghostRow}${daysRow}${livenessRow}
@@ -264,10 +273,11 @@ export async function dispatchAlerts(env, newMatches) {
 
   newMatches.sort((a, b) => a.match.priority - b.match.priority);
 
-  const p1    = newMatches.filter(m => effectivePriority(m.match.priority, m.job.fitScore) === 1);
-  const p2p3  = newMatches.filter(m => effectivePriority(m.match.priority, m.job.fitScore) >= 2);
+  const p1  = newMatches.filter(m => effectivePriority(m.match.priority, m.job.fitScore) === 1);
+  const p2  = newMatches.filter(m => effectivePriority(m.match.priority, m.job.fitScore) === 2);
+  const p3  = newMatches.filter(m => effectivePriority(m.match.priority, m.job.fitScore) >= 3);
 
-  // P1: one push per job — high priority, bypasses quiet hours
+  // P1: one push per job — HIGH priority, bypasses Do Not Disturb, siren sound
   for (const { job, match } of p1) {
     const sal = (() => {
       if (!job.salary) return '';
@@ -289,17 +299,17 @@ export async function dispatchAlerts(env, newMatches) {
     });
   }
 
-  // P2/P3: single batched push
-  if (p2p3.length > 0) {
-    const lines = p2p3
+  // P2: single batched push — normal priority (Product/Data/Analytics)
+  if (p2.length > 0) {
+    const lines = p2
       .map(({ job, match }) => {
         const ghost = ghostLabel(job);
         const fitNote = job.fitScore != null ? ` [${job.fitScore}/10]` : '';
-        return `[P${match.priority}] ${job.title} @ ${job.company}${fitNote}${ghost ? ' ' + ghost : ''}`;
+        return `[P2] ${job.title} @ ${job.company}${fitNote}${ghost ? ' ' + ghost : ''}`;
       })
       .join('\n');
     await sendPushover(env, {
-      title:    `📋 STAT: ${p2p3.length} new match${p2p3.length > 1 ? 'es' : ''}`,
+      title:    `📋 STAT P2: ${p2.length} match${p2.length > 1 ? 'es' : ''}`,
       message:  lines,
       url:      'https://hiring.cafe',
       urlTitle: 'Open HiringCafe',
@@ -307,7 +317,10 @@ export async function dispatchAlerts(env, newMatches) {
     });
   }
 
-  // Email: one digest for all matches
+  // P3: email only — no Pushover (Product / Project / IT roles)
+  // These are lower-signal matches. A push notification would be noise.
+
+  // Email: one digest for all matches (P1 + P2 + P3)
   await sendEmail(env, {
     subject:  `[STAT] ${newMatches.length} new match${newMatches.length > 1 ? 'es' : ''} — ${newMatches[0].job.title} @ ${newMatches[0].job.company}`,
     htmlBody: buildEmailHtml(newMatches),

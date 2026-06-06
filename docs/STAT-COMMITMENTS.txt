@@ -1,0 +1,138 @@
+STAT — Commitments Tracker
+What was promised, what is built, what is open
+Updated: 2026-06-06
+
+This document holds Claude accountable to every architectural claim
+and design promise made during STAT's design and build sessions.
+It is a living document. Every session that ships a promised feature
+must update this file. Every session that makes a new promise must
+add it here before writing code.
+
+The standard: if it was said, it will be built.
+
+═══════════════════════════════════════════════════════════════
+CORE PROMISES — VERIFIED BUILT
+═══════════════════════════════════════════════════════════════
+
+"STAT polls directly from ATS source every 30–120 seconds"
+  STATUS: BUILT
+  WHERE: platform-do.js PlatformDO._reschedule() + getPollingInterval()
+  VERIFIED: 7 platform DOs, ATS-specific floors (greenhouse/lever 2min,
+            workday/icims 4min, sf/taleo 8min), Saturday 20min
+
+"liveness check at alert time — not at crawl time like HiringCafe"
+  STATUS: BUILT
+  WHERE: notify.js checkJobLiveness() — HEAD request, 4s timeout
+         'dead' → suppress, 'unknown' → alert with ⚡ flag
+  VERIFIED: called in platform-do.js alarm loop before enrichment
+
+"salary inference from four verifiable sources, nothing fabricated"
+  STATUS: BUILT (parsers fixed 2026-06-06)
+  WHERE: salary.js SalaryInferenceDO._infer()
+         P1: peer pool (same ATS + keyword group + last 7d)
+         P2: LCA employer exact match
+         P3: LCA SOC + state
+         P4: BLS OEWS percentiles
+         P5: transparency flag (no estimate, legally-required states)
+  VERIFIED: BLS flat file parser + LCA ZIP/DecompressionStream parser
+            both fixed this session. Run /salary-refresh to prime caches.
+  NOTE: Peer pool cold on first deploy — populates over 1–2 weeks.
+        LCA and BLS caches auto-refresh via cron (no manual action needed).
+
+"salary transparently labeled — disclosed vs inferred, source shown"
+  STATUS: BUILT
+  WHERE: notify.js buildEmailHtml() — salaryDisplay block
+         Disclosed: green, no ~ prefix, no attribution
+         Inferred: amber, ~ prefix, source label in monospace below
+         Transparency violation: deep red flag, state named
+  VERIFIED: email HTML renders all three cases distinctly
+
+"P1 alerts bypass Do Not Disturb — Pushover HIGH priority, siren sound"
+  STATUS: BUILT
+  WHERE: notify.js dispatchAlerts() — priority: 1, sound: 'siren'
+  VERIFIED: P1 filter uses effectivePriority() (fit score can downgrade)
+
+"fit scoring against resume profile — Gemini, gates alert priority"
+  STATUS: BUILT
+  WHERE: fit.js scoreFit() + scoreBatch() — Gemini 2.5 Flash-Lite
+         score(1-10), verdict(3-5 words), reasoning(1 sentence)
+         Low fit → email only. P1 downgrade threshold configurable.
+  VERIFIED: called in platform-do.js + batch.js + runHiringCafeScrape()
+
+"Maryland proximity scoring — remote roles near MD flagged"
+  STATUS: BUILT
+  WHERE: maryland.js applyMarylandScore() — mdBadge + mdSignals
+  VERIFIED: called in platform-do.js alarm loop after description enrich
+
+"ghost job detection — warn at 21d, suppress at 90d"
+  STATUS: BUILT
+  WHERE: adapters.js analyzeAge() + config.js GHOST thresholds
+  VERIFIED: ghost filter at top of alarm loop, email/push include flag
+
+"HiringCafe wide-net scrape — catches roles STAT's keyword list misses"
+  STATUS: BUILT
+  WHERE: index.js runHiringCafeScrape() — cron every minute
+  VERIFIED: fetchHiringCafe() in adapters.js, env filter applied
+
+"Browse tab — env-filtered unmatched jobs for manual discovery"
+  STATUS: BUILT (fixed 2026-06-06)
+  WHERE: platform-do.js + batch.js — capture before dedup gate
+         GET /browse endpoint, loadBrowse() on tab activation
+  VERIFIED: smoke assertion confirms capture order
+
+"zero manual intervention after initial deploy"
+  STATUS: BUILT (completed 2026-06-06)
+  WHERE: handleScheduled() — bootstrapDOs + HiringCafe + maybeRefreshSalaryCaches
+  VERIFIED: all three paths automated in cron
+
+═══════════════════════════════════════════════════════════════
+OPEN — PROMISED BUT NOT YET BUILT
+═══════════════════════════════════════════════════════════════
+
+(None outstanding as of 2026-06-06)
+
+
+"P3 = email only, no Pushover"
+  STATUS: BUILT (2026-06-06)
+  WHERE: notify.js dispatchAlerts() — p1/p2/p3 now filtered separately
+         P1: individual high-priority Pushover per job (siren, bypasses DnD)
+         P2: single batched Pushover (normal priority)
+         P3: email only — no Pushover
+  VERIFIED: dispatchAlerts() has three distinct filter variables
+
+"cover letter opener in email alert"
+  STATUS: BUILT (2026-06-06)
+  WHERE: fit.js scoreFit() — coverLetterOpener added to Gemini prompt schema
+         Returns 2 sentences specific to job + candidate when score >= 7.
+         notify.js buildEmailHtml() — coverRow renders as styled block
+         with "Cover Letter Opener" header, shown only when non-null.
+  VERIFIED: prompt schema updated, result mapped to job.coverLetterOpener,
+            email template renders coverRow after fitRow
+
+═══════════════════════════════════════════════════════════════
+EXPLICITLY NOT COMMITTED TO (noted as optional/noisy)
+═══════════════════════════════════════════════════════════════
+
+"job-closed notification when a posting disappears from ATS feed"
+  NOTED IN CHAT: "useful signal... optional and potentially noisy"
+  STATUS: Not built. Not promised. Not required.
+  IF BUILT: would be a TYPE C feature, spec written first.
+
+═══════════════════════════════════════════════════════════════
+RULE: HOW TO USE THIS FILE
+═══════════════════════════════════════════════════════════════
+
+Before starting a build session:
+  Read this file. If an open item is in scope, build it.
+  Do not build new features while open items remain unaddressed
+  unless they are explicitly deferred with a documented reason.
+
+When shipping a promised feature:
+  Move it from OPEN to VERIFIED BUILT.
+  Add WHERE and VERIFIED lines.
+  Commit this file with the code.
+
+When making a new promise in a session:
+  Add it to OPEN before writing any code.
+  This creates accountability before the promise is made,
+  not after the session ends.

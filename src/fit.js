@@ -47,7 +47,8 @@ JSON schema:
 {
   "score": number (1-10, where 10 = near-perfect fit),
   "verdict": "string (3-5 words)",
-  "reasoning": "string (1 sentence — the single most important factor)"
+  "reasoning": "string (1 sentence — the single most important factor)",
+  "coverLetterOpener": "string (2 sentences, specific to this job and candidate — only if score >= 7, otherwise null)"
 }`;
 
   const userMsg = `CANDIDATE PROFILE:
@@ -113,9 +114,10 @@ export async function scoreBatch(matches, profile, geminiKey) {
       job._matchGroup = match.label;
       const result = await scoreFit(job, profile, geminiKey);
       if (result) {
-        job.fitScore    = result.score;
-        job.fitVerdict  = result.verdict;
-        job.fitReasoning = result.reasoning;
+        job.fitScore         = result.score;
+        job.fitVerdict       = result.verdict;
+        job.fitReasoning     = result.reasoning;
+        job.coverLetterOpener = result.coverLetterOpener || null;
       }
     }));
   }
