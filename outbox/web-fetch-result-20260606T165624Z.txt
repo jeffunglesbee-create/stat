@@ -1,0 +1,285 @@
+=== Web Fetch Probe [20260606T165624Z] ===
+URL: https://careers-vhchealth.icims.com/jobs/13916/job
+Extract mode: raw
+
+HTTP Status: 200
+Body length: 73891 chars
+
+=== Response body (first 15000 bytes) ===
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en-US">
+
+
+
+<head id="VsMasterPage_HtmlHeader">
+    <!-- End of iCIMS Pre Header --><base href="https://www.vhchealth.org">
+      <!-- <base href="https://c-10196-20260512-www-vhchealth-org.i.icims.com" /> -->
+
+
+
+    <link type="text/css" rel="stylesheet" href="/css-min/VHC/VHC.css" />
+  
+    <!-- Scripts necessary in head to run first -->
+    <script type="text/javascript">
+        document.documentElement.className = 'js';
+    </script>
+
+    <style>
+        /* Import the variables used for SASS */
+        /* montserrat-200 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 200;
+            src: url("/fonts/montserrat/Montserrat-ExtraLight.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-200italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 200;
+            src: url("/fonts/montserrat/Montserrat-ExtraLightItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-300 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 300;
+            src: url("/fonts/montserrat/Montserrat-Light.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-300italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 300;
+            src: url("/fonts/montserrat/Montserrat-LightItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-regular - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 400;
+            src: url("/fonts/montserrat/Montserrat-Regular.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 400;
+            src: url("/fonts/montserrat/Montserrat-Italic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-500 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 500;
+            src: url("/fonts/montserrat/Montserrat-Medium.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-500italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 500;
+            src: url("/fonts/montserrat/Montserrat-MediumItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-600 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 600;
+            src: url("/fonts/montserrat/Montserrat-SemiBold.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-600italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 600;
+            src: url("/fonts/montserrat/Montserrat-SemiBoldItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-700 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 700;
+            src: url("/fonts/montserrat/Montserrat-Bold.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-700italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 700;
+            src: url("/fonts/montserrat/Montserrat-BoldItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-800 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 800;
+            src: url("/fonts/montserrat/Montserrat-Black.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-800italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 800;
+            src: url("/fonts/montserrat/Montserrat-BlackItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
+    <link rel="canonical" href="https://www.vhchealth.org/" />
+    <link rel="stylesheet" href="/node_modules/audience-based-search/dist/css/index.min.css">
+
+   
+    <script>!function (e) { var n = "https://s.go-mpulse.net/boomerang/"; if ("False" == "True") e.BOOMR_config = e.BOOMR_config || {}, e.BOOMR_config.PageParams = e.BOOMR_config.PageParams || {}, e.BOOMR_config.PageParams.pci = !0, n = "https://s2.go-mpulse.net/boomerang/"; if (window.BOOMR_API_key = "CAKWC-MMWSW-QMGK6-AFBUT-QJYCA", function () { function e() { if (!i) { var e = document.createElement("script"); e.id = "boomr-scr-as", e.src = window.BOOMR.url, e.async = !0, o.parentNode.appendChild(e), i = !0 } } function t(e) { i = !0; var n, t, a, r, d = document, O = window; if (window.BOOMR.snippetMethod = e ? "if" : "i", t = function (e, n) { var t = d.createElement("script"); t.id = n || "boomr-if-as", t.src = window.BOOMR.url, BOOMR_lstart = (new Date).getTime(), e = e || d.body, e.appendChild(t) }, !window.addEventListener && window.attachEvent && navigator.userAgent.match(/MSIE [67]\./)) return window.BOOMR.snippetMethod = "s", void t(o.parentNode, "boomr-async"); a = document.createElement("IFRAME"), a.src = "about:blank", a.title = "", a.role = "presentation", a.loading = "eager", r = (a.frameElement || a).style, r.width = 0, r.height = 0, r.border = 0, r.display = "none", o.parentNode.appendChild(a); try { O = a.contentWindow, d = O.document.open() } catch (_) { n = document.domain, a.src = "javascript:var d=document.open();d.domain='" + n + "';void(0);", O = a.contentWindow, d = O.document.open() } if (n) d._boomrl = function () { this.domain = n, t() }, d.write("<bo" + "dy onload='document._boomrl();'>"); else if (O._boomrl = function () { t() }, O.addEventListener) O.addEventListener("load", O._boomrl, !1); else if (O.attachEvent) O.attachEvent("onload", O._boomrl); d.close() } function a(e) { window.BOOMR_onload = e && e.timeStamp || (new Date).getTime() } if (!window.BOOMR || !window.BOOMR.version && !window.BOOMR.snippetExecuted) { window.BOOMR = window.BOOMR || {}, window.BOOMR.snippetStart = (new Date).getTime(), window.BOOMR.snippetExecuted = !0, window.BOOMR.snippetVersion = 12, window.BOOMR.url = n + "CAKWC-MMWSW-QMGK6-AFBUT-QJYCA"; var o = document.currentScript || document.getElementsByTagName("script")[0], i = !1, r = document.createElement("link"); if (r.relList && "function" == typeof r.relList.supports && r.relList.supports("preload") && "as" in r) window.BOOMR.snippetMethod = "p", r.href = window.BOOMR.url, r.rel = "preload", r.as = "script", r.addEventListener("load", e), r.addEventListener("error", function () { t(!0) }), setTimeout(function () { if (!i) t(!0) }, 3e3), BOOMR_lstart = (new Date).getTime(), o.parentNode.appendChild(r); else t(!1); if (window.addEventListener) window.addEventListener("load", a, !1); else if (window.attachEvent) window.attachEvent("onload", a) } }(), "".length > 0) if (e && "performance" in e && e.performance && "function" == typeof e.performance.setResourceTimingBufferSize) e.performance.setResourceTimingBufferSize(); !function () { if (BOOMR = e.BOOMR || {}, BOOMR.plugins = BOOMR.plugins || {}, !BOOMR.plugins.AK) { var n = "" == "true" ? 1 : 0, t = "", a = "gq3edyqxguf2k2qc7aba-f-1cb55a03b-clientnsv4-s.akamaihd.net", o = "false" == "true" ? 2 : 1, i = { "ak.v": "41", "ak.cp": "1408573", "ak.ai": parseInt("856206", 10), "ak.ol": "0", "ak.cr": 265, "ak.ipv": 4, "ak.proto": "h2", "ak.rid": "bc6a16c4", "ak.r": 48873, "ak.a2": n, "ak.m": "b", "ak.n": "essl", "ak.cport": 61563, "ak.gh": "23.50.129.168", "ak.quicv": "", "ak.tlsv": "tls1.3", "ak.0rtt": "", "ak.0rtt.ed": "", "ak.csrc": "-", "ak.acc": "", "ak.t": "1778579458", "ak.ak": "hOBiQwZUYzCg5VSAfCLimQ==JNu3PaDcRO8C80kteWBECPqszbQ1mBS0lOufO0tOZx2Q2OzhHVxi1SneKzc52HB7q3mvvwyP1HaL8I3n3CsfxFHpNwMRMfIn6yrcwz1GRaUwADRfKHpPzcAw2Lu0X4a+IQVzfDzWnXwLzn94flbHUCVN2khSHZSzDWigcXRhHZhytdUitevaojZx+KgIPFMftUBwEMPetNE1+EVxN6VvkY/9cSJEfBh8tqkL2GJlGnYGHYpXXl8Qz0ICjrf9EcpjvtT0wy+KgsWRAnDHcNg27EFrZEmKOT5CUi+DIOuowxJPbXA99F4bW2YoeWExJVsakLU38KLE9GUQvUL6PhMZW95qwhLDAoJ2GxyZ36vrPPq9lglzYVSx6jFikI8ioeR7sDbML9l97qp1qo0al7dKTgl6tBitcvuKnF/aWaVqcmo=", "ak.pv": "17", "ak.dpoabenc": "", "ak.tf": o }; if ("" !== t) i["ak.ruds"] = t; var r = { i: !1, av: function (n) { var t = "http.initiator"; if (n && (!n[t] || "spa_hard" === n[t])) i["ak.feo"] = void 0 !== e.aFeoApplied ? 1 : 0, BOOMR.addVar(i) }, rv: function () { var e = ["ak.cport", "ak.cr", "ak.csrc", "ak.gh", "ak.ipv", "ak.m", "ak.n", "ak.ol", "ak.proto", "ak.quicv", "ak.tlsv", "ak.0rtt", "ak.0rtt.ed", "ak.r", "ak.acc", "ak.t", "ak.tf"]; BOOMR.removeVar(e) } }; BOOMR.plugins.AK = { akVars: i, akDNSPreFetchDomain: a, init: function () { if (!r.i) { var e = BOOMR.subscribe; e("before_beacon", r.av, null, null), e("onbeacon", r.rv, null, null), r.i = !0 } return this }, is_complete: function () { return !0 } } } }() }(window);</script>
+</head>
+
+
+<body id="Home" class="BeforePageStuctureLoad">
+    <script type="text/javascript" src="/scripts/jquery-3.7.0.min.js"></script>
+    <script type="text/javascript" src="/scripts/jquery-migrate-3.4.1.min.js"></script>
+
+   
+
+    <div id="BodyWrap" class="ClearFix">
+
+        <a href="#Content" class="SkipTo">Skip to Content</a>
+        <div id="AlertPanel" role="region" aria-label="alert">
+            <div class="ClearFix cmspanel" id="PanelAlertSiteWide">
+                <div class="Dec1">
+                    <div class="Dec2">
+                        <div class="ClearFix BasicPanel">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <header id="Header">
+            <div class="HeaderWrap">
+                <div id="HeaderTop">
+                    <div id="TopLeft">
+                        <!-- MOBILE TRIGGERS -->
+                        <div class="MobileTrigger">
+                            <button class="Menu" id="MobileMenuButton" type="button">
+                                <span class="Icon"></span>
+                                <span class="text">Expand Menu</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="TopRight">
+                        <!-- SEARCH TRIGGER -->
+                        <div class="SearchTrigger">
+                            <button class="Search" aria-label="Search" id="SearchButton" aria-controls="SearchContent"
+                                type="button">
+                                <span class="Icon"></span>
+                                <span class="Text">Expand Search</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="HeaderTopWrap">
+                    <nav aria-label="Secondary" id="SecondaryNavWrap">
+                        <div class="ClearFix cmspanel" id="Paneltemplatessecondarynavigation">
+                            <div class="Dec1">
+                                <div class="Dec2">
+                                    <div class="ClearFix BasicPanel">
+                                        <div class="ClearFix cmsPanelContent">
+                                            <ul>
+                                                <li><a href="/careers/">Careers</a></li>
+                                                <li><a
+                                                        href="/patients-visitors/billing-financial-assistance/pay-a-bill/">Pay
+                                                        My Bill</a></li>
+                                                <li><a href="/contact-us/">Contact Us</a></li>
+                                                <li><a
+                                                        href="https://vhchealthfoundation.org/give/?utm_source=VHCHealth">Donate</a>
+                                                </li>
+                                                <li class="Patient-Portal-Link"><a
+                                                        href="https://myvhc.vhchealth.org/MyChartPRD/Authentication/Login"
+                                                        rel="noopener" target="_blank"><img alt="" height="19"
+                                                            src="/app/files/public/icon-portal-white.svg"
+                                                            width="16" />MyVHC Patient Portal</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+
+                <div class="HeaderBottomWrap">
+                    <div class="HeaderBottom">
+                        <div id="Logo">
+                            <div class="ClearFix cmspanel" id="PanelTemplatesLogo">
+                                <div class="Dec1">
+                                    <div class="Dec2">
+                                        <div class="ClearFix BasicPanel">
+                                            <div class="ClearFix cmsPanelContent">
+                                                <p><a href="/"><img alt="Virginia Hospital Center Health System"
+                                                            src="/app/files/public/2025-VHC-Logo-FullColor.svg"
+                                                            width="203" /></a></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                  
+=== End ===
