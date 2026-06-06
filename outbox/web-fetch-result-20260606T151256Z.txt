@@ -1,0 +1,192 @@
+=== Web Fetch Probe [20260606T151256Z] ===
+URL: https://careers-vhchealth.icims.com/jobs/12870/2025-12870/job
+Extract mode: raw
+
+HTTP Status: 410
+Body length: 73914 chars
+
+=== Response body (first 6000 bytes) ===
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en-US">
+
+
+
+<head id="VsMasterPage_HtmlHeader">
+    <!-- End of iCIMS Pre Header --><base href="https://www.vhchealth.org">
+      <!-- <base href="https://c-10196-20260512-www-vhchealth-org.i.icims.com" /> -->
+
+
+
+    <link type="text/css" rel="stylesheet" href="/css-min/VHC/VHC.css" />
+  
+    <!-- Scripts necessary in head to run first -->
+    <script type="text/javascript">
+        document.documentElement.className = 'js';
+    </script>
+
+    <style>
+        /* Import the variables used for SASS */
+        /* montserrat-200 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 200;
+            src: url("/fonts/montserrat/Montserrat-ExtraLight.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-200italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 200;
+            src: url("/fonts/montserrat/Montserrat-ExtraLightItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-300 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 300;
+            src: url("/fonts/montserrat/Montserrat-Light.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-300italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 300;
+            src: url("/fonts/montserrat/Montserrat-LightItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-regular - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 400;
+            src: url("/fonts/montserrat/Montserrat-Regular.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 400;
+            src: url("/fonts/montserrat/Montserrat-Italic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-500 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 500;
+            src: url("/fonts/montserrat/Montserrat-Medium.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-500italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 500;
+            src: url("/fonts/montserrat/Montserrat-MediumItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-600 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 600;
+            src: url("/fonts/montserrat/Montserrat-SemiBold.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-600italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 600;
+            src: url("/fonts/montserrat/Montserrat-SemiBoldItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-700 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 700;
+            src: url("/fonts/montserrat/Montserrat-Bold.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-700italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 700;
+            src: url("/fonts/montserrat/Montserrat-BoldItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-800 - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 800;
+            src: url("/fonts/montserrat/Montserrat-Black.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        /* montserrat-800italic - latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: italic;
+            font-weight: 800;
+            src: url("/fonts/montserrat/Montserrat-BlackItalic.ttf") format("ttf");
+            /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
+    <link rel="canonical" href="https://www.vhchealth.org/" />
+    <link rel="stylesheet" href="/node_modules/audience-based-search/dist/css/index.min.css">
+
+   
+    <script>!function (e) { var n = "https://s.go-mpulse.net/boomerang/"; if ("False" == "True") e.BOOMR_config = e.BOOMR_config || {}, e.BOOMR_config.PageParams = e.BOOMR_config.PageParams || {}, e.BOOMR_config.PageParams.pci = !0, n = "https://s2.go-mpulse.net/boomerang/"; if (window.BOOMR_API_key = "CAKWC-MMWSW-QMGK6-AFBUT-QJYCA", function () { function e() { if (!i) { var e = document.createElement("script"); e.id = "boomr-scr-as", e.src = window.BOOMR.url, e.async = !0, o.parentNode.appendChild(e), i = !0 } } function t(e) { i = !0; var n, t, a, r, d = document, O = windo
+=== End ===
