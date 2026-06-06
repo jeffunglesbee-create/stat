@@ -1,4 +1,4 @@
-url=https://career4.successfactors.com/career/SFHUP/sitemal.xml
+url=https://career4.successfactors.com/sitemal.xml?company=SFHUP
 accept=text/xml,application/xml,*/*
 extract=raw
 max_bytes=10000
