@@ -1,4 +1,4 @@
-url=https://careers-hca.icims.com/jobs/search?in_iframe=1
-accept=text/html
+url=https://careers-hca.icims.com/sitemap.xml
+accept=text/xml,*/*
 extract=raw
-max_bytes=6000
+max_bytes=4000
