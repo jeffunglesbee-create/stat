@@ -1,0 +1,22 @@
+=== Web Fetch Probe [20260606T163005Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/br-test?url=https%3A%2F%2Fhttpbin.org%2Fip&ats=test
+Extract mode: json
+
+HTTP Status: 200
+Body length: 263 chars
+
+=== JSON response ===
+{
+    "ok": true,
+    "ats": "test",
+    "url": "https://httpbin.org/ip",
+    "elapsed_ms": 2767,
+    "title": "",
+    "og_description": "",
+    "job_links": [],
+    "job_card_count": 0,
+    "dom_text_excerpt": "{\n  \"origin\": \"104.28.157.102\"\n}",
+    "job_container_text": ""
+}
+
+=== End ===
