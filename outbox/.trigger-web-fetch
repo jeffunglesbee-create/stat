@@ -1,4 +1,4 @@
-url=https://career4.successfactors.com/career?company=bswh&career_ns=job_listing_summary&resultType=XML
-accept=text/xml,*/*
+url=https://bswh.wd1.myworkdayjobs.com/en-US/BSWH/jobs
+accept=application/json
 extract=raw
-max_bytes=5000
+max_bytes=3000
