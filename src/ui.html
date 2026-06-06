@@ -1495,6 +1495,25 @@ if (WORKER_URL) {
   loadStatus();
   loadStoredProfile();
   setInterval(loadStatus, 30_000);
+
+  // Refresh on return from home screen, tab switch back, or screen wake.
+  // Only fires if hidden for >10s to avoid spurious refreshes from
+  // brief focus changes (e.g. notification tray, app switcher glance).
+  let _hiddenAt = null;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      _hiddenAt = Date.now();
+    } else {
+      const away = _hiddenAt ? Date.now() - _hiddenAt : 0;
+      if (away > 10_000) {
+        loadStatus();
+        const active = document.querySelector('.tab.active')?.dataset?.tab;
+        if (active === 'matches') loadMatches();
+        if (active === 'browse')  loadBrowse();
+      }
+      _hiddenAt = null;
+    }
+  });
 } else {
   document.getElementById('conn-dot').className = 'conn-dot dead';
   document.getElementById('conn-label').textContent = 'no worker url';
