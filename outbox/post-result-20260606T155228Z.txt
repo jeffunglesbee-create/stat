@@ -1,0 +1,56 @@
+URL: https://tuhs.taleo.net/careersection/tuhs_ex/jobsearch.ftl?keyword=analyst  [20260606T155228Z]
+=== Request body ===
+{"keyword":"analyst","portalId":"0","startRow":"0","endRow":"10","locale":"en"}
+
+=== Custom headers ===
+(none)
+
+=== Response (status + body, first 4000 chars) ===
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+	lang="en">
+
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Job Search</title>
+
+<script type="text/javascript">
+		var CRITERIA_FIELDS_TO_REGISTER = [];
+		
+		var require = {
+			baseUrl : "/careersection/2026PRD.1.1.10.3.0/js/",
+			config: {
+				'fs/FacetedSearchSettings': {
+					waitSeconds: 15,
+					queryString: 'KEYWORD=analyst&amp;portal=101430233',
+				    resourcesMapAsJSON: {"resultListPanel.mustEnterSearchName":"You must specify a search query name.","helpPanel.candidateProfile":"Candidate Profile","seeAllOlf.filterLocations":"Filter locations","resultListPanel.ascending":"Ascending","resultListPanel.singleLineViewLinkAudibleDescription":"Job list in single line view. Press ENTER to switch to multi line view.","seeAllOlf.loading":"Loading","resultListPanel.referACandidateButton":"Refer a candidate","advancedSearchPanel.clearAll":"Clear All","seeAllOlf.seeLocations":"See all locations","resultListPanel.share":"Share","resultListPanel.descending":"Descending","icons.draftSubmission":"Draft submission","searchPanel.showMoreTT":"Shore more values","resultListPanel.actions":"Actions","resultListPanel.singleLineView":"Single-line","headerPanel.processesTT":"Go to Tasks","filterTopPanel.removeCriterion":"Remove criterion {0}","searchPanel.viewAllJobs":"View All Jobs","headerPanel.submissionsTT":"Access the My Submissions page containing details related to your submissions","headerPanel.messagesTT":"Access the My Messages page containing your messages","resultListPanel.saveSearchLengthError":"The search name exceeds the maximum length allowed ({0}).","advancedSearchPanel.addJobField":"Add Job Field","resultListPanel.saveSearch":"Save this Search","headerPanel.jobSearchTT":"Access the job search page","headerPanel.advancedSearch":"Advanced Search","resultListPanel.pageTitle":"Job Search","resultListPanel.reApplyButtonTT":"Re-apply for this job","accessibility.noMatchFound":"No match found.","resultListPanel.collapseSection":"Collapse this section","resultListPanel.referLinkTT":"Refer a friend's profile","helpPanel.advancedJobSearch":"Advanced Job Search","advancedSearchPanel.title":"Advanced Job Search","advancedSearchPanel.basicSearch":"Basic Search","resultListPanel.multiLineView":"Multi-line","footerPanel.viewStandardCareerSection":"View Full Career Section","headerPanel.offersTT":"Go to Offers","resultListPanel.noResults":"No jobs correspond to the specified criteria.","accessibility.multipleResultAudible":"{0} results are available, use up and down arrow keys to navigate.","resultListPanel.finishDraftSubmissionButton":"Finish Draft Submission","seeAllOlf.showingOrganizations":"Showing all organizations.","footerPanel.viewStandardCareerSectionTT":"Go to Full Career Section","icons.addedToJobCartResource":"Added to the job cart","resultListPanel.saveSearchConfirm":"Confirm","icons.urgentNeedJob":"Urgent need job","helpPanel.submitCandidateProfileLinkTT":"Open the form used to refer a candidate","headerPanel.processes":"Tasks","resultListPanel.sortOrder":"Order","infoPanel.jobOpenings":"Job Openings","helpPanel.savingSearches":"Saving searches","resultListPanel.saveSearchAction":"Save this Search","resultListPanel.jobListReloaded":"The list of job openings has reloaded","resultListPanel.nextPage":"Next","headerPanel.jobsMatchingMyProfileTT":"Access the list of jobs matching your profile","resultListPanel.nextPageTT":"Go to the next page","searchPanel.showLess":"Show less...","seeAllOlf.filterOlfHint":"The list will update after entering a search criterion.","infoPanel.rss":"RSS","resultListPanel.sortBy":"Sort by","resultListPanel.messageLinkJobDescription":"Click the link to view the complete job description.","resultListPanel.multiLineViewLinkAudibleDescription":"Job list in multi line view. Press ENTER to switch to single line view.","resultListPanel.removeFilters":"To 
