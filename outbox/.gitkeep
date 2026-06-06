@@ -1,0 +1,12 @@
+# STAT outbox — probe trigger files and results land here.
+# This directory is STAT-only. Never shared with FIELD (jubilant-bassoon).
+#
+# Trigger files:
+#   .trigger-cf-api        → cf-api-probe.yml trigger
+#   .trigger-post-probe    → post-probe.yml trigger
+#   .post-probe-body.json  → POST body for post-probe
+#   .post-probe-headers    → optional headers
+#
+# Result files (committed by CI with [skip ci]):
+#   cf-result-{TS}.txt
+#   post-result-{TS}.txt
