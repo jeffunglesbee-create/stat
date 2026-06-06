@@ -1,0 +1,25 @@
+=== Web Fetch Probe [20260606T173626Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https%3A%2F%2Fcareers-vhchealth.icims.com%2Fjobs%2F14014%2Fjob%3Fin_iframe%3D1
+Extract mode: json
+
+HTTP Status: 200
+Body length: 690 chars
+
+=== JSON response ===
+{
+    "ok": true,
+    "url": "https://careers-vhchealth.icims.com/jobs/14014/job?in_iframe=1",
+    "http_status": 200,
+    "elapsed_ms": 300,
+    "body_bytes": 35259,
+    "is_blocked": false,
+    "title": "MyChart Digital Solutions Analyst in Alexandria, Virginia | Careers at 3601 Eisenhower Avenue",
+    "og_description": "",
+    "job_ids": [
+        "14014"
+    ],
+    "job_hrefs": [],
+    "body_text_excerpt": "MyChart Digital Solutions Analyst in Alexandria, Virginia | Careers at 3601 Eisenhower Avenue Please Enable Cookies to Continue Please enable cookies in your browser to experience all the personalized features of this site, including the ability to apply for a job. Welcome page Returning Candidate L"
+}
+
+=== End ===
