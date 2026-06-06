@@ -1,0 +1,62 @@
+=== Web Fetch Probe [20260606T152528Z] ===
+URL: https://career4.successfactors.com/career/SFHUP/sitemal.xml
+Extract mode: raw
+
+HTTP Status: 404
+Body length: 2043 chars
+
+=== Response body (first 10000 bytes) ===
+<!-- saved from url=(0014)about:internet -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>Error - SAP SuccessFactors</title>
+    <link rel="stylesheet" type="text/css" href="/ui/uicore/css/xi.css" />
+    <link rel="stylesheet" type="text/css" href="/ui/uicore/css/xicommon.css" />
+    <link rel="stylesheet" type="text/css" href="/ui/uicore/css/sysmsg.css" />
+    <link rel="stylesheet" type="text/css" href="/ui/uicore/css/page_gray.css" />
+  </head>
+  <body class="page_gray">
+    <div class="round sfpanel">
+      <span class="ct"><span class="cl">&nbsp;</span></span>
+      <div class="bd">
+        <div class="content">
+          <span id="logo" title="SuccessFactors" style="background-image: url(/ui/uicore/img/logo.gif);" name="logo"></span>
+          <div class="round sysmsg error">
+            <span class="ct"><span class="cl">&nbsp;</span></span>
+            <dl>
+              <dd class="img">&nbsp;</dd>
+              <dd class="msg">
+                <strong>The requested operation is not available.</strong>
+                <div>
+                  This problem is due to the following reason(s):<br />
+                  You are not authorized to access the functionality you have requested.<br />
+		  If you continue to experience problems, please contact your administrator.<br />
+
+                  <br />
+                  <br />
+                  <br />
+                </div>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      <div class="x-dlg-ft">
+        <div class="button_row">
+          <div class="right">
+            <span class="aquabtn active"><span>
+            </span></span>
+          </div>
+        </div>
+      </div>
+      <span class="cb"><span class="cl">&nbsp;</span></span>
+    </div>
+  </body>
+</html>
+
+=== End ===
