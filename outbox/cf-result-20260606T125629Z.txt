@@ -1,0 +1,37 @@
+=== CF API Probe [20260606T125629Z] ===
+Request: GET https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/storage/kv/namespaces
+
+{
+    "result": [
+        {
+            "id": "46b6d8db59ea49eca8b1d89c576a6158",
+            "title": "field-push-subs",
+            "supports_url_encoding": true
+        },
+        {
+            "id": "67b2f7113a7c4754a263f6f984e884ae",
+            "title": "STAT_KV",
+            "supports_url_encoding": true
+        },
+        {
+            "id": "83edf19398da4ed184a42746cb85c9d7",
+            "title": "field-journalism",
+            "supports_url_encoding": true
+        },
+        {
+            "id": "f61e51036f9d4969b873cdc7602aad27",
+            "title": "field-mcp-oauth",
+            "supports_url_encoding": true
+        }
+    ],
+    "errors": [],
+    "messages": [],
+    "success": true,
+    "result_info": {
+        "count": 4,
+        "page": 1,
+        "per_page": 20,
+        "total_count": 4,
+        "total_pages": 1
+    }
+}
