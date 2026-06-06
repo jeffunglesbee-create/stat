@@ -1,0 +1,32 @@
+=== Web Fetch Probe [20260606T171653Z] ===
+URL: https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https%3A%2F%2Fcareers-vhchealth.icims.com%2Fjobs%2Fsearch%3Fss%3D1%26searchKeyword%3Danalyst%26in_iframe%3D1
+Extract mode: json
+
+HTTP Status: 200
+Body length: 738 chars
+
+=== JSON response ===
+{
+    "ok": true,
+    "url": "https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst&in_iframe=1",
+    "http_status": 200,
+    "elapsed_ms": 423,
+    "body_bytes": 42011,
+    "is_blocked": false,
+    "title": "Job Listings at VHC Health",
+    "og_description": "",
+    "job_ids": [
+        "13550",
+        "13367",
+        "13713",
+        "13390",
+        "13906",
+        "12833",
+        "14014",
+        "13916"
+    ],
+    "job_hrefs": [],
+    "body_text_excerpt": "Job Listings at VHC Health Please Enable Cookies to Continue Please enable cookies in your browser to experience all the personalized features of this site, including the ability to apply for a job. Welcome page Returning Candidate Log back in! VHC Health Career Opportunities Here is a list of our c"
+}
+
+=== End ===
