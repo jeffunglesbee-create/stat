@@ -35,7 +35,7 @@ import {
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
-import { getStatStore, storeGet, storeSet } from './store.js';
+import { getStatStore, storeGet, storeSet, saveRecentMatches } from './store.js';
 import { getPollingInterval, KV, GHOST } from './config.js';
 import { applyMarylandScore } from './maryland.js';
 import { enrichDescriptions } from './enrich.js';
@@ -222,6 +222,8 @@ class PlatformDO {
       }
       console.log(`[STAT ${this.ats}] ${newMatches.length} matches from ${polledCount} companies`);
       await dispatchAlerts(this.env, newMatches);
+      // Store matches in rolling job history for GET /jobs
+      await saveRecentMatches(getStatStore(this.env), newMatches);
     }
 
     await this._reschedule();

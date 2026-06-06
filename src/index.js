@@ -29,7 +29,7 @@ import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
-import { getStatStore, storeGet, storeSet, storeDel } from './store.js';
+import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches } from './store.js';
 export { StateStoreDO } from './store.js';
 import UI_HTML from './ui.html';
 
@@ -487,6 +487,35 @@ async function handleFetch(request, env) {
     } catch (e) {
       return json({ error: 'BatchPollerDO not available: ' + e.message });
     }
+  }
+
+  // GET /jobs — recent keyword-matched jobs (rolling 200)
+  // Query params: ?priority=1 ?ats=greenhouse ?q=epic ?limit=50
+  if (url.pathname === '/jobs' && request.method === 'GET') {
+    const matches = await loadRecentMatches(getStatStore(env));
+    let filtered = matches;
+
+    const qPriority = url.searchParams.get('priority');
+    const qAts      = url.searchParams.get('ats');
+    const qSearch   = url.searchParams.get('q')?.toLowerCase();
+    const qLimit    = parseInt(url.searchParams.get('limit') || '200', 10);
+
+    if (qPriority) filtered = filtered.filter(m => String(m.match?.priority) === qPriority);
+    if (qAts)      filtered = filtered.filter(m => m.job?.atsSource === qAts);
+    if (qSearch)   filtered = filtered.filter(m =>
+      (m.job?.title || '').toLowerCase().includes(qSearch) ||
+      (m.job?.company || '').toLowerCase().includes(qSearch) ||
+      (m.job?.description || '').toLowerCase().includes(qSearch)
+    );
+
+    filtered = filtered.slice(0, Math.min(qLimit, 200));
+
+    return json({
+      ok:    true,
+      count: filtered.length,
+      total: matches.length,
+      jobs:  filtered,
+    });
   }
 
   // GET /profile

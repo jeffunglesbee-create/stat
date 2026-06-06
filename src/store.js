@@ -114,3 +114,46 @@ export async function storeDel(stub, key) {
     }));
   } catch { }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECENT MATCHES — rolling store of last 200 keyword-matched jobs
+// Saved after every dispatchAlerts() call. Readable at GET /jobs.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const RECENT_MATCHES_KEY = 'recent_matches';
+const RECENT_MATCHES_MAX = 200;
+
+/**
+ * Append new matches to the recent_matches store.
+ * Each entry: { job, match, alertedAt }
+ * Trims to the last RECENT_MATCHES_MAX entries.
+ */
+export async function saveRecentMatches(stub, newMatches) {
+  if (!newMatches || newMatches.length === 0) return;
+  try {
+    const raw      = await storeGet(stub, RECENT_MATCHES_KEY);
+    const existing = raw ? JSON.parse(raw) : [];
+    const alertedAt = new Date().toISOString();
+    const toAdd = newMatches.map(({ job, match }) => ({ job, match, alertedAt }));
+    const combined = [...toAdd, ...existing];
+    // Dedupe by job.id (keep newest)
+    const seen = new Set();
+    const deduped = combined.filter(({ job }) => {
+      if (seen.has(job.id)) return false;
+      seen.add(job.id);
+      return true;
+    });
+    const trimmed = deduped.slice(0, RECENT_MATCHES_MAX);
+    await storeSet(stub, RECENT_MATCHES_KEY, JSON.stringify(trimmed));
+  } catch (e) {
+    console.warn('[STAT store] saveRecentMatches failed:', e.message);
+  }
+}
+
+/** Load all recent matches. Returns array of { job, match, alertedAt }. */
+export async function loadRecentMatches(stub) {
+  try {
+    const raw = await storeGet(stub, RECENT_MATCHES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}

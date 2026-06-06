@@ -25,7 +25,7 @@
  */
 
 import { fetchCompanyJobs } from './adapters.js';
-import { getStatStore, storeGet, storeSet } from './store.js';
+import { getStatStore, storeGet, storeSet, saveRecentMatches } from './store.js';
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
@@ -181,6 +181,7 @@ export class BatchPollerDO {
       }
       console.log(`[STAT Batch] cursor=${cursor}: ${newMatches.length} matches from ${polledCount} companies`);
       await dispatchAlerts(this.env, newMatches);
+      await saveRecentMatches(getStatStore(this.env), newMatches);
     }
 
     // Reschedule

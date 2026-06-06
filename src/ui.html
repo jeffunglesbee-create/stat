@@ -464,6 +464,141 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
 .toast.show { transform: translateY(0); opacity: 1; }
 .toast.error { border-left-color: var(--p1); }
 .toast.success { border-left-color: var(--p3); }
+
+/* ── Match Cards ─────────────────────────────────────────────────────────── */
+.match-card {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  background: var(--paper);
+  transition: border-color .15s;
+}
+.match-card:hover { border-color: var(--teal-mid); }
+.match-card-header {
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px;
+}
+.match-card-title {
+  font-size: 13px; font-weight: 600; color: var(--head); flex: 1; line-height: 1.3;
+}
+.match-card-company {
+  font-size: 11px; color: var(--muted); margin-bottom: 6px;
+}
+.match-card-meta {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px;
+}
+.match-card-actions {
+  margin-top: 10px; display: flex; gap: 8px;
+}
+.apply-btn {
+  display: inline-block;
+  padding: 6px 14px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-family: var(--sans);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .15s;
+}
+.apply-btn:hover { background: var(--teal2); }
+.fit-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 10px; font-weight: 600;
+  background: var(--teal-pale); color: var(--teal);
+}
+.fit-badge.high { background: var(--p3-pale); color: var(--p3); }
+.fit-badge.low  { background: var(--p1-pale); color: var(--p1); }
+.md-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 10px; font-weight: 600;
+  background: #e8f0fe; color: #2a5cb8;
+}
+.ghost-warn {
+  font-size: 10px; color: var(--warn); font-weight: 500;
+}
+.salary-tag {
+  font-size: 11px; color: var(--muted); font-family: var(--mono);
+}
+.env-tag {
+  font-size: 10px; color: var(--dim);
+  border: 1px solid var(--rule); border-radius: 8px; padding: 1px 6px;
+}
+/* Priority tags */
+.pt-1 { background:var(--p1-pale);color:var(--p1); }
+.pt-2 { background:var(--p2-pale);color:var(--p2); }
+.pt-3 { background:var(--p3-pale);color:var(--p3); }
+
+/* ── Resume Tab ──────────────────────────────────────────────────────────── */
+.profile-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--teal-pale);
+  color: var(--teal);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 500;
+  margin: 2px 3px 2px 0;
+}
+.score-result {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  background: var(--paper2);
+  margin-top: 8px;
+}
+.score-number {
+  font-family: var(--serif);
+  font-size: 36px;
+  font-style: italic;
+  color: var(--teal);
+  line-height: 1;
+}
+.score-verdict {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--head);
+  margin-top: 4px;
+}
+.score-section {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--body);
+  line-height: 1.6;
+}
+.score-section strong {
+  color: var(--muted);
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 2px;
+}
+.cover-letter-box {
+  background: var(--paper3);
+  border: 1px solid var(--rule2);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--body);
+  margin-top: 8px;
+  position: relative;
+}
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  background: var(--teal); color: #fff;
+  border: none; border-radius: var(--radius);
+  font-size: 10px; font-family: var(--sans); font-weight: 600;
+  padding: 3px 8px; cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -530,10 +665,29 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
   <!-- Panel -->
   <main class="panel">
     <nav class="tabs">
+      <button class="tab" data-tab="matches">Matches</button>
       <button class="tab active" data-tab="companies">Companies</button>
+      <button class="tab" data-tab="resume">Resume</button>
       <button class="tab" data-tab="config">Configuration</button>
       <button class="tab" data-tab="log">Activity Log</button>
     </nav>
+
+    <!-- Matches -->
+    <div class="tab-content" id="tab-matches">
+      <div class="toolbar" style="margin-bottom:12px">
+        <input type="text" class="search-input" id="match-search" placeholder="Filter by title, company, or keyword…">
+        <select id="match-priority" style="padding:6px 10px;border:1px solid var(--rule);border-radius:var(--radius);background:var(--paper);font-size:12px;color:var(--body)">
+          <option value="">All priorities</option>
+          <option value="1">P1 only</option>
+          <option value="2">P2 only</option>
+          <option value="3">P3 only</option>
+        </select>
+        <button class="sbar-btn" id="btn-refresh-jobs" style="padding:6px 14px;font-size:11px">Refresh</button>
+      </div>
+      <div id="match-list">
+        <div class="empty"><div class="empty-icon">S</div><p>No matches yet.<br>STAT will populate this as jobs are found.</p></div>
+      </div>
+    </div>
 
     <!-- Companies -->
     <div class="tab-content active" id="tab-companies">
@@ -581,6 +735,49 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
         <div class="empty">
           <div class="empty-icon">S</div>
           <p>Loading watchlist…<br>Set WORKER_URL at the top of this file.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resume -->
+    <div class="tab-content" id="tab-resume">
+      <div class="cfg-block" style="border-left-color:var(--teal);margin-bottom:16px">
+        <div class="cfg-head"><span class="cfg-label">Resume Profile</span></div>
+        <div class="cfg-body">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+            Upload your resume or paste text below. Claude will extract your profile
+            (Epic modules, certifications, experience) and save it to STAT for automated
+            fit scoring on every alert.
+          </p>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1.5px dashed var(--rule2);border-radius:var(--radius);cursor:pointer;font-size:12px;color:var(--muted);transition:border-color .15s" id="pdf-drop-zone">
+              <input type="file" id="pdf-input" accept=".pdf,.txt,.docx" style="display:none">
+              📄 Drop PDF / TXT / DOCX or click to upload
+            </label>
+          </div>
+          <textarea id="resume-text" placeholder="Or paste resume text here…" style="width:100%;height:140px;padding:10px;border:1px solid var(--rule);border-radius:var(--radius);font-family:var(--mono);font-size:11px;color:var(--body);background:var(--paper2);resize:vertical;line-height:1.5"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn-submit" id="btn-analyze-resume" style="flex:1">Analyze Resume → Extract Profile</button>
+            <button class="btn-cancel-form" id="btn-clear-profile">Clear Profile</button>
+          </div>
+          <div id="resume-status" style="margin-top:8px;font-size:11px;color:var(--muted)"></div>
+        </div>
+      </div>
+
+      <div class="cfg-block" style="border-left-color:var(--teal);display:none" id="profile-display">
+        <div class="cfg-head">
+          <span class="cfg-label">Stored Profile</span>
+          <span id="profile-status-badge" style="font-size:10px;color:var(--p3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">✓ Active</span>
+        </div>
+        <div class="cfg-body" id="profile-body" style="font-size:12px;color:var(--body);line-height:1.6"></div>
+      </div>
+
+      <div class="cfg-block" style="border-left-color:var(--rule2);margin-top:12px">
+        <div class="cfg-head"><span class="cfg-label">Score a Job Description</span></div>
+        <div class="cfg-body">
+          <textarea id="jd-text" placeholder="Paste job description here…" style="width:100%;height:120px;padding:10px;border:1px solid var(--rule);border-radius:var(--radius);font-family:var(--mono);font-size:11px;color:var(--body);background:var(--paper2);resize:vertical;line-height:1.5"></textarea>
+          <button class="btn-submit" id="btn-score-jd" style="margin-top:8px;width:100%">Score This Job →</button>
+          <div id="jd-score-result" style="margin-top:10px"></div>
         </div>
       </div>
     </div>
@@ -657,6 +854,8 @@ const WORKER_URL = window.STAT_WORKER_URL || window.location.origin;
 // ─── State ───────────────────────────────────────────────────────────────────
 let companies = [];
 let alertsToday = 0;
+let matches = [];
+let resumeProfile = null;
 
 // ─── API ─────────────────────────────────────────────────────────────────────
 async function api(path, opts = {}) {
@@ -877,8 +1076,310 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
   document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
   t.classList.add('active');
-  document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+  const tabId = 'tab-' + t.dataset.tab;
+  document.getElementById(tabId).classList.add('active');
+  if (t.dataset.tab === 'matches') loadMatches();
+  if (t.dataset.tab === 'resume') loadStoredProfile();
 });
+
+
+// ─── Matches ──────────────────────────────────────────────────────────────────
+async function loadMatches() {
+  const priorityFilter = document.getElementById('match-priority').value;
+  const q = document.getElementById('match-search').value.trim();
+  const params = new URLSearchParams();
+  if (priorityFilter) params.set('priority', priorityFilter);
+  if (q) params.set('q', q);
+  params.set('limit', '100');
+
+  const { ok, data } = await api('/jobs?' + params.toString());
+  if (!ok) return;
+  matches = data.jobs ?? [];
+  renderMatches();
+}
+
+function renderMatches() {
+  const el = document.getElementById('match-list');
+  if (!matches.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">S</div><p>No matches yet.<br>STAT will populate this as jobs are found.</p></div>`;
+    return;
+  }
+  el.innerHTML = matches.map(renderMatchCard).join('');
+}
+
+function renderMatchCard({ job, match, alertedAt }) {
+  const pClass   = { 1: 'pt-1', 2: 'pt-2', 3: 'pt-3' }[match?.priority] || 'pt-3';
+  const pLabel   = `P${match?.priority ?? '?'}`;
+  const atsLabel = job.atsSource || '';
+  const salary   = job.salary ? `<span class="salary-tag">${job.salary}${job.salaryInferred ? ' ~' : ''}</span>` : '';
+  const env      = job.environment ? `<span class="env-tag">${job.environment}</span>` : '';
+  const ghost    = job.ghostFlag === 'warn' ? `<span class="ghost-warn">⚠️ ${job.daysAgo}d old</span>` : '';
+  const md       = job.mdBadge ? `<span class="md-badge">${job.mdBadge}</span>` : '';
+  const liveness = job.liveness === 'unknown' ? `<span class="ghost-warn">⚡ unverified URL</span>` : '';
+
+  let fitBadge = '';
+  if (job.fitScore != null) {
+    const cls = job.fitScore >= 7 ? 'high' : job.fitScore <= 4 ? 'low' : '';
+    fitBadge = `<span class="fit-badge ${cls}">Fit ${job.fitScore}/10</span>`;
+  }
+
+  const when = alertedAt ? new Date(alertedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+
+  return `
+<div class="match-card">
+  <div class="match-card-header">
+    <span class="priority-tag ${pClass}">${pLabel}</span>
+    <span class="match-card-title">${job.title}</span>
+    <span class="ats-pill ats-${atsLabel}" style="flex-shrink:0">${atsLabel}</span>
+  </div>
+  <div class="match-card-company">${job.company}${job.location ? ' · ' + job.location : ''}${when ? ' · ' + when : ''}</div>
+  <div class="match-card-meta">
+    ${salary}${env}${fitBadge}${md}${ghost}${liveness}
+    ${match?.label ? `<span style="font-size:10px;color:var(--dim)">${match.label}</span>` : ''}
+  </div>
+  <div class="match-card-actions">
+    <a href="${job.url}" target="_blank" class="apply-btn">Apply →</a>
+    <button class="btn-cancel-form" onclick="scoreFromCard('${job.id}')" style="font-size:10px">Score against profile</button>
+  </div>
+</div>`;
+}
+
+function scoreFromCard(jobId) {
+  const entry = matches.find(m => m.job.id === jobId);
+  if (!entry) return;
+  // Switch to Resume tab and populate JD from match description
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+  document.querySelector('[data-tab="resume"]').classList.add('active');
+  document.getElementById('tab-resume').classList.add('active');
+  const jd = [entry.job.title, entry.job.company, entry.job.description || ''].join('\n\n');
+  document.getElementById('jd-text').value = jd;
+  toast('Job loaded — click Score This Job');
+}
+
+document.getElementById('btn-refresh-jobs').onclick = loadMatches;
+document.getElementById('match-priority').addEventListener('change', loadMatches);
+document.getElementById('match-search').addEventListener('input', () => {
+  clearTimeout(window._matchSearchTimer);
+  window._matchSearchTimer = setTimeout(loadMatches, 350);
+});
+
+// ─── Resume + Profile ──────────────────────────────────────────────────────────
+const GEMINI_MODEL = 'gemini-2.5-flash-lite-preview-06-17';
+const GEMINI_EXTRACT_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent';
+
+// Note: resume analysis calls the Anthropic API directly from the browser.
+// The Worker's GEMINI_KEY is not exposed to the client — we use claude.ai's
+// built-in Anthropic API access via the artifact proxy.
+
+async function callAnthropic(system, userText) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      system,
+      messages: [{ role: 'user', content: userText }],
+    }),
+  });
+  const data = await res.json();
+  return data.content?.[0]?.text || '';
+}
+
+async function extractProfile(resumeText) {
+  const system = `You are a healthcare IT hiring specialist with deep knowledge of Epic EHR implementations.
+Extract the candidate profile as JSON with EXACTLY these fields (use empty arrays/null if not present):
+{
+  "headline": "2-3 word professional summary",
+  "yearsExperience": number or null,
+  "epicModules": ["array of Epic module names"],
+  "otherSystems": ["other EHR/HIT systems"],
+  "certifications": ["Epic and other certs"],
+  "skills": ["top 6 technical skills"],
+  "targetRoles": ["appropriate job titles"],
+  "environments": ["remote","hybrid","onsite"],
+  "matchStrengths": ["3 strongest selling points"],
+  "potentialGaps": ["2-3 areas that may be missing"]
+}
+Return ONLY the JSON object, no markdown, no explanation.`;
+  const raw = await callAnthropic(system, resumeText);
+  const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+  return JSON.parse(cleaned);
+}
+
+async function scoreJobDescription(profile, jd) {
+  const system = `You are a senior healthcare IT career advisor specializing in Epic EHR roles.
+Score this candidate profile against the job description. Return ONLY valid JSON:
+{
+  "score": number 1-10,
+  "verdict": "2-4 word verdict",
+  "strengths": ["top 3 match points"],
+  "gaps": ["top 2-3 gaps"],
+  "salaryNote": "brief salary alignment note or null",
+  "coverOpener": "2-sentence job-specific cover letter opener. Must reference the specific role and company."
+}`;
+  const userText = `CANDIDATE PROFILE:
+${JSON.stringify(profile, null, 2)}
+
+JOB DESCRIPTION:
+${jd}`;
+  const raw = await callAnthropic(system, userText);
+  const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+  return JSON.parse(cleaned);
+}
+
+function renderProfile(profile) {
+  if (!profile) {
+    document.getElementById('profile-display').style.display = 'none';
+    return;
+  }
+  document.getElementById('profile-display').style.display = '';
+  const chips = (arr) => (arr || []).map(x => `<span class="profile-chip">${x}</span>`).join('');
+  document.getElementById('profile-body').innerHTML = `
+    <div style="margin-bottom:8px">
+      <strong style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Role</strong>
+      ${profile.headline || '—'} · ${profile.yearsExperience != null ? profile.yearsExperience + ' yrs exp' : ''}
+    </div>
+    <div style="margin-bottom:8px">
+      <strong style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Epic Modules</strong>
+      <div>${chips(profile.epicModules)}</div>
+    </div>
+    <div style="margin-bottom:8px">
+      <strong style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Certifications</strong>
+      <div>${chips(profile.certifications)}</div>
+    </div>
+    <div style="margin-bottom:8px">
+      <strong style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Skills</strong>
+      <div>${chips(profile.skills)}</div>
+    </div>
+    <div style="margin-bottom:4px">
+      <strong style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Gaps</strong>
+      <div style="font-size:11px;color:var(--muted)">${(profile.potentialGaps || []).join(' · ') || 'None identified'}</div>
+    </div>
+  `;
+}
+
+async function loadStoredProfile() {
+  const { ok, data } = await api('/profile');
+  if (ok && data.profile) {
+    resumeProfile = data.profile;
+    renderProfile(resumeProfile);
+  }
+}
+
+// File upload
+document.getElementById('pdf-drop-zone').addEventListener('click', () =>
+  document.getElementById('pdf-input').click()
+);
+document.getElementById('pdf-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('resume-status');
+  status.textContent = 'Reading file…';
+  if (file.type === 'application/pdf') {
+    // Extract text from PDF using FileReader + basic text extraction
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      // Crude PDF text extraction — works for text-layer PDFs
+      const raw = new Uint8Array(ev.target.result);
+      const text = new TextDecoder('utf-8', { fatal: false }).decode(raw);
+      const extracted = text.replace(/[^\x20-\x7E\n]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (extracted.length > 100) {
+        document.getElementById('resume-text').value = extracted.slice(0, 8000);
+        status.textContent = 'PDF text extracted (' + extracted.length + ' chars). Click Analyze.';
+      } else {
+        status.textContent = 'PDF appears to be image-only. Please paste resume text manually.';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    // Plain text or DOCX-as-text
+    const text = await file.text();
+    document.getElementById('resume-text').value = text.slice(0, 8000);
+    status.textContent = 'File loaded (' + text.length + ' chars). Click Analyze.';
+  }
+});
+
+document.getElementById('btn-analyze-resume').onclick = async () => {
+  const text = document.getElementById('resume-text').value.trim();
+  if (!text) { toast('Paste or upload resume text first', 'error'); return; }
+  const btn = document.getElementById('btn-analyze-resume');
+  const status = document.getElementById('resume-status');
+  btn.textContent = 'Analyzing…'; btn.disabled = true;
+  status.textContent = 'Calling Claude to extract profile…';
+  try {
+    const profile = await extractProfile(text);
+    resumeProfile = profile;
+    renderProfile(profile);
+    // Save to Worker
+    const { ok } = await api('/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    });
+    if (ok) {
+      status.textContent = '✓ Profile extracted and saved to STAT. Fit scoring is now active.';
+      toast('Profile saved — fit scoring active', 'success');
+    } else {
+      status.textContent = 'Profile extracted but save failed. Check Worker status.';
+    }
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    toast('Analysis failed: ' + e.message, 'error');
+  }
+  btn.textContent = 'Analyze Resume → Extract Profile'; btn.disabled = false;
+};
+
+document.getElementById('btn-clear-profile').onclick = async () => {
+  if (!confirm('Delete stored resume profile? Fit scoring will be disabled.')) return;
+  await api('/profile', { method: 'DELETE' });
+  resumeProfile = null;
+  document.getElementById('profile-display').style.display = 'none';
+  document.getElementById('resume-status').textContent = 'Profile cleared.';
+  toast('Profile cleared', 'success');
+};
+
+document.getElementById('btn-score-jd').onclick = async () => {
+  const jd = document.getElementById('jd-text').value.trim();
+  if (!jd) { toast('Paste a job description first', 'error'); return; }
+  if (!resumeProfile) { toast('Extract your profile first', 'error'); return; }
+  const btn = document.getElementById('btn-score-jd');
+  const resultEl = document.getElementById('jd-score-result');
+  btn.textContent = 'Scoring…'; btn.disabled = true;
+  resultEl.innerHTML = '<div style="font-size:11px;color:var(--dim)">Calling Claude…</div>';
+  try {
+    const result = await scoreJobDescription(resumeProfile, jd);
+    const scoreClass = result.score >= 7 ? 'high' : result.score <= 4 ? 'low' : '';
+    const fitColor = { high: 'var(--p3)', low: 'var(--p1)', '': 'var(--teal)' }[scoreClass];
+    resultEl.innerHTML = `
+<div class="score-result">
+  <span class="score-number" style="color:${fitColor}">${result.score}</span><span style="font-size:14px;color:var(--dim)">/10</span>
+  <div class="score-verdict">${result.verdict}</div>
+  ${result.salaryNote ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">${result.salaryNote}</div>` : ''}
+  <div class="score-section">
+    <strong>Strengths</strong>
+    ${(result.strengths || []).map(s => '• ' + s).join('<br>')}
+  </div>
+  <div class="score-section">
+    <strong>Gaps</strong>
+    ${(result.gaps || []).map(g => '• ' + g).join('<br>')}
+  </div>
+  ${result.coverOpener ? `
+  <div class="score-section">
+    <strong>Cover Letter Opener</strong>
+    <div class="cover-letter-box">
+      ${result.coverOpener}
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('${result.coverOpener.replace(/'/g,"\\'")}');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)">Copy</button>
+    </div>
+  </div>` : ''}
+</div>`;
+  } catch(e) {
+    resultEl.innerHTML = `<div style="font-size:11px;color:var(--p1)">Error: ${e.message}</div>`;
+    toast('Scoring failed', 'error');
+  }
+  btn.textContent = 'Score This Job →'; btn.disabled = false;
+};
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.getElementById('log-t0').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
@@ -886,6 +1387,7 @@ renderConfig();
 
 if (WORKER_URL) {
   loadStatus();
+  loadStoredProfile();
   setInterval(loadStatus, 30_000);
 } else {
   document.getElementById('conn-dot').className = 'conn-dot dead';
