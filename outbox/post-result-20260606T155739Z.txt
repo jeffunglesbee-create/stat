@@ -1,0 +1,154 @@
+URL: https://tuhs.taleo.net/careersection/2026PRD.1.1.10.3.0/fs/FacetedSearch?queryString=portal%3D101430233%26lang%3Den&lang=en  [20260606T155739Z]
+=== Request body ===
+{}
+
+=== Custom headers ===
+(none)
+
+=== Response (status + body, first 4000 chars) ===
+<html>
+<head>
+<title>Page not Found</title>
+<style>
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+em {
+	font-style: italic;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+body {
+   background-image: url(https://servicestatus.cloud.oracle.com/outage/img/bg-tile-diag.png); 
+   font-weight: normal;
+   font-family: Arial,sans-serif;
+   font-size: 9pt;
+   color:#4F4F4F;
+}
+
+
+a,
+a:visited {
+   color:         #1466b2;
+}
+
+a,
+a:visited {
+   text-decoration: none;
+}
+
+.bbnn {
+   background:    #f5f5f5;
+   border-bottom: 1px solid #f9f9f9;
+   -webkit-box-shadow: 0 3px 3px rgba(0, 0, 0, 0.1);
+   box-shadow:    0 3px 3px rgba(0, 0, 0, 0.1);
+   display:       block;
+   height:        34px;
+   position:      relative;
+   text-align:    center;
+   z-index:       10;   
+}
+
+.bbnn-logo {
+   display:       block;
+   font-weight:   bold;
+   margin: 7px 0px 8px;
+   text-decoration: none;
+}
+
+.bb-logo-img {
+   background:    url(https://servicestatus.cloud.oracle.com/outage/img/oracle-logo20.png) no-repeat;
+   display:       block;
+   float:         left;
+   height:        20px;
+   width:         160px;
+}
+
+.bb-logo-text {
+   font-size:     12pt;
+   display:       block;
+   float:         left;
+   color:         #454545;
+   padding:       6px 0 0 4px;
+}
+
+.sec-container {
+   display:       block;
+   position:      relative;
+   text-align:    center;
+}
+
+.sec {
+   clear:         both;
+   display:       inline-block;
+   position:      relative;
+   text-align:    left;
+   width:         970px;
+}
+</style>
+</head>
+<body>
+<div class="bbnn">
+   <div class="bb-sec sec">
+      <a href="https://www.oracle.com/index.html" class="bbnn-logo">
+	     <img src="https://servicestatus.cloud.oracle.com/outage/img/oracle-logo20.png" class="bb-logo-img"/>
+		 <div class="bb-logo-text">Cloud</div>
+	  </a>
+   </div>
+</div>
+<div class="sec-container"><div class="sec" style="width: 854px;">
+<div style="margin: 50px 0px; padding: 50px 50px 50px 50px; border: 1px solid #d6dfe6; background: #fff; border-radius: 2px; -moz-border-radius: 2px; -webkit-border-radius: 2px; font-family: Helvetica Neue, Helvetica, Arial, sans-serif; font-size: 14px; font-color: #333333; line-height: 22px; height: 176px;">
+   <img src="https://servicestatus.cloud.oracle.com/outage/img/cloud_92_issue.png" style="float: left; display: block; width: 92px; height 92px" />
+   <div style="float: left; display: block; margin-left: 50px; width: 610px;">
+      We're sorry, the page you requested was not found.<br/><br/>
+	You may wish to try again using one of the links below:</a><br/><br/>
+	<ul>
+	<li><a href="javascript:history.back(-1);">Back to Previous Page</a></li>
+	<li><a href="https://www.oracle.com/index.html">Go to the Oracle Homepage</a></li>
+	</ul>
+	  <br/>
+    <em><font color="#F00">Integrated Cloud</font> Applications &amp; Platform Services</em></div>
+</div>
+</div></div>
+</body>
+</html>
+HTTP_STATUS:404
