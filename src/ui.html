@@ -1330,9 +1330,9 @@ async function loadStoredProfile() {
 }
 
 // File upload
-document.getElementById('pdf-drop-zone').addEventListener('click', () =>
-  document.getElementById('pdf-input').click()
-);
+// NOTE: pdf-drop-zone is a <label> wrapping the input — clicking it
+// natively triggers the file picker. No manual .click() needed or wanted.
+// Adding one causes a double-trigger that cancels the picker on iOS/mobile.
 document.getElementById('pdf-input').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -1354,8 +1354,30 @@ document.getElementById('pdf-input').addEventListener('change', async (e) => {
       }
     };
     reader.readAsArrayBuffer(file);
+  } else if (file.name.toLowerCase().endsWith('.docx')) {
+    // DOCX is a ZIP of XML — file.text() returns binary garbage.
+    // Extract readable strings from the raw bytes (catches most resume text).
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const raw = new Uint8Array(ev.target.result);
+      const text = new TextDecoder('utf-8', { fatal: false }).decode(raw);
+      // Pull readable ASCII runs out of the binary — DOCX XML text nodes are plain UTF-8
+      const runs = text.match(/[\x20-\x7E]{20,}/g) || [];
+      const extracted = runs
+        .filter(r => !r.startsWith('PK') && !r.includes('<?xml') && !r.includes('xmlns'))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (extracted.length > 100) {
+        document.getElementById('resume-text').value = extracted.slice(0, 8000);
+        status.textContent = 'DOCX text extracted (' + extracted.length + ' chars). Review and click Analyze.';
+      } else {
+        status.textContent = 'DOCX could not be parsed. Please paste resume text manually.';
+      }
+    };
+    reader.readAsArrayBuffer(file);
   } else {
-    // Plain text or DOCX-as-text
+    // Plain text (.txt)
     const text = await file.text();
     document.getElementById('resume-text').value = text.slice(0, 8000);
     status.textContent = 'File loaded (' + text.length + ' chars). Click Analyze.';
