@@ -1,4 +1,4 @@
-url=https://jhhs.jobs.hr.cloud.sap/sitemal.xml
+url=https://jobs.hr.cloud.sap/sitemal.xml?company=SFHUP
 accept=text/xml,application/xml,*/*
 extract=raw
 max_bytes=5000
