@@ -4,47 +4,91 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 account_id = "b57e9af57ab46c52ca9215804e689c29"
 
-# ── Cron: wide-net HiringCafe scrape + DO health check every minute ──────────
+# ── Cron: wide-net HiringCafe scrape every minute ────────────────────────────
 [triggers]
 crons = ["* * * * *"]
 
 # ── KV: seen job IDs + company watchlist + DO registry ───────────────────────
-# Create with: wrangler kv:namespace create STAT_KV
-# Then paste the returned id below
 [[kv_namespaces]]
 binding = "STAT_KV"
 id = "67b2f7113a7c4754a263f6f984e884ae"
 
-# ── Durable Objects: one CompanyWatcherDO per target employer ────────────────
+# ── Durable Objects ───────────────────────────────────────────────────────────
+# Platform-grouped architecture: one DO per ATS platform (not per company).
+# Each DO wakes on the time-aware schedule and polls ALL companies of that ATS.
+# Cost: 7 setAlarm() writes/cycle regardless of company count.
+# vs per-company: N setAlarm() writes/cycle (scales linearly with companies).
+# At 3,000 companies: 7 writes vs 3,000 writes per cycle. Alarm writes → $0.
+#
+# SQLite storage backend (recommended by Cloudflare for all new DO classes):
+# Includes 50M rows written/month vs 1M write-units on KV backend.
+# setAlarm() = 1 row written. 7 platforms × 6,360 cycles/month = 44,520 rows.
+# Ceiling: ~16,000 companies before CPU becomes the binding constraint at $25/mo.
+
 [[durable_objects.bindings]]
-name = "COMPANY_WATCHER"
-class_name = "CompanyWatcherDO"
+name = "GREENHOUSE_DO"
+class_name = "GreenhouseDO"
+
+[[durable_objects.bindings]]
+name = "LEVER_DO"
+class_name = "LeverDO"
+
+[[durable_objects.bindings]]
+name = "ASHBY_DO"
+class_name = "AshbyDO"
+
+[[durable_objects.bindings]]
+name = "WORKDAY_DO"
+class_name = "WorkdayDO"
+
+[[durable_objects.bindings]]
+name = "ICIMS_DO"
+class_name = "IcimsDO"
+
+[[durable_objects.bindings]]
+name = "SUCCESSFACTORS_DO"
+class_name = "SuccessFactorsDO"
+
+[[durable_objects.bindings]]
+name = "TALEO_DO"
+class_name = "TaleoDO"
+
+[[durable_objects.bindings]]
+name = "BATCH_POLLER"
+class_name = "BatchPollerDO"
 
 [[durable_objects.bindings]]
 name = "SALARY_INFERENCE"
 class_name = "SalaryInferenceDO"
 
+# ── Migrations ────────────────────────────────────────────────────────────────
+# v1: original KV-backend DOs (CompanyWatcherDO, SalaryInferenceDO)
+# v2: BatchPollerDO added
+# v3: platform-grouped DOs (SQLite backend) replace CompanyWatcherDO
+#     SQLite backend = new_sqlite_classes (not new_classes)
+#     CompanyWatcherDO deleted (no active instances after bootstrap runs)
 [[migrations]]
-tag = "v1"
-new_classes = ["CompanyWatcherDO", "SalaryInferenceDO"]
-
-# ── R2 bucket (optional — for large LCA/BLS file caching) ──────────────────────
-# Create with: wrangler r2 bucket create stat-salary-cache
-# Then uncomment:
-# [[r2_buckets]]
-# binding = "STAT_R2"
-# bucket_name = "stat-salary-cache"
-
-# ── Secrets (set via: wrangler secret put <NAME>) ────────────────────────────
-# PUSHOVER_APP_TOKEN  — from pushover.net/apps
-# PUSHOVER_USER_KEY   — from pushover.net dashboard
-# SENDGRID_API_KEY    — from sendgrid.com (restricted: Mail Send only)
-# ALERT_EMAIL         — address to receive email digests
-
-[[durable_objects.bindings]]
-  name = "BATCH_POLLER"
-  class_name = "BatchPollerDO"
+  tag = "v1"
+  new_classes = ["CompanyWatcherDO", "SalaryInferenceDO"]
 
 [[migrations]]
   tag = "v2"
   new_classes = ["BatchPollerDO"]
+
+[[migrations]]
+  tag = "v3"
+  new_sqlite_classes = ["GreenhouseDO", "LeverDO", "AshbyDO", "WorkdayDO", "IcimsDO", "SuccessFactorsDO", "TaleoDO"]
+  deleted_classes = ["CompanyWatcherDO"]
+
+# ── Secrets (set via: wrangler secret put <NAME> --name stat-job-watcher) ────
+# PUSHOVER_APP_TOKEN  — from pushover.net/apps
+# PUSHOVER_USER_KEY   — from pushover.net dashboard
+# SENDGRID_API_KEY    — from sendgrid.com (Mail Send scope only)
+# ALERT_EMAIL         — address for email digests
+# ANTHROPIC_API_KEY   — for resume fit scoring (optional)
+
+# ── R2 (optional, for large salary cache files) ───────────────────────────────
+# wrangler r2 bucket create stat-salary-cache
+# [[r2_buckets]]
+# binding = "STAT_R2"
+# bucket_name = "stat-salary-cache"

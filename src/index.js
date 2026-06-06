@@ -16,11 +16,14 @@
  *   - No intelligence in the Worker itself — all matching in config + notify
  */
 
-export { CompanyWatcherDO } from './do.js';
 export { SalaryInferenceDO } from './salary.js';
 export { BatchPollerDO } from './batch.js';
+export {
+  GreenhouseDO, LeverDO, AshbyDO, WorkdayDO,
+  IcimsDO, SuccessFactorsDO, TaleoDO,
+} from './platform-do.js';
 
-import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, LEARNING, BATCH_POLLER } from './config.js';
+import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, BATCH_POLLER } from './config.js';
 import { bootstrapSalaryDO } from './salary.js';
 import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
@@ -87,44 +90,52 @@ async function saveMatchCounts(kv, c) { await kv.put(KV.match_counts, JSON.strin
 // Called on first deploy and when new companies are added.
 // ─────────────────────────────────────────────────────────────────────────────
 async function bootstrapDOs(env) {
-  // Load or initialize company watchlist from seed
+  // Load or initialize company watchlist
   let companies = await loadCompanyList(env.STAT_KV);
   if (!companies) {
     companies = SEED_COMPANIES;
     await saveCompanyList(env.STAT_KV, companies);
-    console.log(`[STAT] Initialized watchlist with ${companies.length} seed companies`);
   }
+
+  // Platform DO map: binding name → ATS key
+  const PLATFORM_DOS = [
+    { binding: 'GREENHOUSE_DO',     ats: 'greenhouse' },
+    { binding: 'LEVER_DO',          ats: 'lever' },
+    { binding: 'ASHBY_DO',          ats: 'ashby' },
+    { binding: 'WORKDAY_DO',        ats: 'workday' },
+    { binding: 'ICIMS_DO',          ats: 'icims' },
+    { binding: 'SUCCESSFACTORS_DO', ats: 'successfactors' },
+    { binding: 'TALEO_DO',          ats: 'taleo' },
+  ];
 
   const registry = await loadDoRegistry(env.STAT_KV);
   let spawned = 0;
 
-  for (const company of companies) {
-    const doKey = `${company.ats}:${company.token ?? company.name}`;
-    if (registry[doKey]) continue; // already running
-
-    // Spawn a new DO for this company
-    const id = env.COMPANY_WATCHER.idFromName(doKey);
-    const stub = env.COMPANY_WATCHER.get(id);
+  for (const { binding, ats } of PLATFORM_DOS) {
+    const key = `platform:${ats}`;
+    if (registry[key]) continue; // already running
+    const doBinding = env[binding];
+    if (!doBinding) continue;
     try {
-      await stub.fetch(new Request('https://stat-internal/init', {
-        method: 'POST',
-        body: JSON.stringify(company),
-        headers: { 'Content-Type': 'application/json' },
-      }));
-      registry[doKey] = { name: company.name, ats: company.ats, startedAt: new Date().toISOString() };
+      const id   = doBinding.idFromName(ats);
+      const stub = doBinding.get(id);
+      await stub.fetch(new Request('https://stat-internal/init', { method: 'POST' }));
+      const count = companies.filter(c => c.ats === ats).length;
+      registry[key] = {
+        name: `${ats} platform DO`, ats, type: 'platform',
+        companyCount: count, startedAt: new Date().toISOString(),
+      };
       spawned++;
+      console.log(`[STAT] ${ats} platform DO started (${count} companies)`);
     } catch (e) {
-      console.error(`[STAT] Failed to spawn DO for ${company.name}:`, e.message);
+      console.error(`[STAT] Failed to start ${ats} DO:`, e.message);
     }
   }
 
-  if (spawned > 0) {
-    await saveDoRegistry(env.STAT_KV, registry);
-    console.log(`[STAT] Spawned ${spawned} new DOs`);
-  }
+  if (spawned > 0) await saveDoRegistry(env.STAT_KV, registry);
 
-  // Bootstrap SalaryInferenceDO — prime BLS + LCA caches on first deploy
-  if (spawned > 0 || Object.keys(registry).length === 0) {
+  // Bootstrap SalaryInferenceDO
+  if (spawned > 0 || Object.keys(registry).filter(k => k.startsWith('platform:')).length === 0) {
     try {
       const r = await bootstrapSalaryDO(env);
       console.log('[STAT] Salary bootstrap:', JSON.stringify(r));
@@ -133,7 +144,7 @@ async function bootstrapDOs(env) {
     }
   }
 
-  // Bootstrap BatchPollerDO — single DO for the BATCH_WATCHLIST
+  // Bootstrap BatchPollerDO
   if (!registry['batch:main'] && BATCH_WATCHLIST.length > 0) {
     try {
       const id   = env.BATCH_POLLER.idFromName('batch-main');
@@ -144,8 +155,7 @@ async function bootstrapDOs(env) {
       }));
       registry['batch:main'] = {
         name: 'BatchPollerDO', type: 'batch',
-        listSize: BATCH_WATCHLIST.length,
-        startedAt: new Date().toISOString(),
+        listSize: BATCH_WATCHLIST.length, startedAt: new Date().toISOString(),
       };
       await saveDoRegistry(env.STAT_KV, registry);
       console.log(`[STAT] BatchPollerDO started — ${BATCH_WATCHLIST.length} companies`);
@@ -156,6 +166,7 @@ async function bootstrapDOs(env) {
 
   return { companies, registry, spawned };
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HIRINGCAFE WIDE-NET SCRAPE
@@ -314,6 +325,8 @@ async function handleFetch(request, env) {
       version: '2.0.0',
       activeDOs: Object.keys(registry).length,
       watchedCompanies: companies.length,
+      batchWatchlist: BATCH_WATCHLIST.length,
+      totalMonitored: companies.length + BATCH_WATCHLIST.length,
       seenJobIds: seenIds.size,
       resumeProfile: profile ? `${profile.name || 'stored'} · ${profile.headline || ''}` : null,
       fitScoring: profile && env.ANTHROPIC_API_KEY ? 'active' : profile ? 'profile stored — add ANTHROPIC_API_KEY' : 'disabled (no profile stored)',
@@ -323,7 +336,7 @@ async function handleFetch(request, env) {
         'POST /bootstrap':     'Spawn DOs for all companies',
         'GET /companies':      'List all watched companies',
         'POST /companies':     'Add a company (body: {name,ats,token,url?})',
-        'GET /do/:key/status': 'Status of a specific DO',
+        'GET /platform/:ats/status': 'Status of a platform DO (greenhouse/lever/etc.)',
         'GET /salary-status':  'Salary DO status',
         'POST /salary-refresh':'Re-fetch salary caches',
         'GET /profile':        'Get stored resume profile',
@@ -371,15 +384,25 @@ async function handleFetch(request, env) {
     }
   }
 
-  // GET /companies — list watchlist
+  // GET /companies — list watchlist with platform DO status
   if (url.pathname === '/companies' && request.method === 'GET') {
     const companies = await loadCompanyList(env.STAT_KV) ?? SEED_COMPANIES;
     const registry  = await loadDoRegistry(env.STAT_KV);
+    // Group by ATS platform
+    const byPlatform = {};
+    for (const c of companies) {
+      if (!byPlatform[c.ats]) byPlatform[c.ats] = [];
+      byPlatform[c.ats].push(c);
+    }
     return json({
       total: companies.length,
-      companies: companies.map(c => ({
-        ...c,
-        watching: !!registry[`${c.ats}:${c.token ?? c.name}`],
+      batchWatchlist: BATCH_WATCHLIST.length,
+      totalMonitored: companies.length + BATCH_WATCHLIST.length,
+      platforms: Object.entries(byPlatform).map(([ats, cos]) => ({
+        ats,
+        count: cos.length,
+        doActive: !!registry[`platform:${ats}`],
+        companies: cos.map(c => c.name),
       })),
     });
   }
@@ -410,11 +433,18 @@ async function handleFetch(request, env) {
     return json({ ok: true, company: company.name, doKey });
   }
 
-  // GET /do/:key/status — check a specific DO
-  if (url.pathname.startsWith('/do/') && request.method === 'GET') {
-    const doKey = decodeURIComponent(url.pathname.slice(4).replace('/status', ''));
-    const id   = env.COMPANY_WATCHER.idFromName(doKey);
-    const stub = env.COMPANY_WATCHER.get(id);
+  // GET /platform/:ats/status — check a platform DO (e.g. /platform/greenhouse/status)
+  if (url.pathname.startsWith('/platform/') && request.method === 'GET') {
+    const ats = url.pathname.split('/')[2]?.replace('/status', '');
+    const PLATFORM_MAP = {
+      greenhouse: 'GREENHOUSE_DO', lever: 'LEVER_DO', ashby: 'ASHBY_DO',
+      workday: 'WORKDAY_DO', icims: 'ICIMS_DO',
+      successfactors: 'SUCCESSFACTORS_DO', taleo: 'TALEO_DO',
+    };
+    const binding = PLATFORM_MAP[ats];
+    if (!binding || !env[binding]) return json({ error: `Unknown platform: ${ats}` }, 404);
+    const id   = env[binding].idFromName(ats);
+    const stub = env[binding].get(id);
     const res  = await stub.fetch(new Request('https://stat-internal/status'));
     return res;
   }
@@ -486,8 +516,9 @@ async function handleFetch(request, env) {
   if (url.pathname === '/reset-all' && request.method === 'POST') {
     await env.STAT_KV.put(KV.seen_jobs, JSON.stringify([]));
     await env.STAT_KV.put(KV.do_registry, JSON.stringify({}));
+    await env.STAT_KV.put(KV.match_counts, JSON.stringify({}));
     await env.STAT_KV.delete(KV.company_list);
-    return json({ ok: true, message: 'Full reset complete — POST /bootstrap to re-initialize' });
+    return json({ ok: true, message: 'Full reset — POST /bootstrap to re-initialize all platform DOs' });
   }
 
   return json({ error: 'Not found' }, 404);
