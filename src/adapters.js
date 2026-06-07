@@ -205,7 +205,7 @@ export async function fetchWorkday(company) {
       // OR semantics: 'epic' OR 'ehr' OR 'within' 
       // 'within' catches "work within Epic", "within the Epic ecosystem" in JD text
       // — the strongest signal for certification-sponsoring employers
-      searchText: 'epic ehr within',
+      searchText: 'epic ehr',
     });
     const allJobs = new Map(); // populated below
     const res = await fetch(apiUrl, {

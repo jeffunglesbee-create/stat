@@ -805,7 +805,7 @@ async function handleFetch(request, env) {
     const apiUrl = `https://${host}/wday/cxs/${tenant}/${slug}/jobs`;
     const body = JSON.stringify({
       appliedFacets: {}, limit: 5, offset: 0,
-      searchText: 'epic ehr within',
+      searchText: 'epic ehr',
     });
     const origin = `https://${host}`;
     const referer = `https://${host}/en-US/${slug}`;
