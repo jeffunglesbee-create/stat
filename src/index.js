@@ -376,19 +376,71 @@ async function runHiringCafeScrape(env) {
     if (ckRaw) hcCustomKeywords = JSON.parse(ckRaw).keywords || null;
   } catch {}
 
-  // ── ADAPTIVE FREQUENCY — skip if recently ran with 0 matches ─────────────
-  // 0 matches last run → HC feed unchanged → back off 10min to save BR time
-  // 1+ matches last run → stay at 1min cron interval (signal is active)
-  // Stored in StateStoreDO so it persists across cron invocations.
+  // ── TIME-AWARE ADAPTIVE FREQUENCY ────────────────────────────────────────
+  // Mirrors the same time-aware schedule as platform DO polling (config.js).
+  // Research basis: Tuesday peak (ZipRecruiter 10M jobs), 6-10am ET prime
+  // window (TalentWorks: 89% more responses), 48hr application window (OpteroAI).
+  //
+  // Backoff logic (two dimensions):
+  //   1. SIGNAL: 1+ matches last run → use fast interval (active feed)
+  //              0 matches last run → use slow interval (feed unchanged)
+  //   2. TIME:   mirrors getPollingInterval() windows from config.js
+  //              Peak window (Mon-Fri 6-10am ET) → min backoff 1min
+  //              Active hours (Mon-Fri 10am-4pm ET) → min backoff 2min
+  //              Declining (Mon-Fri 4-7pm ET) → min backoff 5min
+  //              Dead zone (overnight, Sat) → min backoff 20min
+  //              Sun 6am-4pm → min backoff 10min
+  //              Sun 4pm-midnight → min backoff 5min (Monday pre-posts)
+  //
+  // Result: BR runs fast when jobs are actually being posted,
+  //         slow when nothing is happening — aligns cost with signal.
+  function getHCBackoffMs(lastMatchCount) {
+    const nowET = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+    );
+    const day  = nowET.getDay();
+    const hour = nowET.getHours();
+
+    let slowMs; // backoff when 0 matches
+    let fastMs; // backoff when 1+ matches
+
+    if (day === 6) {
+      // Saturday — dead zone all day
+      slowMs = 20 * 60_000; fastMs = 10 * 60_000;
+    } else if (day === 0) {
+      // Sunday
+      if (hour >= 16) {
+        slowMs = 5 * 60_000; fastMs = 2 * 60_000;  // Monday pre-posts
+      } else if (hour >= 6) {
+        slowMs = 10 * 60_000; fastMs = 4 * 60_000; // light activity
+      } else {
+        slowMs = 20 * 60_000; fastMs = 10 * 60_000; // dead zone
+      }
+    } else {
+      // Monday–Friday
+      if (hour >= 6 && hour < 10) {
+        slowMs = 2 * 60_000; fastMs = 60_000;       // peak window ★
+      } else if (hour >= 10 && hour < 16) {
+        slowMs = 4 * 60_000; fastMs = 2 * 60_000;   // active hours
+      } else if (hour >= 16 && hour < 19) {
+        slowMs = 8 * 60_000; fastMs = 4 * 60_000;   // declining
+      } else {
+        slowMs = 20 * 60_000; fastMs = 10 * 60_000; // overnight dead zone
+      }
+    }
+
+    return lastMatchCount > 0 ? fastMs : slowMs;
+  }
+
   try {
     const hcStateRaw = await storeGet(getStatStore(env), 'hc_br_state');
     if (hcStateRaw) {
       const hcState = JSON.parse(hcStateRaw);
       const msSinceRun = Date.now() - (hcState.lastRunAt || 0);
-      const backoffMs = hcState.lastMatchCount === 0 ? 10 * 60_000 : 60_000;
+      const backoffMs = getHCBackoffMs(hcState.lastMatchCount || 0);
       if (msSinceRun < backoffMs) {
-        console.log(`[STAT HC] Adaptive backoff — last run ${Math.round(msSinceRun/1000)}s ago, ` +
-                    `${hcState.lastMatchCount} matches, backoff=${backoffMs/1000}s`);
+        console.log(`[STAT HC] Backoff — ${Math.round(msSinceRun/1000)}s since last run, ` +
+                    `${hcState.lastMatchCount} matches, window=${backoffMs/1000}s`);
         return 0;
       }
     }
