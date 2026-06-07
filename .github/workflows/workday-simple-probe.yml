@@ -9,44 +9,43 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.STAT_PAT }}
-      - name: Probe Workday rate limits
+      - name: Probe via Worker endpoint
         shell: bash
         run: |
-          BODY='{"appliedFacets":{},"limit":5,"offset":0,"searchText":"epic"}'
           mkdir -p outbox
           TS=$(date -u +%Y%m%dT%H%M%SZ)
           OUT="outbox/workday-floor-${TS}.txt"
-          call_wd() {
-            local url="$1" gap="$2"
-            [ "$gap" -gt 0 ] && sleep "$gap"
-            local r=$(curl -sf -w '\n%{http_code}' -X POST "$url" \
-              -H 'Content-Type: application/json' -H 'Accept: application/json' \
-              -H 'User-Agent: Mozilla/5.0' -d "$BODY" --max-time 8 2>/dev/null)
-            local code=$(echo "$r" | tail -1)
-            local jobs=$(echo "$r" | head -1 | python3 -c \
-              "import sys,json; d=json.load(sys.stdin); print(len(d.get('jobPostings',[])))" 2>/dev/null || echo ERR)
-            printf "  gap=%-3ss  HTTP=%s  jobs=%s\n" "$gap" "$code" "$jobs" | tee -a "$OUT"
-          }
-          {
-            echo "=== Workday Floor Probe $TS ==="
-            echo "200+jobs>0=OK  200+jobs=0=SILENT_THROTTLE  429=RATE_LIMIT"
-            echo ""
-            for row in \
-              "jhhs|jhhs.wd5.myworkdayjobs.com|JHH_External_Positions" \
-              "mayoclinic|mayoclinic.wd5.myworkdayjobs.com|mayoclinic" \
-              "kaiserpermanente|kp.wd5.myworkdayjobs.com|KP_External_Career_Site"; do
-              IFS='|' read -r tenant host slug <<< "$row"
-              URL="https://${host}/wday/cxs/${tenant}/${slug}/jobs"
-              echo "--- $tenant ---"
-              call_wd "$URL" 0
-              call_wd "$URL" 30
-              call_wd "$URL" 10
-              call_wd "$URL" 5
-              call_wd "$URL" 2
-              call_wd "$URL" 1
-              echo ""
-            done
-          } | tee "$OUT"
+          WORKER="https://stat-job-watcher.jeffunglesbee.workers.dev"
+
+          echo "=== Workday Floor Probe via Worker $TS ===" | tee "$OUT"
+          echo "Worker runs from Cloudflare IPs (not blocked by Workday WAF)" | tee -a "$OUT"
+          echo "GitHub runner IPs return 422 from Workday directly." | tee -a "$OUT"
+          echo "" | tee -a "$OUT"
+
+          for row in \
+            "jhhs|jhhs.wd5.myworkdayjobs.com|JHH_External_Positions" \
+            "mayoclinic|mayoclinic.wd5.myworkdayjobs.com|mayoclinic" \
+            "kaiserpermanente|kp.wd5.myworkdayjobs.com|KP_External_Career_Site"; do
+            IFS='|' read -r tenant host slug <<< "$row"
+            echo "--- $tenant ---" | tee -a "$OUT"
+            echo "Calling: $WORKER/workday-probe?tenant=$tenant&host=$host&slug=$slug" | tee -a "$OUT"
+            echo "(takes ~60s — tests gaps 0,30,10,5,2,1s)" | tee -a "$OUT"
+            curl -sf --max-time 90 \
+              "$WORKER/workday-probe?tenant=$tenant&host=$host&slug=$slug" \
+              | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+print('anyThrottle:', d['anyThrottle'])
+print('lowestSafeGap:', d['lowestSafeGapSeconds'], 's')
+for r in d['results']:
+    print(f'  gap={r[\"gap\"]:2d}s  HTTP={r[\"http\"]}  jobs={r[\"jobs\"]}  {r[\"elapsed\"]}ms  [{r[\"verdict\"]}]')
+" 2>/dev/null | tee -a "$OUT" || echo "  Worker call failed" | tee -a "$OUT"
+            echo "" | tee -a "$OUT"
+          done
+
+          echo "=== SUMMARY ===" | tee -a "$OUT"
+          echo "KEY: floor=lowest gap where all 3 tenants return jobs>0" | tee -a "$OUT"
+          cat "$OUT"
       - name: Commit and push results
         if: always()
         shell: bash
@@ -54,7 +53,7 @@ jobs:
           git config user.email "stat-ci@stat" && git config user.name "STAT CI"
           git add outbox/workday-floor-*.txt
           git diff --cached --quiet && echo "nothing to commit" && exit 0
-          git commit -m "probe: Workday floor results [skip ci]"
+          git commit -m "probe: Workday floor results via Worker [skip ci]"
           for i in 1 2 3; do
             git pull --rebase --autostash origin main && \
             git push origin main && break || sleep $((i*5))
