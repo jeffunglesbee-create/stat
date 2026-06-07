@@ -263,7 +263,7 @@ export async function fetchWorkday(company, env) {
       if (postings && postings.length > 0) {
         const parsed = new URL(company.url);
         console.log(`[STAT Workday-BR] ${company.name}: ${postings.length} jobs via XHR intercept`);
-        return postings.map(j => makeJob({
+        const brJobs = postings.map(j => makeJob({
           id:          j.bulletFields?.[0] ?? j.externalPath ?? Math.random().toString(36),
           title:       j.title ?? '',
           company:     company.name,
@@ -279,6 +279,8 @@ export async function fetchWorkday(company, env) {
           postedAt:    j.postedOn ?? null,
           atsSource:   'workday',
         }));
+        brJobs._source = 'intercept';
+        return brJobs;
       }
       // XHR returned 0 jobs or timed out — fall through to SSR
       console.warn(`[STAT Workday-BR] ${company.name}: XHR intercept returned no jobs — falling through to SSR`);
@@ -307,7 +309,8 @@ export async function fetchWorkday(company, env) {
       const jobs = data?.props?.pageProps?.jobs
                 ?? data?.props?.pageProps?.jobPostings
                 ?? [];
-      if (jobs.length > 0) return jobs.map(j => makeJob({
+      if (jobs.length > 0) {
+        const r = jobs.map(j => makeJob({
         id:         j.id ?? j.jobId ?? String(Math.random()),
         title:      j.title ?? j.jobTitle ?? '',
         company:    company.name,
@@ -317,7 +320,10 @@ export async function fetchWorkday(company, env) {
         url:        j.url ?? j.externalPath ?? company.url,
         postedAt:   j.postedOn ?? j.postedAt ?? null,
         atsSource:  'workday',
-      }));
+        }));
+        r._source = 'ssr_next';
+        return r;
+      }
     }
 
     // Try inline JSON blob (Workday embeds job data as a JS variable)
@@ -325,7 +331,8 @@ export async function fetchWorkday(company, env) {
     if (inlineMatch) {
       const data = JSON.parse(inlineMatch[1]);
       const jobs = data?.jobPostings ?? data?.jobs ?? [];
-      if (jobs.length > 0) return jobs.map(j => makeJob({
+      if (jobs.length > 0) {
+        const rStore = jobs.map(j => makeJob({
         id:         j.bulletFields?.[0] ?? String(Math.random()),
         title:      j.title ?? '',
         company:    company.name,
@@ -335,7 +342,10 @@ export async function fetchWorkday(company, env) {
         url:        j.externalPath ? `${new URL(company.url).origin}${j.externalPath}` : company.url,
         postedAt:   j.postedOn ?? null,
         atsSource:  'workday',
-      }));
+        }));
+        rStore._source = 'ssr_store';
+        return rStore;
+      }
     }
   } catch { /* give up */ }
 

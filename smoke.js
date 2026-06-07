@@ -158,6 +158,10 @@ assert('index: readLog imported', read('index.js').includes('readLog'));
 assert('index: /logs endpoint present', read('index.js').includes("pathname === '/logs'"));
 assert('platform-do: appendLog imported', read('platform-do.js').includes('appendLog'));
 assert('platform-do: appendLog called in alarm loop', read('platform-do.js').includes('await appendLog('));
+assert('platform-do: brLog declared in alarm loop', read('platform-do.js').includes('const brLog'));
+assert('platform-do: brLog captures workday _source', read('platform-do.js').includes('jobs._source'));
+assert('adapters: fetchWorkday tags intercept result', read('adapters.js').includes("brJobs._source = 'intercept'"));
+assert('adapters: fetchWorkday tags ssr_next result', read('adapters.js').includes("r._source = 'ssr_next'"));
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;

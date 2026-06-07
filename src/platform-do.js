@@ -128,6 +128,7 @@ class PlatformDO {
     const newMatches    = [];
     const unmatchedJobs = [];   // env-filtered, not keyword-matched
     const errorLog      = [];   // per-company errors for /logs diagnostic
+    const brLog        = [];   // Workday BR path results: {company, source, jobs}
     let polledCount  = 0;
 
     // CHUNKED POLLING with cursor rotation.
@@ -155,6 +156,10 @@ class PlatformDO {
       try {
         const jobs = await this._fetchJobs(company);
         polledCount++;
+        // Capture Workday BR path result for /logs diagnostic
+        if (this.ats === 'workday' && jobs._source) {
+          brLog.push({ company: company.name, source: jobs._source, jobs: jobs.length });
+        }
 
         for (const job of jobs) {
           // Ghost filter
@@ -283,6 +288,7 @@ class PlatformDO {
       newMatches: newMatches.length,
       cursor:     (cursor + CHUNK_SIZE) % allCompanies.length,
       errors:     errorLog,
+      ...(this.ats === 'workday' && brLog.length > 0 ? { br: brLog } : {}),
     });
     }
 
