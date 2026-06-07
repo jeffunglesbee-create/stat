@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-07T17:09:40Z
-HEAD: efd5ed4
+Generated: 2026-06-07T17:08:05Z
+HEAD: 5c8e350
 Smoke: 21/21
 
 COMPANIES
@@ -9,7 +9,11 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  efd5ed4 ci: trigger doc-snapshot first run — add trailing comment to config.js
+  5c8e350 probe: worker-probe — fresh workflow calling Worker endpoints
+  7bf96aa probe: Workday floor v6 — via Worker endpoint
+  75568c8 fix: workday probe — call Worker endpoint, not Workday directly
+  ca3bc5c probe: Workday floor v5 — push-back to outbox/
+  a4a8d9e fix: workday-simple-probe — push results to outbox/ via raw.githubusercontent.com
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
