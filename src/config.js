@@ -29,6 +29,28 @@ export const WATCH_GROUPS = [
       'epic him', 'health information management analyst', 'him analyst',
       // Identity / MPI — in demand at health system mergers and consolidations
       'epic identity', 'patient identity analyst', 'mpi analyst',
+
+      // ── CERTIFICATION OPPORTUNITY SIGNALS ──────────────────────────────
+      // "within Epic" is the key phrase — health systems actively building
+      // their Epic footprint use this in descriptions. These roles almost
+      // always include certification sponsorship ($1,000–$3,000/module).
+      // Reversed because descriptions say "work within Epic" not "epic within".
+      'within epic',           // "experience within Epic", "work within Epic"
+      'epic within',           // "Epic within 6 months"
+      'within the epic',       // "within the Epic environment"
+      'epic ecosystem',        // "within the Epic ecosystem"
+      'epic certification',    // "opportunity to earn Epic certification"
+      'epic certified',        // "become Epic certified"
+      'epic training',         // "Epic training provided"
+      'sponsored certification', // explicit sponsorship language
+      'certification opportunity', // "certification opportunities available"
+      'earn certification',    // "earn your Epic certification"
+      'become certified',      // "become certified in Epic"
+
+      // Go-live signals — active implementations = cert opportunity
+      'epic go-live', 'epic go live', 'ehr go-live',
+      'epic optimization',     // optimization projects require deeper cert
+      'epic upgrade',          // upgrade projects = cert renewal opportunities
     ],
     companyFilter: {
       health_system_hints: [
@@ -47,6 +69,21 @@ export const WATCH_GROUPS = [
         'divurgent', 'inovalon', 'evolent',
       ],
     },
+  },
+
+  // ── Certification Opportunity — description-level signal ─────────────────
+  // These roles explicitly mention Epic certification, sponsorship, or active
+  // implementations. Employer paying $1,000–$3,000/module = career accelerant.
+  // Separate group so UI shows distinct "🎓 Cert Opportunity" label.
+  {
+    priority: 1,
+    label: '🎓 Cert Opportunity',
+    keywords: [
+      'will be certified', 'training to become', 'certification provided',
+      'epic certification included', 'certification upon completion',
+      'epic certification preferred', 'certification reimbursement',
+      'professional development epic', 'epic training included',
+    ],
   },
 
   // ── Epic at a consulting firm (P2 default, fit-upgrades to P1) ───────────

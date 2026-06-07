@@ -118,6 +118,11 @@ Generate at THREE levels:
 2. BROAD: single words strongly indicating relevance (e.g. "ambulatory", "cogito", "clarity")
 3. ADJACENT: related roles this person could pivot to (e.g. "clinical informatics", "application coordinator")
 
+IMPORTANT: also include certification-opportunity signals in EXACT:
+- "within epic", "epic certification", "epic training", "epic go-live", "epic build"
+- These appear in JOB DESCRIPTIONS (not titles) and signal employers who sponsor certification
+- Epic certification costs $1,000-$3,000/module — sponsored roles are extremely high value
+
 Return ONLY JSON, no markdown:
 {"exact":["phrase1","phrase2"],"broad":["word1","word2"],"adjacent":["phrase1","phrase2"]}
 

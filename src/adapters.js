@@ -202,7 +202,10 @@ export async function fetchWorkday(company) {
       appliedFacets: {},
       limit: 50,       // higher limit to catch all Epic roles at large health systems
       offset: 0,
-      searchText: 'epic ehr',  // OR semantics — 'epic' OR 'ehr', avoids false positives from 'informatics'
+      // OR semantics: 'epic' OR 'ehr' OR 'within' 
+      // 'within' catches "work within Epic", "within the Epic ecosystem" in JD text
+      // — the strongest signal for certification-sponsoring employers
+      searchText: 'epic ehr within',
     });
     const allJobs = new Map(); // populated below
     const res = await fetch(apiUrl, {
