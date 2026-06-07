@@ -3,13 +3,13 @@ name: STAT - Doc Snapshot
 # Runs after every successful deploy
 # Generates a compact snapshot of current state and commits to docs/
 on:
-  workflow_run:
-    workflows: ["Deploy STAT worker"]
-    types: [completed]
+  push:
+    paths:
+      - 'src/**'
+      - 'wrangler.toml'
 
 jobs:
   snapshot:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
