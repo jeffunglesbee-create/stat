@@ -5,6 +5,8 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
+    env:
+      STAT_PAT: ${{ secrets.STAT_PAT }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,4 +51,5 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "probe: Workday floor results [skip ci]"
           git pull --rebase --autostash origin main
-          git push "https://${{ secrets.STAT_PAT }}@github.com/jeffunglesbee-create/stat.git" main
+          REMOTE="https://x:${STAT_PAT}@github.com/jeffunglesbee-create/stat.git"
+          git push "$REMOTE" main
