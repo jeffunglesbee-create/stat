@@ -29,7 +29,7 @@ import { fetchHiringCafe, fetchHiringCafeBR } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
-import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches, loadUnmatchedJobs, saveUnmatchedJobs } from './store.js';
+import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches, loadUnmatchedJobs, saveUnmatchedJobs, appendLog, readLog } from './store.js';
 export { StateStoreDO } from './store.js';
 import UI_HTML from './ui.html';
 
@@ -531,6 +531,9 @@ async function runHiringCafeScrape(env) {
       await scoreBatch(newMatches, profile, env.GEMINI_KEY);
     }
     console.log(`[STAT HC] ${newMatches.length} new HiringCafe matches`);
+    await appendLog(getStatStore(env), {
+      type: 'hc_poll', ats: 'hiringcafe', newMatches: newMatches.length,
+    });
     await dispatchAlerts(env, newMatches);
   }
 
@@ -973,6 +976,19 @@ async function handleFetch(request, env) {
     } catch (e) {
       return json({ error: 'BatchPollerDO not available: ' + e.message });
     }
+  }
+
+  // GET /logs — recent alarm-cycle log entries for diagnostic visibility
+  // Shows: per-ATS alarm results, Workday BR intercept success/fail, error counts
+  // Query params: ?limit=N (default 50, max 200) ?ats=workday (filter by ATS)
+  // CI log-check workflow calls this and writes to outbox/ for Claude to read.
+  if (url.pathname === '/logs' && request.method === 'GET') {
+    const limit  = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200);
+    const qAts   = url.searchParams.get('ats');
+    let entries  = await readLog(getStatStore(env), 200);
+    if (qAts) entries = entries.filter(e => e.ats === qAts);
+    entries = entries.slice(0, limit);
+    return ok(entries);
   }
 
   // GET /jobs — recent keyword-matched jobs (rolling 200)

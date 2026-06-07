@@ -35,7 +35,7 @@ import {
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
-import { getStatStore, storeGet, storeSet, saveRecentMatches, saveUnmatchedJobs } from './store.js';
+import { getStatStore, storeGet, storeSet, saveRecentMatches, saveUnmatchedJobs, appendLog } from './store.js';
 import { getPollingInterval, KV, GHOST } from './config.js';
 import { applyMarylandScore } from './maryland.js';
 import { enrichDescriptions } from './enrich.js';
@@ -127,6 +127,7 @@ class PlatformDO {
 
     const newMatches    = [];
     const unmatchedJobs = [];   // env-filtered, not keyword-matched
+    const errorLog      = [];   // per-company errors for /logs diagnostic
     let polledCount  = 0;
 
     // CHUNKED POLLING with cursor rotation.
@@ -202,6 +203,7 @@ class PlatformDO {
 
       } catch (e) {
         console.warn(`[STAT ${this.ats}] ${company.name} error:`, e.message);
+        errorLog.push({ company: company.name, error: e.message });
       }
     }
 
@@ -268,6 +270,20 @@ class PlatformDO {
     // Save env-filtered non-matches for browsing (outside match gate)
     if (unmatchedJobs.length > 0) {
       await saveUnmatchedJobs(getStatStore(this.env), unmatchedJobs);
+
+    // ── Structured log entry for GET /logs diagnostic endpoint ─────────────
+    // Captures per-alarm-cycle results so CI log-check can surface open questions:
+    //   - Is Workday BR XHR intercept returning jobs or falling back to SSR?
+    //   - Which companies are returning 0 jobs consistently?
+    //   - Is match rate improving after Workday fix?
+    await appendLog(getStatStore(this.env), {
+      type:       'alarm',
+      ats:        this.ats,
+      polled:     polledCount,
+      newMatches: newMatches.length,
+      cursor:     (cursor + CHUNK_SIZE) % allCompanies.length,
+      errors:     errorLog,
+    });
     }
 
     await this._reschedule();

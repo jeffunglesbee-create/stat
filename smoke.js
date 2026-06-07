@@ -151,6 +151,14 @@ assert('adapters: fetchCompanyJobs passes env to fetchWorkday',
 assert('platform-do: _fetchJobs passes this.env to fetchWorkday',
   platformSrc.includes('return fetchWorkday(company, this.env)'));
 
+// ─── /logs endpoint wiring ───────────────────────────────────────────────────
+assert('store: appendLog exported', read('store.js').includes('export async function appendLog'));
+assert('store: readLog exported', read('store.js').includes('export async function readLog'));
+assert('index: readLog imported', read('index.js').includes('readLog'));
+assert('index: /logs endpoint present', read('index.js').includes("pathname === '/logs'"));
+assert('platform-do: appendLog imported', read('platform-do.js').includes('appendLog'));
+assert('platform-do: appendLog called in alarm loop', read('platform-do.js').includes('await appendLog('));
+
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
 const failed = results.filter(r => !r.ok);

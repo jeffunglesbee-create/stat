@@ -1,0 +1,52 @@
+name: log-check
+on:
+  push:
+    paths: ['outbox/.log-check']
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+      - name: Fetch Worker logs
+        shell: bash
+        run: |
+          mkdir -p outbox
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/logs-${TS}.txt"
+
+          echo "=== STAT Worker Logs $TS ===" | tee "$OUT"
+          echo "" | tee -a "$OUT"
+
+          BASE="https://stat-job-watcher.jeffunglesbee.workers.dev"
+
+          # All recent logs (last 100 entries)
+          echo "--- All recent entries (limit=100) ---" | tee -a "$OUT"
+          curl -sf --max-time 30 "$BASE/logs?limit=100" | \
+            python3 scripts/parse_logs.py | tee -a "$OUT"
+          echo "" | tee -a "$OUT"
+
+          # Workday-specific logs
+          echo "--- Workday alarm entries (last 20) ---" | tee -a "$OUT"
+          curl -sf --max-time 30 "$BASE/logs?ats=workday&limit=20" | \
+            python3 scripts/parse_logs.py | tee -a "$OUT"
+          echo "" | tee -a "$OUT"
+
+          # HiringCafe logs
+          echo "--- HiringCafe poll entries (last 20) ---" | tee -a "$OUT"
+          curl -sf --max-time 30 "$BASE/logs?ats=hiringcafe&limit=20" | \
+            python3 scripts/parse_logs.py | tee -a "$OUT"
+
+      - name: Commit results
+        if: always()
+        shell: bash
+        run: |
+          git config user.email "stat-ci@stat" && git config user.name "STAT CI"
+          git add outbox/logs-*.txt
+          git diff --cached --quiet && echo "nothing to commit" && exit 0
+          git commit -m "probe: Worker logs [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && \
+            git push origin main && break || sleep $((i*5))
+          done

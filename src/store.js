@@ -201,3 +201,39 @@ export async function loadUnmatchedJobs(stub) {
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOG BUFFER
+// Ring buffer of recent Worker log entries stored in StateStoreDO.
+// Keyed 'log_buffer'. Max LOG_MAX entries, newest first.
+// Entries written by platform DO alarm loops and HC cron.
+// Read by GET /logs endpoint and CI log-check workflow.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const LOG_KEY = 'log_buffer';
+const LOG_MAX = 200;
+
+/**
+ * Append a structured log entry to the ring buffer.
+ * Non-blocking — failures are silent (never break the main pipeline).
+ *
+ * @param {object} stub   StateStoreDO stub from getStatStore(env)
+ * @param {object} entry  Log entry fields — merged with ts automatically
+ */
+export async function appendLog(stub, entry) {
+  try {
+    const raw = await storeGet(stub, LOG_KEY);
+    const buf = raw ? JSON.parse(raw) : [];
+    buf.unshift({ ts: new Date().toISOString(), ...entry });
+    await storeSet(stub, LOG_KEY, JSON.stringify(buf.slice(0, LOG_MAX)));
+  } catch { /* never break the pipeline */ }
+}
+
+/** Read the log buffer. Returns array of log entries, newest first. */
+export async function readLog(stub, limit = LOG_MAX) {
+  try {
+    const raw = await storeGet(stub, LOG_KEY);
+    const buf = raw ? JSON.parse(raw) : [];
+    return buf.slice(0, limit);
+  } catch { return []; }
+}
