@@ -1,0 +1,27 @@
+=== Workday Floor Probe 20260607T163837Z ===
+200+jobs>0=OK  200+jobs=0=SILENT_THROTTLE  429=RATE_LIMIT
+
+--- jhhs ---
+  gap=0  s  HTTP=422  jobs=ERR
+  gap=30 s  HTTP=422  jobs=ERR
+  gap=10 s  HTTP=422  jobs=ERR
+  gap=5  s  HTTP=422  jobs=ERR
+  gap=2  s  HTTP=422  jobs=ERR
+  gap=1  s  HTTP=422  jobs=ERR
+
+--- mayoclinic ---
+  gap=0  s  HTTP=422  jobs=ERR
+  gap=30 s  HTTP=422  jobs=ERR
+  gap=10 s  HTTP=422  jobs=ERR
+  gap=5  s  HTTP=422  jobs=ERR
+  gap=2  s  HTTP=422  jobs=ERR
+  gap=1  s  HTTP=422  jobs=ERR
+
+--- kaiserpermanente ---
+  gap=0  s  HTTP=422  jobs=ERR
+  gap=30 s  HTTP=422  jobs=ERR
+  gap=10 s  HTTP=422  jobs=ERR
+  gap=5  s  HTTP=422  jobs=ERR
+  gap=2  s  HTTP=422  jobs=ERR
+  gap=1  s  HTTP=422  jobs=ERR
+
