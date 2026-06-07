@@ -8,35 +8,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Probe STAT worker with curl
+      - name: Probe and push
         shell: bash
         run: |
           mkdir -p outbox
           TS=$(date -u +%Y%m%dT%H%M%SZ)
           OUT="outbox/stat-probe-${TS}.txt"
-          echo "=== Probe at $TS ===" > "$OUT"
-          for path in "/" "/companies" "/jobs?limit=1" "/profile"; do
+          echo "=== STAT Worker Probe $TS ===" > "$OUT"
+          for path in "/" "/companies" "/jobs?limit=1"; do
             URL="https://stat-job-watcher.jeffunglesbee.workers.dev${path}"
             echo "" >> "$OUT"
-            echo "=== $path ===" >> "$OUT"
-            curl -s -w "\nHTTP_STATUS:%{http_code}\nCONTENT_TYPE:%{content_type}\n" \
+            echo "=== GET $path ===" >> "$OUT"
+            curl -s -w "\n---HTTP:%{http_code} CT:%{content_type}---\n" \
               -H "Accept: application/json" \
               -H "User-Agent: STAT-probe/1.0" \
               --max-time 15 \
-              "$URL" >> "$OUT" 2>&1
+              "$URL" >> "$OUT" 2>&1 || echo "CURL_FAILED" >> "$OUT"
           done
+          echo "" >> "$OUT"
+          echo "=== END ===" >> "$OUT"
           cat "$OUT"
-          echo "OUT=$OUT" >> $GITHUB_ENV
-      - name: Push results
-        run: |
           git config user.email "stat@stat" && git config user.name "STAT"
-          git add "${OUT}"
-          git status
-          git diff --cached --stat
-          git commit -m "stat-probe results [skip ci]" || echo "nothing to commit"
+          git add "$OUT"
+          git commit -m "stat-probe ${TS} [skip ci]"
           for i in 1 2 3; do
-            git pull --rebase --autostash origin main && git push origin main && break
-            sleep $((i*5))
+            git pull --rebase --autostash origin main && git push origin main && break || sleep $((i*5))
           done
-        env:
-          OUT: ${{ env.OUT }}
