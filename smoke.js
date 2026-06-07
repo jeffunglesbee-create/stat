@@ -135,6 +135,22 @@ try {
   assert('ui.html: script block has valid JS syntax — ' + e.message.split('\n').slice(0,2).join(' '), false);
 }
 
+// ─── Workday Browser Rendering wiring ────────────────────────────────────────
+// Verifies fetchWorkday accepts env param and uses MYBROWSER for XHR intercept.
+// Verifies both call sites (platform-do._fetchJobs + adapters.fetchCompanyJobs)
+// pass env through — missing env silently falls back to SSR, never catches.
+const platformSrc = read('platform-do.js');
+assert('adapters: fetchWorkday signature accepts env param',
+  adaptersSrc.includes('async function fetchWorkday(company, env)'));
+assert('adapters: fetchWorkday checks env.MYBROWSER',
+  adaptersSrc.includes('env?.MYBROWSER') && adaptersSrc.includes('wday/cxs'));
+assert('adapters: fetchWorkday XHR intercept uses page.on response',
+  adaptersSrc.includes("page.on('response'") && adaptersSrc.includes('wday/cxs'));
+assert('adapters: fetchCompanyJobs passes env to fetchWorkday',
+  adaptersSrc.includes('return fetchWorkday(company, env)'));
+assert('platform-do: _fetchJobs passes this.env to fetchWorkday',
+  platformSrc.includes('return fetchWorkday(company, this.env)'));
+
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
 const failed = results.filter(r => !r.ok);

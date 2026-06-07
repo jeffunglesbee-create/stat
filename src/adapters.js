@@ -168,69 +168,103 @@ export async function fetchAshby(company) {
 // Workday also exposes a search API at /wday/cxs/{tenant}/{path}/jobs
 // We try the JSON search endpoint first, fall back to SSR parse.
 // ─────────────────────────────────────────────────────────────────────────────
-export async function fetchWorkday(company) {
+export async function fetchWorkday(company, env) {
   if (!company.url) return [];
 
-  // Attempt 1: Workday's internal search API (JSON, much cleaner than SSR)
+  // ─────────────────────────────────────────────────────────────────────────
+  // ROOT CAUSE (confirmed 2026-06-07, sessions 4–5):
   //
-  // URL derivation (verified via Workday SPA network inspection):
-  //   Browser URL: https://{tenant}.wd5.myworkdayjobs.com/en-US/{PathSlug}
-  //   API URL:     https://{tenant}.wd5.myworkdayjobs.com/wday/cxs/{tenant}/{PathSlug}/jobs
+  // Workday's /wday/cxs/ JSON API requires a valid browser session established
+  // by a prior page load. From Workday's own cookie documentation:
+  //   - PLAY_SESSION: session ID — must be present on all API calls
+  //   - CALYPSO_CSRF_TOKEN: CSRF token — required, causes 422 if absent
+  //   - __cf_bm: Cloudflare bot management cookie — set on first page load
+  //   - WorkdayLB_*: load balancer stickiness cookies
   //
-  // The path slug is ALWAYS the last segment of the company.url path.
-  // It is tenant-specific and cannot be hardcoded as "External_Career_Site".
+  // Plain fetch() from any datacenter IP (Cloudflare Worker, GitHub Actions)
+  // returns HTTP 422 because these cookies are absent. This is not an IP block;
+  // it is correct, documented CSRF/session validation behavior.
   //
-  // Custom domain handling: some companies (e.g. Cleveland Clinic) use custom
-  // career domains (jobs.clevelandclinic.org) that are NOT *.myworkdayjobs.com.
-  // These likely proxy to Workday but the /wday/cxs/ API path may not be accessible.
-  // For these, the SSR fallback (Attempt 2) is the viable path.
-  try {
-    const parsed = new URL(company.url);
-    const tenant = parsed.hostname.split('.')[0]; // e.g. "jhhs" from jhhs.wd5.myworkdayjobs.com
-    // Extract path slug: last non-empty segment of the URL path
-    // e.g. /en-US/JHH_External_Positions → "JHH_External_Positions"
-    // e.g. /en-US/mayoclinic → "mayoclinic"
-    // e.g. /IntermountainCareers → "IntermountainCareers" (no /en-US/)
-    const pathParts = parsed.pathname.split('/').filter(Boolean);
-    const pathSlug = pathParts[pathParts.length - 1] || 'External_Career_Site';
-    const apiUrl = `${parsed.origin}/wday/cxs/${tenant}/${pathSlug}/jobs`;
-    // Search for Epic/EHR roles directly at the Workday API level.
-    // Single search — Workday treats multi-word searchText as OR across words.
-    // "epic ehr" returns jobs containing 'epic' OR 'ehr' in title/description.
-    // Much faster than 5 separate API calls: 1 call per company, not 5.
-    const body = JSON.stringify({
-      appliedFacets: {},
-      limit: 50,       // higher limit to catch all Epic roles at large health systems
-      offset: 0,
-      // OR semantics: 'epic' OR 'ehr' OR 'within' 
-      // 'within' catches "work within Epic", "within the Epic ecosystem" in JD text
-      // — the strongest signal for certification-sponsoring employers
-      searchText: 'epic ehr',
-    });
-    const allJobs = new Map(); // populated below
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': UA,
-        // Workday /wday/cxs/ API validates same-origin requests.
-        // Without Origin + Referer it returns 422 regardless of caller IP.
-        'Origin':  parsed.origin,
-        'Referer': company.url,
-      },
-      body,
-    });
-    if (res.ok) {
-      const data = await res.json();
-      for (const j of data.jobPostings ?? []) {
-        const id = j.bulletFields?.[0] ?? j.title ?? Math.random().toString(36);
-        allJobs.set(id, j);
+  // SOLUTION: Browser Rendering (env.MYBROWSER) loads the career page in a
+  // real headless Chrome session. Workday's JavaScript executes, sets all
+  // required cookies, then fires the /wday/cxs/ XHR automatically. We
+  // intercept that XHR response via page.on('response') and extract the
+  // jobPostings JSON — no manual cookie extraction, no CSRF token handling.
+  //
+  // This is the same XHR intercept pattern used by fetchHiringCafeBR().
+  // Cost: ~3-5s browser time per company. Workers Paid includes 10 hrs/month
+  // free, sufficient for normal STAT polling volumes.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Attempt 1: Browser Rendering XHR intercept
+  // Requires env.MYBROWSER (Workers Plus binding). Falls through if unavailable.
+  if (env?.MYBROWSER) {
+    let browser = null;
+    let page = null;
+    try {
+      // SESSION REUSE — connect to idle browser, launch only if none available
+      const sessions = await puppeteer.sessions(env.MYBROWSER);
+      const idle = sessions.filter(s => !s.connectionId);
+      if (idle.length > 0) {
+        try {
+          browser = await puppeteer.connect(env.MYBROWSER, idle[0].sessionId);
+        } catch { browser = null; }
       }
-    }
-    if (allJobs.size > 0) {
-      return [...allJobs.values()].map(j => makeJob({
-          id:          j.bulletFields?.[0] ?? j.title ?? Math.random().toString(36),
+      if (!browser) browser = await puppeteer.launch(env.MYBROWSER);
+
+      page = await browser.newPage();
+
+      // RESOURCE BLOCKING — abort non-essential requests to reduce browser time
+      await page.setRequestInterception(true);
+      page.on('request', req => {
+        const t = req.resourceType();
+        if (['image', 'font', 'media', 'stylesheet'].includes(t)) req.abort();
+        else req.continue();
+      });
+
+      // XHR INTERCEPT — capture the /wday/cxs/ response fired by Workday SPA
+      // After page load, Workday JS executes and fires the jobs search XHR.
+      // The browser carries all session cookies automatically (PLAY_SESSION,
+      // CALYPSO_CSRF_TOKEN, __cf_bm, WorkdayLB_*) — no manual handling needed.
+      let capturedJobs = null;
+      const xhrPromise = new Promise((resolve) => {
+        page.on('response', async (response) => {
+          if (capturedJobs !== null) return;
+          if (!response.url().includes('/wday/cxs/')) return;
+          if (!response.url().includes('/jobs')) return;
+          try {
+            const data = await response.json();
+            const postings = data?.jobPostings;
+            if (Array.isArray(postings)) {
+              capturedJobs = postings;
+              resolve(postings);
+            }
+          } catch {}
+        });
+      });
+
+      await page.goto(company.url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 20_000,
+      });
+
+      // Wait for XHR response OR 15s timeout — whichever comes first
+      // Workday SPA fires the XHR ~1-3s after domcontentloaded
+      const postings = await Promise.race([
+        xhrPromise,
+        new Promise(r => setTimeout(() => r(null), 15_000)),
+      ]);
+
+      await page.close();
+      page = null;
+      await browser.disconnect();
+      browser = null;
+
+      if (postings && postings.length > 0) {
+        const parsed = new URL(company.url);
+        console.log(`[STAT Workday-BR] ${company.name}: ${postings.length} jobs via XHR intercept`);
+        return postings.map(j => makeJob({
+          id:          j.bulletFields?.[0] ?? j.externalPath ?? Math.random().toString(36),
           title:       j.title ?? '',
           company:     company.name,
           location:    j.locationsText ?? j.bulletFields?.[1] ?? '',
@@ -240,15 +274,27 @@ export async function fetchWorkday(company) {
             if (loc.includes('hybrid')) return 'hybrid';
             return '';
           })(),
-          salary:      null, // Workday rarely exposes salary in the listing JSON
+          salary:      null,
           url:         j.externalPath ? `${parsed.origin}${j.externalPath}` : company.url,
           postedAt:    j.postedOn ?? null,
           atsSource:   'workday',
         }));
-    }
-  } catch { /* fall through to SSR */ }
+      }
+      // XHR returned 0 jobs or timed out — fall through to SSR
+      console.warn(`[STAT Workday-BR] ${company.name}: XHR intercept returned no jobs — falling through to SSR`);
 
-  // Attempt 2: SSR __NEXT_DATA__ or Workday inline JSON
+    } catch (e) {
+      console.warn('[STAT Workday-BR]', company.name, e.message);
+    } finally {
+      if (page) { try { await page.close(); } catch {} }
+      if (browser) { try { await browser.disconnect(); } catch {} }
+    }
+  }
+
+  // Attempt 2: SSR plain fetch — parses job data embedded in server-rendered HTML.
+  // Works when the page includes job data in __NEXT_DATA__ or window.__reactiveStore.
+  // seenCount=814 confirms this path is returning real job objects (2026-06-07).
+  // Does NOT use the /wday/cxs/ API — no CSRF/session requirement.
   try {
     const res = await fetch(company.url, { headers: { 'User-Agent': UA } });
     if (!res.ok) return [];
@@ -261,7 +307,7 @@ export async function fetchWorkday(company) {
       const jobs = data?.props?.pageProps?.jobs
                 ?? data?.props?.pageProps?.jobPostings
                 ?? [];
-      return jobs.map(j => makeJob({
+      if (jobs.length > 0) return jobs.map(j => makeJob({
         id:         j.id ?? j.jobId ?? String(Math.random()),
         title:      j.title ?? j.jobTitle ?? '',
         company:    company.name,
@@ -279,7 +325,7 @@ export async function fetchWorkday(company) {
     if (inlineMatch) {
       const data = JSON.parse(inlineMatch[1]);
       const jobs = data?.jobPostings ?? data?.jobs ?? [];
-      return jobs.map(j => makeJob({
+      if (jobs.length > 0) return jobs.map(j => makeJob({
         id:         j.bulletFields?.[0] ?? String(Math.random()),
         title:      j.title ?? '',
         company:    company.name,
@@ -855,7 +901,7 @@ export async function fetchCompanyJobs(company, env) {
     case 'greenhouse':     return fetchGreenhouse(company);
     case 'lever':          return fetchLever(company);
     case 'ashby':          return fetchAshby(company);
-    case 'workday':        return fetchWorkday(company);
+    case 'workday':        return fetchWorkday(company, env);
     case 'icims':          return fetchICIMS(company);
     case 'successfactors': return fetchSuccessFactors(company);
     case 'taleo':          return fetchTaleo(company, env);

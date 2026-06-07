@@ -279,7 +279,7 @@ class PlatformDO {
       case 'greenhouse':     return fetchGreenhouse(company);
       case 'lever':          return fetchLever(company);
       case 'ashby':          return fetchAshby(company);
-      case 'workday':        return fetchWorkday(company);
+      case 'workday':        return fetchWorkday(company, this.env);
       case 'icims':          return fetchICIMS(company);
       case 'successfactors': return fetchSuccessFactors(company);
       case 'taleo':          return fetchTaleo(company, this.env);
