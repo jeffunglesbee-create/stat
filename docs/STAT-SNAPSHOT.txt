@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-07T20:17:26Z
-HEAD: 1173311
-Smoke: 32/32
+Generated: 2026-06-07T20:58:05Z
+HEAD: 490b0bc
+Smoke: 36/36
 
 COMPANIES
   SEED total: 180
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  1173311 fix: /logs endpoint ok() → json() + probe
+  490b0bc feat: br_result in Workday alarm log entries
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
