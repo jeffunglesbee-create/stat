@@ -1,0 +1,34 @@
+HiringCafe Job Page Probe — 20260607T004715Z
+
+=== HC /job/requisition_id ===
+URL: https://hiring.cafe/job/gi0crktty5y4sbqj
+HTTP:200 FINAL:https://hiring.cafe/job/gi0crktty5y4sbqj
+bytes: 64170
+ssrHits: 0 jobs
+<!DOCTYPE html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1" data-next-head=""/><meta charSet="utf-8" data-next-head=""/><title data-next-head="">School Readiness Therapist at Action Behavior Centers</title><meta property="og:title" content="School Readiness Therapist at Action Behavior Centers" data-next-head=""/><meta property="og:description" content="High school diploma/GED, age 18+, ability to lift 30 lbs, willingness to complete paid RBT certification within 20 days, consistent attendance, and ability to w" data-next-head=""/><meta name="description" property="description" content="High school diploma/GED, age 18+, ability to lift 30 lbs, willingness to complete paid RBT certification within 20 days, consistent attendance, and ability to w" data-next-head=""/><meta property="og:url" content="https://hiring.cafe/job/gi0crktty5y4sbqj" data-next-head=""/><link rel="canonical" href="https://hiring.cafe/job/gi0crktty5y4sbqj" data-next-head=""/><meta property="og:type" content="website" data-next-head=""/><meta property="og:image" content="https://s2.googleusercontent.com/s2/favicons?domain=actionbehavior.com&amp;sz=128" data-next-head=""/><meta name="twitter:card" content="summary_large_image" data-next-head=""/><meta name="twitter:title" content="School Readiness Therapist at Action Behavior Centers" data-next-head=""/><meta name="twitter:description" content="High school diploma/GED, age 18+, ability to lift 30 lbs, willingness t
+
+=== HC /viewjob/requisition_id ===
+URL: https://hiring.cafe/viewjob/gi0crktty5y4sbqj
+HTTP:410 FINAL:https://hiring.cafe/viewjob/gi0crktty5y4sbqj
+bytes: 38669
+ssrHits: 0 jobs
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><title data-next-head="">HiringCafe - Page Gone</title><meta name="description" content="This URL is no longer available. Find more jobs at hiring.cafe." data-next-head=""/><meta name="robots" content="noindex,nofollow" data-next-head=""/><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-KJCD0N6Q7T"></script><script>
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-KJCD0N6Q7T');
+            </script><link rel="manifest" href="/manifest.json"/><meta name="mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="white"/><meta name="apple-mobile-web-app-title" content="HiringCafe"/><link rel="preload" href="/_next/static/chunks/b040b00cc4baa796.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" as="style"/><link rel="stylesheet" href="/_next/static/chunks/b040b00cc4baa796.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" data-n-g=""/><link rel="preload" href="/_next/static/chunks/2d5c1f22abdd42a0.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" as="style"/><link rel="stylesheet" href="/_next/static/chunks/2d5c1f22abdd42a0.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" data-n-g=""/><link rel="preload" href="/_next/static/chunks/83c32224a57a218e.css?dpl=dpl_BtiH7jQnb7HftE
+
+=== HC /b/requisition_id ===
+URL: https://hiring.cafe/b/gi0crktty5y4sbqj
+HTTP:404 FINAL:https://hiring.cafe/b/gi0crktty5y4sbqj
+bytes: 38271
+ssrHits: 0 jobs
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><title data-next-head="">HiringCafe - 404</title><meta name="description" content="The #1 Job Search Engine." data-next-head=""/><meta name="robots" content="noindex,follow" data-next-head=""/><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-KJCD0N6Q7T"></script><script>
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-KJCD0N6Q7T');
+            </script><link rel="manifest" href="/manifest.json"/><meta name="mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="white"/><meta name="apple-mobile-web-app-title" content="HiringCafe"/><link rel="preload" href="/_next/static/chunks/b040b00cc4baa796.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" as="style"/><link rel="stylesheet" href="/_next/static/chunks/b040b00cc4baa796.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" data-n-g=""/><link rel="preload" href="/_next/static/chunks/2d5c1f22abdd42a0.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" as="style"/><link rel="stylesheet" href="/_next/static/chunks/2d5c1f22abdd42a0.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" data-n-g=""/><link rel="preload" href="/_next/static/chunks/83c32224a57a218e.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" as="style"/><link rel="stylesh
+
+DONE
