@@ -807,10 +807,15 @@ async function handleFetch(request, env) {
       appliedFacets: {}, limit: 5, offset: 0,
       searchText: 'epic ehr within',
     });
+    const origin = `https://${host}`;
+    const referer = `https://${host}/en-US/${slug}`;
     const hdrs = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'User-Agent': 'Mozilla/5.0 (compatible; STAT/1.0)',
+      // Workday /wday/cxs/ API requires same-origin headers — 422 without them
+      'Origin':  origin,
+      'Referer': referer,
     };
     const gaps = [0, 30, 10, 5, 2, 1];
     const results = [];

@@ -214,6 +214,10 @@ export async function fetchWorkday(company) {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'User-Agent': UA,
+        // Workday /wday/cxs/ API validates same-origin requests.
+        // Without Origin + Referer it returns 422 regardless of caller IP.
+        'Origin':  parsed.origin,
+        'Referer': company.url,
       },
       body,
     });
