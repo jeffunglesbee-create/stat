@@ -6,12 +6,16 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
       - name: Probe Workday rate limits
         shell: bash
         run: |
           BODY='{"appliedFacets":{},"limit":5,"offset":0,"searchText":"epic"}'
-          mkdir -p results
-          OUT="results/wd-floor.txt"
+          mkdir -p outbox
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/workday-floor-${TS}.txt"
           call_wd() {
             local url="$1" gap="$2"
             [ "$gap" -gt 0 ] && sleep "$gap"
@@ -24,7 +28,7 @@ jobs:
             printf "  gap=%-3ss  HTTP=%s  jobs=%s\n" "$gap" "$code" "$jobs" | tee -a "$OUT"
           }
           {
-            echo "=== Workday Floor Probe $(date -u) ==="
+            echo "=== Workday Floor Probe $TS ==="
             echo "200+jobs>0=OK  200+jobs=0=SILENT_THROTTLE  429=RATE_LIMIT"
             echo ""
             for row in \
@@ -43,9 +47,15 @@ jobs:
               echo ""
             done
           } | tee "$OUT"
-      - name: Upload results
-        uses: actions/upload-artifact@v4
-        with:
-          name: workday-floor-results
-          path: results/wd-floor.txt
-          retention-days: 7
+      - name: Commit and push results
+        if: always()
+        shell: bash
+        run: |
+          git config user.email "stat-ci@stat" && git config user.name "STAT CI"
+          git add outbox/workday-floor-*.txt
+          git diff --cached --quiet && echo "nothing to commit" && exit 0
+          git commit -m "probe: Workday floor results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && \
+            git push origin main && break || sleep $((i*5))
+          done
