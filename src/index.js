@@ -733,6 +733,119 @@ Score this candidate profile against the job description. Return ONLY valid JSON
     }
   }
 
+  // POST /review — Claude-powered inline job review, streamed to the UI
+  // Accepts { title, company, description, requisitionId } + optional stored profile
+  // Returns a ReadableStream of SSE chunks: data: {token}\n\n
+  // The UI renders these incrementally on the match card — no tab switch needed.
+  if (url.pathname === '/review' && request.method === 'POST') {
+    const ANTHROPIC_KEY = env.ANTHROPIC_API_KEY || env.ANTHROPIC_KEY;
+    if (!ANTHROPIC_KEY) return json({ error: 'ANTHROPIC_API_KEY not configured' }, 503);
+
+    let body;
+    try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+    const { title, company, description, requisitionId, location, environment, salary } = body;
+    if (!title) return json({ error: 'title required' }, 400);
+
+    // Load stored profile for context (optional — review works without it)
+    const profile = await loadProfile(env).catch(() => null);
+    const profileCtx = profile
+      ? `\n\nCANDIDATE PROFILE SUMMARY:\n${JSON.stringify(profile, null, 2).slice(0, 800)}`
+      : '';
+
+    const jobText = [
+      `Title: ${title}`,
+      `Company: ${company || 'Unknown'}`,
+      location ? `Location: ${location}` : null,
+      environment ? `Environment: ${environment}` : null,
+      salary ? `Salary: ${salary}` : null,
+      description ? `\nDescription:\n${description.slice(0, 3000)}` : null,
+    ].filter(Boolean).join('\n');
+
+    const systemPrompt = \`You are a sharp healthcare IT career advisor reviewing a job posting for an Epic EHR analyst.
+Be direct and specific. No filler. Format your response with these exact sections:
+
+**VERDICT** — One sentence: is this worth applying to and why?
+**TOP SIGNALS** — 3 bullet points of the most relevant match points (or mismatches)
+**DEALBREAKER** — One sentence if there is a clear dealbreaker, otherwise "None identified"
+**QUICK TAKE** — One sentence advice on how to approach this application
+
+Keep the entire response under 200 words. Use the candidate profile if provided.\`;
+
+    const userText = \`REVIEW THIS JOB:\n\${jobText}\${profileCtx}\`;
+
+    // Call Anthropic API with streaming
+    let anthropicRes;
+    try {
+      anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 400,
+          stream: true,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userText }],
+        }),
+      });
+    } catch (e) {
+      return json({ error: 'Anthropic request failed: ' + e.message }, 502);
+    }
+
+    if (!anthropicRes.ok) {
+      const errText = await anthropicRes.text().catch(() => '');
+      return json({ error: 'Anthropic error ' + anthropicRes.status + ': ' + errText.slice(0, 200) }, 502);
+    }
+
+    // Stream SSE tokens back to the browser
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
+
+    (async () => {
+      try {
+        const reader = anthropicRes.body.getReader();
+        const dec = new TextDecoder();
+        let buf = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop() ?? '';
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const raw = line.slice(6).trim();
+            if (raw === '[DONE]') continue;
+            try {
+              const evt = JSON.parse(raw);
+              if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+                const token = evt.delta.text;
+                await writer.write(encoder.encode('data: ' + JSON.stringify({ token }) + '\n\n'));
+              }
+            } catch {}
+          }
+        }
+        await writer.write(encoder.encode('data: [DONE]\n\n'));
+      } catch (e) {
+        await writer.write(encoder.encode('data: ' + JSON.stringify({ error: e.message }) + '\n\n'));
+      } finally {
+        writer.close();
+      }
+    })();
+
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  }
+
   // POST /extract-profile — extract structured profile from raw resume text via Gemini
   // Called by ui.html Resume tab. Keeps API keys server-side.
   if (url.pathname === '/extract-profile' && request.method === 'POST') {
