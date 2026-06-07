@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-07T22:47:16Z
-HEAD: c53302e
-Smoke: 38/38
+Generated: 2026-06-07T22:53:56Z
+HEAD: 823a052
+Smoke: 41/41
 
 COMPANIES
   SEED total: 180
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  c53302e fix: UPMC — workday → taleo (upmcjobs.taleo.net/careersection/UPMC_External)
+  823a052 fix: HC-BR TODO — wire mapHiringCafeHit() to complete XHR intercept path
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
