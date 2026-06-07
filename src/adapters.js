@@ -737,6 +737,71 @@ export async function fetchTaleo(company, env) {
 // With adaptive backoff (avg 10min between calls): 2s/10min = ~0.2 hrs/day = 6 hrs/mo
 // Workers Paid includes 10 hrs/mo FREE — stays well within free tier.
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared HiringCafe hit → job object mapper
+// Used by both SSR (fetchHiringCafe) and BR XHR intercept (fetchHiringCafeBR).
+// Input: raw ES document from ssrHits array or BR XHR response hits array.
+// Both paths return the same v5_processed_job_data + job_information structure.
+// ─────────────────────────────────────────────────────────────────────────────
+export function mapHiringCafeHit(j) {
+  const v5  = j.v5_processed_job_data ?? {};
+  const inf = j.job_information ?? {};
+
+  const salMin = v5.yearly_min_compensation ?? v5.monthly_min_compensation * 12
+                 ?? v5.hourly_min_compensation * 2080 ?? j.salaryMin ?? null;
+  const salMax = v5.yearly_max_compensation ?? v5.monthly_max_compensation * 12
+                 ?? v5.hourly_max_compensation * 2080 ?? j.salaryMax ?? null;
+
+  const workplaceStates = v5.workplace_states ?? [];
+  const boundlessStates = v5.boundless_workplace_states ?? [];
+  const isWorldwide     = v5.is_workplace_worldwide_ok ?? false;
+  const workplaceType   = v5.workplace_type ?? j.workplaceType ?? j.workplace_type ?? '';
+  const envRaw          = workplaceType || v5.workplace_physical_environment || '';
+  const atsSource       = j.source ?? 'hiringcafe';
+  const boardToken      = j.board_token ?? '';
+  const applyUrl        = j.apply_url ?? j.applicationUrl ?? j.applyUrl
+                          ?? `https://hiring.cafe/job/${j.requisition_id ?? j.id}`;
+  const description     = inf.description ?? inf.descriptionHtml ?? '';
+  const location        = v5.formatted_workplace_location
+                          ?? j.location?.display ?? j.locationDisplay ?? j.location ?? '';
+
+  const job = makeJob({
+    id:          String(j.id ?? j.requisition_id ?? j.objectID ?? JSON.stringify(j).slice(0, 32)),
+    title:       inf.title ?? inf.job_title_raw ?? j.title ?? j.jobTitle ?? '',
+    company:     j.enriched_company_data?.name ?? j.company?.name ?? j.companyName ?? '',
+    location,
+    environment: envRaw,
+    salary:      normalizeSalary(salMin, salMax),
+    salaryRaw:   (salMin || salMax) ? { min: salMin, max: salMax } : null,
+    url:         applyUrl,
+    postedAt:    v5.estimated_publish_date ?? j.postedAt ?? j.posted_at ?? null,
+    atsSource:   'hiringcafe',
+    description,
+  });
+
+  job.hc = {
+    workplaceStates,
+    boundlessStates,
+    isWorldwide,
+    workplaceType,
+    requirementsSummary: v5.requirements_summary ?? '',
+    seniorityLevel:      v5.seniority_level ?? '',
+    salaryTransparent:   v5.is_compensation_transparent ?? false,
+    visaSponsorship:     v5.visa_sponsorship ?? false,
+    minYoe:              v5.min_industry_and_role_yoe ?? null,
+    certifications:      v5.licenses_or_certifications ?? [],
+    technicalTools:      v5.technical_tools ?? [],
+    atsSource,
+    boardToken,
+    requisitionId:       j.requisition_id ?? '',
+    companySize:         j.enriched_company_data?.nb_employees ?? null,
+    companyFounded:      j.enriched_company_data?.year_founded ?? null,
+    companyIndustries:   j.enriched_company_data?.industries ?? [],
+  };
+
+  return job;
+}
+
 export async function fetchHiringCafeBR(keyword, environment, env) {
   if (!env?.MYBROWSER) return null;
 
@@ -861,86 +926,7 @@ export async function fetchHiringCafe(keyword, environment) {
     // ─────────────────────────────────────────────────────────────────────────
     const jobs = pp.ssrHits ?? [];
     if (!Array.isArray(jobs)) return [];
-
-    return jobs.map(j => {
-      // v5_processed_job_data is HiringCafe's AI enrichment layer — the gold mine
-      const v5  = j.v5_processed_job_data ?? {};
-      const inf = j.job_information ?? {};
-
-      // Structured salary from v5 (yearly preferred, falls back to other frequencies)
-      const salMin = v5.yearly_min_compensation ?? v5.monthly_min_compensation * 12
-                     ?? v5.hourly_min_compensation * 2080 ?? j.salaryMin ?? null;
-      const salMax = v5.yearly_max_compensation ?? v5.monthly_max_compensation * 12
-                     ?? v5.hourly_max_compensation * 2080 ?? j.salaryMax ?? null;
-
-      // State eligibility — the most valuable field for Maryland scoring
-      // workplace_states = states where the role is located/approved
-      // boundless_workplace_states = states explicitly approved for remote work
-      // Empty boundless + workplace_type=Remote = likely nationwide
-      const workplaceStates     = v5.workplace_states     ?? [];   // e.g. ["Maryland, US", "Virginia, US"]
-      const boundlessStates     = v5.boundless_workplace_states ?? [];
-      const isWorldwide         = v5.is_workplace_worldwide_ok ?? false;
-      const workplaceType       = v5.workplace_type ?? j.workplaceType ?? j.workplace_type ?? '';
-
-      // Derive environment from v5 (more reliable than raw field)
-      const envRaw = workplaceType || v5.workplace_physical_environment || '';
-
-      // ATS source info — enables auto-promotion to direct DO watching
-      const atsSource   = j.source ?? 'hiringcafe';
-      const boardToken  = j.board_token ?? j.board_token ?? '';
-      const applyUrl    = j.apply_url ?? j.applicationUrl ?? j.applyUrl
-                          ?? `https://hiring.cafe/job/${j.requisition_id ?? j.id}`;
-
-      // Full description from job_information (same HTML as job detail page)
-      const description = inf.description ?? inf.descriptionHtml ?? '';
-
-      // Location: prefer formatted string from v5
-      const location = v5.formatted_workplace_location
-                       ?? j.location?.display ?? j.locationDisplay ?? j.location ?? '';
-
-      const job = makeJob({
-        id:          String(j.id ?? j.requisition_id ?? j.objectID
-                            ?? JSON.stringify(j).slice(0, 32)),
-        title:       inf.title ?? inf.job_title_raw ?? j.title ?? j.jobTitle ?? '',
-        company:     j.enriched_company_data?.name ?? j.company?.name ?? j.companyName ?? '',
-        location,
-        environment: envRaw,
-        salary:      normalizeSalary(salMin, salMax),
-        salaryRaw:   (salMin || salMax) ? { min: salMin, max: salMax } : null,
-        url:         applyUrl,
-        postedAt:    v5.estimated_publish_date ?? j.postedAt ?? j.posted_at ?? null,
-        atsSource:   'hiringcafe',
-        description,
-      });
-
-      // Attach HiringCafe-specific enrichment fields to the job object
-      // These are used by the Maryland scorer and future enrichment layers
-      job.hc = {
-        workplaceStates,          // ["Maryland, US"] — structured state list
-        boundlessStates,          // explicitly approved remote states
-        isWorldwide,              // true = no state restriction
-        workplaceType,            // 'Remote' | 'Hybrid' | 'Onsite'
-        requirementsSummary: v5.requirements_summary ?? '',
-        seniorityLevel:     v5.seniority_level ?? '',
-        salaryTransparent:  v5.is_compensation_transparent ?? false,
-        visaSponsorship:    v5.visa_sponsorship ?? false,
-        minYoe:             v5.min_industry_and_role_yoe ?? null,
-        certifications:     v5.licenses_or_certifications ?? [],
-        technicalTools:     v5.technical_tools ?? [],
-        atsSource,            // original ATS (greenhouse/workday/etc.)
-        boardToken,           // ATS board slug for DO auto-promotion
-        // requisitionId is the HiringCafe-internal short ID used in /job/{id} URLs
-        // DIFFERENT from j.id which is the compound key (source___board___original_id)
-        // Verified: hiring.cafe/job/{requisitionId} returns HTTP 200 + full description
-        // in job_information.description inside __NEXT_DATA__.props.pageProps.job
-        requisitionId:      j.requisition_id ?? '',
-        companySize:        j.enriched_company_data?.nb_employees ?? null,
-        companyFounded:     j.enriched_company_data?.year_founded ?? null,
-        companyIndustries:  j.enriched_company_data?.industries ?? [],
-      };
-
-      return job;
-    });
+    return jobs.map(mapHiringCafeHit);
   } catch { return []; }
 }
 

@@ -25,7 +25,7 @@ export {
 
 import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, BATCH_POLLER, LEARNING } from './config.js';
 import { bootstrapSalaryDO } from './salary.js';
-import { fetchHiringCafe, fetchHiringCafeBR } from './adapters.js';
+import { fetchHiringCafe, fetchHiringCafeBR, mapHiringCafeHit } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
@@ -464,12 +464,11 @@ async function runHiringCafeScrape(env) {
       try {
         const brHits = await fetchHiringCafeBR('epic ehr within', envType, env);
         if (brHits && brHits.length > 0) {
-          // BR returned real filtered results — map to job objects
-          // BR hits are raw ES documents; convert via same structure as SSR hits
+          // BR returned real ES-filtered results — map to job objects.
+          // BR hits are raw ES _source documents: same v5_processed_job_data +
+          // job_information structure as ssrHits. mapHiringCafeHit() handles both.
           console.log(`[STAT HC-BR] ${brHits.length} targeted results for ${envType}`);
-          // TODO: map brHits to job objects (structure depends on XHR response format)
-          // For now fall through to SSR — this is the probe point
-          jobs = null; // will be confirmed after first successful intercept
+          jobs = brHits.map(mapHiringCafeHit);
         }
       } catch (e) {
         console.warn('[STAT HC-BR] Failed, falling back to SSR:', e.message);

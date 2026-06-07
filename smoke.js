@@ -156,6 +156,9 @@ assert('platform-do: _fetchJobs passes this.env to fetchWorkday',
   platformSrc.includes('return fetchWorkday(company, this.env)'));
 
 // ─── /logs endpoint wiring ───────────────────────────────────────────────────
+assert('adapters: mapHiringCafeHit exported', read('adapters.js').includes('export function mapHiringCafeHit'));
+assert('index: mapHiringCafeHit imported', read('index.js').includes('mapHiringCafeHit'));
+assert('index: HC-BR TODO resolved — maps hits with mapHiringCafeHit', read('index.js').includes('jobs = brHits.map(mapHiringCafeHit)'));
 assert('store: appendLog exported', read('store.js').includes('export async function appendLog'));
 assert('store: readLog exported', read('store.js').includes('export async function readLog'));
 assert('index: readLog imported', read('index.js').includes('readLog'));
