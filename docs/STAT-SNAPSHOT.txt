@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-07T19:51:40Z
-HEAD: 61f3526
-Smoke: 26/26
+Generated: 2026-06-07T19:57:39Z
+HEAD: 977604f
+Smoke: 32/32
 
 COMPANIES
   SEED total: 180
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  61f3526 fix: Workday — Browser Rendering XHR intercept replaces failed plain fetch
+  977604f feat: Worker log buffer + GET /logs endpoint + log-check CI workflow
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
