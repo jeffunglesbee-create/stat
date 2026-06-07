@@ -1261,3 +1261,4 @@ export default {
     return handleFetch(request, env);
   },
 };
+// browser rendering + SF fix deployed — ANTHROPIC_API_KEY active 2026-06-07
