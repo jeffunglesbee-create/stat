@@ -210,16 +210,57 @@ export async function fetchWorkday(company, env) {
           browser = await puppeteer.connect(env.MYBROWSER, idle[0].sessionId);
         } catch { browser = null; }
       }
-      if (!browser) browser = await puppeteer.launch(env.MYBROWSER);
+      // DataImpulse residential proxy — bypasses Workday's __cf_bm bot detection
+      // which blocks headless Chrome from CF datacenter IPs.
+      // Chrome handles CONNECT tunneling natively via --proxy-server arg.
+      // page.authenticate() provides username:password to the proxy gateway.
+      // When DI creds absent, launch normally (CF IP — intercept works for
+      // some tenants whose __cf_bm is less strict).
+      const diUser = env?.DATAIMPULSE_USER;
+      const diPass = env?.DATAIMPULSE_PASS;
+      const proxyArgs = (diUser && diPass)
+        ? ['--proxy-server=gw.dataimpulse.com:823']
+        : [];
+      if (!browser) browser = await puppeteer.launch(env.MYBROWSER, {
+        args: proxyArgs,
+      });
 
       page = await browser.newPage();
 
-      // RESOURCE BLOCKING — abort non-essential requests to reduce browser time
+      // Authenticate with DataImpulse proxy gateway (no-op when no proxy)
+      if (diUser && diPass) {
+        await page.authenticate({ username: diUser, password: diPass });
+      }
+
+      // RESOURCE BLOCKING + SEARCH INJECTION
+      // Two purposes:
+      // 1. Abort non-essential resources to reduce browser time cost
+      // 2. Intercept the /wday/cxs/ POST and inject searchText:'epic'
+      //    The SPA fires searchText:"" by default (all jobs, all categories).
+      //    Rewriting to searchText:'epic' filters server-side — only Epic roles
+      //    are returned, eliminating noise from nursing/facilities/food service.
+      //    limit:20 is the Workday hard cap (jobhive confirmed — >20 returns 400).
       await page.setRequestInterception(true);
       page.on('request', req => {
         const t = req.resourceType();
-        if (['image', 'font', 'media', 'stylesheet'].includes(t)) req.abort();
-        else req.continue();
+        if (['image', 'font', 'media', 'stylesheet'].includes(t)) {
+          req.abort();
+          return;
+        }
+        // Inject searchText:'epic' into the Workday jobs search XHR
+        if (req.url().includes('/wday/cxs/') && req.method() === 'POST') {
+          try {
+            const body = JSON.parse(req.postData() || '{}');
+            body.searchText = 'epic';
+            body.limit = 20;
+            req.continue({
+              postData: JSON.stringify(body),
+              headers: { ...req.headers(), 'Content-Type': 'application/json' },
+            });
+            return;
+          } catch { /* parse failed — let it through unmodified */ }
+        }
+        req.continue();
       });
 
       // XHR INTERCEPT — capture the /wday/cxs/ response fired by Workday SPA

@@ -146,6 +146,10 @@ assert('adapters: fetchWorkday checks env.MYBROWSER',
   adaptersSrc.includes('env?.MYBROWSER') && adaptersSrc.includes('wday/cxs'));
 assert('adapters: fetchWorkday XHR intercept uses page.on response',
   adaptersSrc.includes("page.on('response'") && adaptersSrc.includes('wday/cxs'));
+assert('adapters: fetchWorkday injects searchText epic into request',
+  adaptersSrc.includes("searchText = 'epic'") && adaptersSrc.includes("body.limit = 20"));
+assert('adapters: fetchWorkday uses DataImpulse proxy when creds present',
+  adaptersSrc.includes('--proxy-server=gw.dataimpulse.com:823') && adaptersSrc.includes('page.authenticate'));
 assert('adapters: fetchCompanyJobs passes env to fetchWorkday',
   adaptersSrc.includes('return fetchWorkday(company, env)'));
 assert('platform-do: _fetchJobs passes this.env to fetchWorkday',
