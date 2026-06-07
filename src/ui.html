@@ -1420,8 +1420,7 @@ async function toggleReview(jobId) {
             // Render markdown-lite: bold **text**
             content.innerHTML = text
               .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-              .replace(/
-/g, '<br>');
+              .replace(/\n/g, '<br>');
           }
           if (evt.error) {
             content.textContent = '⚠ ' + evt.error;
