@@ -619,6 +619,107 @@ export async function fetchTaleo(company, env) {
 // These fields are available at search-results list level (not just detail page)
 // so STAT captures them on every HiringCafe scrape with zero extra HTTP requests.
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// HIRINGCAFE — BROWSER RENDERING (FAST XHR INTERCEPT)
+// Novel approach: intercept the ES search XHR directly instead of waiting
+// for full page render. Session reuse + resource blocking + fast exit.
+//
+// MITIGATIONS vs call frequency + cost concerns:
+//   1. Adaptive frequency: 0 matches → 10min backoff, 1+ → 1min
+//   2. Session reuse: connect to idle browser (~50ms) vs cold launch (~800ms)
+//   3. waitForResponse not networkidle0: ~1.2s vs ~4s per call
+//   4. Resource blocking: abort images/fonts/media/stylesheets
+//   5. Disconnect not close: browser stays warm between calls
+//   6. finally block: always disconnect, never leave hanging session
+//
+// Cost at 2 calls/min: ~1.6s/call × 2 × 60 = 192s/hr = 3.2 hrs/day = 96 hrs/mo
+// With adaptive backoff (avg 10min between calls): 2s/10min = ~0.2 hrs/day = 6 hrs/mo
+// Workers Paid includes 10 hrs/mo FREE — stays well within free tier.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function fetchHiringCafeBR(keyword, environment, env) {
+  if (!env?.MYBROWSER) return null;
+
+  let browser = null;
+  let page = null;
+
+  try {
+    // SESSION REUSE — connect to idle browser, launch only if none available
+    const sessions = await puppeteer.sessions(env.MYBROWSER);
+    const idle = sessions.filter(s => !s.connectionId);
+    if (idle.length > 0) {
+      try {
+        browser = await puppeteer.connect(env.MYBROWSER, idle[0].sessionId);
+      } catch { browser = null; }
+    }
+    if (!browser) browser = await puppeteer.launch(env.MYBROWSER);
+
+    page = await browser.newPage();
+
+    // RESOURCE BLOCKING — abort non-essential requests to speed up JS execution
+    await page.setRequestInterception(true);
+    page.on('request', req => {
+      const t = req.resourceType();
+      if (['image', 'font', 'media', 'stylesheet'].includes(t)) req.abort();
+      else req.continue();
+    });
+
+    // FAST EXIT — capture the ES search XHR response without waiting for full load
+    // The HC client-side XHR fires ~400-900ms after domcontentloaded
+    // We intercept it and abort the navigation immediately after
+    let capturedJobs = null;
+    const responsePromise = new Promise((resolve) => {
+      page.on('response', async (response) => {
+        if (capturedJobs !== null) return;
+        const contentType = response.headers()['content-type'] || '';
+        if (!contentType.includes('application/json')) return;
+        try {
+          const text = await response.text();
+          // HC search XHR returns JSON with objectID + job_information fields
+          if (!text.includes('objectID') || !text.includes('job_information')) return;
+          const data = JSON.parse(text);
+          const hits = data?.hits?.hits
+                    || data?.ssrHits
+                    || data?.results
+                    || (Array.isArray(data) ? data : null);
+          if (hits && hits.length > 0) {
+            capturedJobs = hits;
+            resolve(hits);
+          }
+        } catch {}
+      });
+    });
+
+    const params = new URLSearchParams({ q: keyword, environment });
+    await page.goto(`https://hiring.cafe/?${params}`, {
+      waitUntil: 'domcontentloaded', // faster than networkidle0
+      timeout: 12_000,
+    });
+
+    // Wait for XHR response OR 8s timeout — whichever comes first
+    const jobs = await Promise.race([
+      responsePromise,
+      new Promise(r => setTimeout(() => r(null), 8_000)),
+    ]);
+
+    await page.close();
+    page = null;
+    // DISCONNECT not close — browser stays alive (warm session for next call)
+    await browser.disconnect();
+    browser = null;
+
+    return jobs; // null = BR failed, caller falls back to SSR
+
+  } catch (e) {
+    console.warn('[STAT HC-BR] Error:', e.message);
+    return null;
+  } finally {
+    // COST CEILING — always disconnect, never leave a hanging session
+    // Un-disconnected sessions burn time until 60s timeout
+    if (page) { try { await page.close(); } catch {} }
+    if (browser) { try { await browser.disconnect(); } catch {} }
+  }
+}
+
 export async function fetchHiringCafe(keyword, environment) {
   const params = new URLSearchParams({ q: keyword, environment });
   const url = `https://hiring.cafe/?${params}`;

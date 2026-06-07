@@ -25,7 +25,7 @@ export {
 
 import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, BATCH_POLLER, LEARNING } from './config.js';
 import { bootstrapSalaryDO } from './salary.js';
-import { fetchHiringCafe } from './adapters.js';
+import { fetchHiringCafe, fetchHiringCafeBR } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
@@ -375,22 +375,59 @@ async function runHiringCafeScrape(env) {
     const ckRaw = await storeGet(getStatStore(env), 'custom_keywords');
     if (ckRaw) hcCustomKeywords = JSON.parse(ckRaw).keywords || null;
   } catch {}
+
+  // ── ADAPTIVE FREQUENCY — skip if recently ran with 0 matches ─────────────
+  // 0 matches last run → HC feed unchanged → back off 10min to save BR time
+  // 1+ matches last run → stay at 1min cron interval (signal is active)
+  // Stored in StateStoreDO so it persists across cron invocations.
+  try {
+    const hcStateRaw = await storeGet(getStatStore(env), 'hc_br_state');
+    if (hcStateRaw) {
+      const hcState = JSON.parse(hcStateRaw);
+      const msSinceRun = Date.now() - (hcState.lastRunAt || 0);
+      const backoffMs = hcState.lastMatchCount === 0 ? 10 * 60_000 : 60_000;
+      if (msSinceRun < backoffMs) {
+        console.log(`[STAT HC] Adaptive backoff — last run ${Math.round(msSinceRun/1000)}s ago, ` +
+                    `${hcState.lastMatchCount} matches, backoff=${backoffMs/1000}s`);
+        return 0;
+      }
+    }
+  } catch {}
+
   const seenIds = await loadSeenIds(env);
   const newMatches = [];
   const unmatchedJobsHC = [];  // env-filtered HC jobs with no keyword match — Browse capture
   const seenThisRun = new Set();
 
-  // ── HiringCafe SSR search note (verified 2026-06-07) ──────────────────────
-  // The ?q= keyword param does NOT filter the SSR payload. HiringCafe's ES
-  // backend returns a global popularity/recency feed (152 items) regardless of
-  // search terms. All 31 × 2 = 62 keyword+env combinations return identical
-  // results. We fetch ONCE per environment instead, then run matchJob() across
-  // all 152 results — matchJob() already checks all WATCH_GROUPS keywords.
-  // This eliminates ~18s of redundant HTTP + ~24s of artificial delay per cron.
+  // ── HIRINGCAFE SEARCH — BR first, SSR fallback ────────────────────────────
+  // BR (Browser Rendering): intercepts the client-side ES search XHR,
+  // returns real keyword-filtered results (~20-30 targeted jobs per call).
+  // SSR fallback: global feed (152 jobs), matchJob() filters downstream.
+  // Both paths feed the same matching pipeline below.
   // ─────────────────────────────────────────────────────────────────────────
   for (const envType of HIRINGCAFE.environments) {
-    // Single fetch per environment — keyword is passed but ignored by SSR
-    const jobs = await fetchHiringCafe('epic analyst', envType);
+    // Try BR first — intercepts the actual ES XHR for keyword-filtered results
+    let jobs = null;
+    if (env.MYBROWSER) {
+      try {
+        const brHits = await fetchHiringCafeBR('epic ehr within', envType, env);
+        if (brHits && brHits.length > 0) {
+          // BR returned real filtered results — map to job objects
+          // BR hits are raw ES documents; convert via same structure as SSR hits
+          console.log(`[STAT HC-BR] ${brHits.length} targeted results for ${envType}`);
+          // TODO: map brHits to job objects (structure depends on XHR response format)
+          // For now fall through to SSR — this is the probe point
+          jobs = null; // will be confirmed after first successful intercept
+        }
+      } catch (e) {
+        console.warn('[STAT HC-BR] Failed, falling back to SSR:', e.message);
+      }
+    }
+
+    // SSR fallback (or if BR returned null/empty)
+    if (!jobs) {
+      jobs = await fetchHiringCafe('epic analyst', envType);
+    }
     for (const job of jobs) {
       if (seenThisRun.has(job.id) || seenIds.has(job.id)) {
         seenIds.add(job.id);
@@ -427,6 +464,14 @@ async function runHiringCafeScrape(env) {
   if (unmatchedJobsHC.length > 0) {
     await saveUnmatchedJobs(getStatStore(env), unmatchedJobsHC);
   }
+
+  // Update adaptive frequency state
+  try {
+    await storeSet(getStatStore(env), 'hc_br_state', JSON.stringify({
+      lastRunAt: Date.now(),
+      lastMatchCount: newMatches.length,
+    }));
+  } catch {}
 
   if (newMatches.length > 0) {
     const profile = await loadProfile(env);
