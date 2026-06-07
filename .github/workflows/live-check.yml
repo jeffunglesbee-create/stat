@@ -8,8 +8,56 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Run probe
+      - name: STAT status + Workday floor probe
         shell: bash
         run: |
-          echo "live-check running at $(date)"
-          echo "commit: $GITHUB_SHA"
+          BASE="https://stat-job-watcher.jeffunglesbee.workers.dev"
+          BODY='{"appliedFacets":{},"limit":5,"offset":0,"searchText":"epic ehr within"}'
+          mkdir -p outbox
+
+          call_wd() {
+            local url="$1" gap="$2"
+            [ "$gap" -gt 0 ] && sleep "$gap"
+            local r=$(curl -sf -w '\n%{http_code}' -X POST "$url" \
+              -H 'Content-Type: application/json' -H 'Accept: application/json' \
+              -H 'User-Agent: Mozilla/5.0' -d "$BODY" --max-time 8 2>/dev/null)
+            local code=$(echo "$r" | tail -1)
+            local jobs=$(echo "$r" | head -1 | python3 -c \
+              "import sys,json; d=json.load(sys.stdin); print(len(d.get('jobPostings',[])))" 2>/dev/null || echo ERR)
+            printf "  gap=%-3ss  HTTP=%s  jobs=%s\n" "$gap" "$code" "$jobs"
+          }
+
+          echo "=== STAT status ===" && curl -s "$BASE/" | python3 -c "
+import sys,json
+try:
+  d=json.load(sys.stdin)
+  print('seenJobIds:', d.get('seenJobIds'))
+  print('activeDOs:', d.get('activeDOs'))
+except: print('ERROR')
+"
+          echo ""
+          echo "=== Workday Floor Probe $(date -u) ==="
+          echo "200+jobs>0=OK  200+jobs=0=SILENT_THROTTLE  429=RATE_LIMITED"
+          for row in \
+            "jhhs|jhhs.wd5.myworkdayjobs.com|JHH_External_Positions" \
+            "mayoclinic|mayoclinic.wd5.myworkdayjobs.com|mayoclinic" \
+            "kaiserpermanente|kp.wd5.myworkdayjobs.com|KP_External_Career_Site"; do
+            IFS='|' read -r tenant host slug <<< "$row"
+            URL="https://${host}/wday/cxs/${tenant}/${slug}/jobs"
+            echo "--- $tenant ---"
+            call_wd "$URL" 0
+            call_wd "$URL" 30
+            call_wd "$URL" 10
+            call_wd "$URL" 5
+            call_wd "$URL" 2
+            call_wd "$URL" 1
+            echo ""
+          done
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-check-${{ github.run_id }}
+          path: outbox/
+          retention-days: 7
+          if-no-files-found: warn
