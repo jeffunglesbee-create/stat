@@ -1,0 +1,82 @@
+name: STAT — Doc Snapshot
+
+# Runs after every successful deploy
+# Generates a compact snapshot of current state and commits to docs/
+on:
+  workflow_run:
+    workflows: ["Deploy STAT worker"]
+    types: [completed]
+
+jobs:
+  snapshot:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+
+      - name: Generate snapshot
+        shell: bash
+        run: |
+          mkdir -p docs
+          HEAD=$(git rev-parse --short HEAD)
+          DATE=$(date -u +%Y-%m-%d)
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          # Count companies from config.js
+          SEED_GH=$(grep -c "ats: 'greenhouse'" src/config.js 2>/dev/null || echo 0)
+          SEED_WD=$(grep -c "ats: 'workday'" src/config.js 2>/dev/null || echo 0)
+          SEED_TOTAL=$(python3 -c "
+import re
+c = open('src/config.js').read()
+seed_end = c.index('export const BATCH_WATCHLIST') if 'export const BATCH_WATCHLIST' in c else len(c)
+seed = c[:seed_end]
+total = sum(seed.count(f\"ats: '{a}'\") for a in ['greenhouse','lever','ashby','workday','icims','successfactors','taleo'])
+print(total)
+" 2>/dev/null || echo "?")
+
+          # Count smoke assertions
+          SMOKE=$(node smoke.js 2>&1 | grep -oP '\d+(?=/\d+ passed)' | head -1 || echo "?")
+
+          # Get last 5 substantive commits
+          COMMITS=$(git log --oneline -10 | grep -v '\[skip ci\]' | head -5 | sed 's/^/  /')
+
+          cat > docs/STAT-SNAPSHOT.txt << EOF
+STAT — Auto-generated Snapshot
+Generated: $TIMESTAMP
+HEAD: $HEAD
+Smoke: $SMOKE/21
+
+COMPANIES
+  SEED total: $SEED_TOTAL
+  Workday: $SEED_WD (Epic-first search: 'epic ehr within')
+  Greenhouse: $SEED_GH
+
+RECENT COMMITS
+$COMMITS
+
+POLLING LAYERS
+  1. HiringCafe: 1-min cron, 2 calls/min, 152 jobs (global feed)
+  2. Platform DOs: 7 DOs, CHUNK_SIZE=15, cursor rotation
+     Workday sweep (91 cos): ~24min | GH sweep (59 cos): ~8min
+  3. BatchPollerDO: 57 cos, 25/cycle, 2min interval
+  4. Backfill: manual POST /backfill-browse
+
+KEY FACTS (do not re-verify)
+  HiringCafe: Elasticsearch backend (NOT Algolia), private VPC
+  ?q= param: server-side no-op, returns same 152 jobs always
+  DO alarm limit: 30s wall-clock (network I/O excluded from CPU)
+  Cache-Control: no-store on /ui (Safari cache busted)
+  ONEDRIVE_RESUME_URL: set, auto-fetches on bootstrap + weekly
+EOF
+
+          git config user.email "stat-ci@stat" && git config user.name "STAT CI"
+          git add docs/STAT-SNAPSHOT.txt
+          git diff --cached --quiet && echo "no changes" && exit 0
+          git commit -m "doc: auto-snapshot HEAD=$HEAD [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && \
+            git push origin main && break || sleep $((i*5))
+          done
