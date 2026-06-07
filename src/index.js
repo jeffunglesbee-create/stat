@@ -791,6 +791,53 @@ async function handleFetch(request, env) {
     return json({ ok: true, newMatches: count, time: new Date().toISOString() });
   }
 
+  // GET /workday-probe — rate limit floor probe for Workday API
+  // Tests a single tenant at decreasing intervals and returns results as JSON.
+  // Usage: GET /workday-probe?tenant=jhhs&host=jhhs.wd5.myworkdayjobs.com&slug=JHH_External_Positions
+  // Takes ~60s to run (6 rounds with sleep gaps).
+  if (url.pathname === '/workday-probe' && request.method === 'GET') {
+    const tenant = url.searchParams.get('tenant');
+    const host   = url.searchParams.get('host');
+    const slug   = url.searchParams.get('slug');
+    if (!tenant || !host || !slug) {
+      return json({ error: 'tenant, host, slug required' }, 400);
+    }
+    const apiUrl = `https://${host}/wday/cxs/${tenant}/${slug}/jobs`;
+    const body = JSON.stringify({
+      appliedFacets: {}, limit: 5, offset: 0,
+      searchText: 'epic ehr within',
+    });
+    const hdrs = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (compatible; STAT/1.0)',
+    };
+    const gaps = [0, 30, 10, 5, 2, 1];
+    const results = [];
+    for (const gap of gaps) {
+      if (gap > 0) await new Promise(r => setTimeout(r, gap * 1000));
+      const start = Date.now();
+      try {
+        const res = await fetch(apiUrl, { method: 'POST', headers: hdrs, body });
+        const elapsed = Date.now() - start;
+        let jobCount = 0;
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          jobCount = data.jobPostings?.length ?? 0;
+        }
+        results.push({ gap, http: res.status, elapsed, jobs: jobCount,
+          verdict: res.ok && jobCount > 0 ? 'OK'
+                 : res.ok && jobCount === 0 ? 'SILENT_THROTTLE'
+                 : res.status === 429 ? 'RATE_LIMITED' : 'ERROR' });
+      } catch (e) {
+        results.push({ gap, http: 'ERR', elapsed: Date.now() - start, verdict: 'ERROR', error: e.message });
+      }
+    }
+    const anyThrottle = results.some(r => r.verdict !== 'OK');
+    const lowestSafeGap = results.filter(r => r.verdict === 'OK').reduce((min, r) => Math.min(min, r.gap), 30);
+    return json({ tenant, results, anyThrottle, lowestSafeGapSeconds: lowestSafeGap });
+  }
+
   // POST /regenerate-keywords — regenerate profile-driven keyword list from stored profile
   if (url.pathname === '/regenerate-keywords' && request.method === 'POST') {
     const profile = await loadProfile(env).catch(() => null);
