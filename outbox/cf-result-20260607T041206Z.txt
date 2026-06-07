@@ -1,0 +1,177 @@
+=== CF API Probe [20260607T041206Z] ===
+Request: GET https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/workers/scripts/stat-job-watcher/deployments?limit=3
+
+{
+    "result": {
+        "deployments": [
+            {
+                "id": "277118d7-2b01-4982-805c-c8dc13d5199a",
+                "source": "wrangler",
+                "strategy": "percentage",
+                "author_email": "jeffunglesbee@gmail.com",
+                "annotations": {
+                    "workers/triggered_by": "deployment"
+                },
+                "versions": [
+                    {
+                        "version_id": "b28e56d6-0b35-4e43-bd84-53e19be4f9c0",
+                        "percentage": 100
+                    }
+                ],
+                "created_on": "2026-06-07T03:57:09.888233Z"
+            },
+            {
+                "id": "4794cc14-ea67-496c-a6c6-ea689045cb84",
+                "source": "wrangler",
+                "strategy": "percentage",
+                "author_email": "jeffunglesbee@gmail.com",
+                "annotations": {
+                    "workers/triggered_by": "deployment"
+                },
+                "versions": [
+                    {
+                        "version_id": "e529d186-ae09-48a0-ae7a-50232bc2f740",
+                        "percentage": 100
+                    }
+                ],
+                "created_on": "2026-06-07T03:14:24.751044Z"
+            },
+            {
+                "id": "b38660b0-0f51-4919-b316-aa67bfc6b9f6",
+                "source": "wrangler",
+                "strategy": "percentage",
+                "author_email": "jeffunglesbee@gmail.com",
+                "annotations": {
+                    "workers/triggered_by": "deployment"
+                },
+                "versions": [
+                    {
+                        "version_id": "de3545cd-ef40-47f2-a59b-663b884e2b8b",
+                        "percentage": 100
+                    }
+                ],
+                "created_on": "2026-06-07T03:06:56.360023Z"
+            },
+            {
+                "id": "d7df56da-415a-48cc-b035-15a6d6dda66a",
+                "source": "wrangler",
+                "strategy": "percentage",
+                "author_email": "jeffunglesbee@gmail.com",
+                "annotations": {
+                    "workers/message": "Automatic deployment on upload.",
+                    "workers/triggered_by": "upload"
+                },
+                "versions": [
+                    {
+                        "version_id": "699eda57-7c82-49b0-ab80-379ffb802ecf",
+                        "percentage": 100
+                    }
+                ],
+                "created_on": "2026-06-07T01:56:38.421485Z"
+            },
+            {
+                "id": "97dd160d-3fac-4918-972a-56b11aff31a4",
+                "source": "wrangler",
+                "strategy": "percentage",
+                "author_email": "jeffunglesbee@gmail.com",
+                "annotations": {
+                    "workers/message": "Automatic deployment on upload.",
+                    "workers/triggered_by": "upload"
+                },
+                "versions": [
+                    {
+                        "version_id": "3c1fa4bf-10cb-4edb-801c-3bc5c21f6c76",
+                        "percentage": 100
+                    }
+                ],
+                "created_on": "2026-06-07T01:54:12.106415Z"
+            },
+            {
+                "id": "de3815fd-609a-4fd0-9b46-8813309643fd",
+                "source": "wrangler",
+                "strategy": "percentage",
+                "author_email": "jeffunglesbee@gmail.com",
+                "annotations": {
+                    "workers/message": "Automatic deployment on upload.",
+                    "workers/triggered_by": "upload"
+                },
+                "versions": [
+                    {
+                        "version_id": "1bd9acb1-9768-4ba8-9bc8-7d7249c4a15e",
+                        "percentage": 100
+                    }
+                ],
+                "created_on": "2026-06-07T01:19:46.12448Z"
+            },
+            {
+                "id": "6e029c03-a56a-4930-a988-ca2c37fae330",
+                "source": "wrangler",
+                "strategy": "percentage",
+                "author_email": "jeffunglesbee@gmail.com",
+                "annotations": {
+                    "workers/triggered_by": "deployment"
+                },
+                "versions": [
+                    {
+                        "version_id": "fbb9b54a-5431-4f07-abb5-5167b486bc4f",
+                        "percentage": 100
+                    }
+                ],
+                "created_on": "2026-06-07T01:03:38.291427Z"
+            },
+            {
+                "id": "c6d459a6-6425-40e2-bb3f-d0f8da8cec3d",
+                "source": "wrangler",
+                "strategy": "percentage",
+                "author_email": "jeffunglesbee@gmail.com",
+                "annotations": {
+                    "workers/message": "Automatic deployment on upload.",
+                    "workers/triggered_by": "upload"
+                },
+                "versions": [
+                    {
+                        "version_id": "0914f02d-dee0-4e14-9869-bdc65da03b27",
+                        "percentage": 100
+                    }
+                ],
+                "created_on": "2026-06-07T01:03:34.382126Z"
+            },
+            {
+                "id": "7290a1bd-924c-435e-87c4-84eb5932543c",
+                "source": "wrangler",
+                "strategy": "percentage",
+                "author_email": "jeffunglesbee@gmail.com",
+                "annotations": {
+                    "workers/triggered_by": "deployment"
+                },
+                "versions": [
+                    {
+                        "version_id": "2a63c480-2cc5-4096-8f7f-6dce92236171",
+                        "percentage": 100
+                    }
+                ],
+                "created_on": "2026-06-07T00:36:59.340535Z"
+            },
+            {
+                "id": "163d8ea5-d70b-4950-a5a3-ae1c2adc5af4",
+                "source": "wrangler",
+                "strategy": "percentage",
+                "author_email": "jeffunglesbee@gmail.com",
+                "annotations": {
+                    "workers/message": "Automatic deployment on upload.",
+                    "workers/triggered_by": "upload"
+                },
+                "versions": [
+                    {
+                        "version_id": "682046a1-7f61-438e-abac-9e0e3296a40c",
+                        "percentage": 100
+                    }
+                ],
+                "created_on": "2026-06-07T00:36:53.768022Z"
+            }
+        ]
+    },
+    "success": true,
+    "errors": [],
+    "messages": []
+}
