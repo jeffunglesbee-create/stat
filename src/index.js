@@ -761,7 +761,7 @@ Score this candidate profile against the job description. Return ONLY valid JSON
       description ? `\nDescription:\n${description.slice(0, 3000)}` : null,
     ].filter(Boolean).join('\n');
 
-    const systemPrompt = \`You are a sharp healthcare IT career advisor reviewing a job posting for an Epic EHR analyst.
+    const systemPrompt = `You are a sharp healthcare IT career advisor reviewing a job posting for an Epic EHR analyst.
 Be direct and specific. No filler. Format your response with these exact sections:
 
 **VERDICT** — One sentence: is this worth applying to and why?
@@ -769,9 +769,9 @@ Be direct and specific. No filler. Format your response with these exact section
 **DEALBREAKER** — One sentence if there is a clear dealbreaker, otherwise "None identified"
 **QUICK TAKE** — One sentence advice on how to approach this application
 
-Keep the entire response under 200 words. Use the candidate profile if provided.\`;
+Keep the entire response under 200 words. Use the candidate profile if provided.`;
 
-    const userText = \`REVIEW THIS JOB:\n\${jobText}\${profileCtx}\`;
+    const userText = `REVIEW THIS JOB:\n${jobText}${profileCtx}`;
 
     // Call Anthropic API with streaming
     let anthropicRes;
