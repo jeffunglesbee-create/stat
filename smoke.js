@@ -89,6 +89,14 @@ assert('store: loadUnmatchedJobs exported',
 
 assert('store: UNMATCHED_MAX cap defined',
   store.includes('UNMATCHED_MAX'));
+assert('store: UNMATCHED_MAX >= 2000',
+  store.includes('UNMATCHED_MAX = 2000'));
+assert('ui: browse desc button calls toggleDescBrowse',
+  ui.includes("toggleDescBrowse('${job.id}'"));
+assert('ui: browse desc button uses data-desc attr',
+  ui.includes('data-desc='));
+assert('adapters: SF description cleaned via descRaw',
+  read('adapters.js').includes('descRaw'));
 
 // ─── JS syntax: no escaped backticks ─────────────────────────────────────────
 // Escaped backticks (\`) inside JS source are never valid — they appear when

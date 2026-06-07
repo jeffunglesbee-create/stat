@@ -166,7 +166,7 @@ export async function loadRecentMatches(stub) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const UNMATCHED_KEY = 'unmatched_jobs';
-const UNMATCHED_MAX = 500;
+const UNMATCHED_MAX = 2000;
 
 /**
  * Append env-filtered non-matching jobs to the unmatched store.

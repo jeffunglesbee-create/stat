@@ -1982,7 +1982,7 @@ document.getElementById('btn-score-jd').onclick = async () => {
 async function loadBrowse() {
   const atsFilter = document.getElementById('browse-ats').value;
   const q = document.getElementById('browse-search').value.trim();
-  const params = new URLSearchParams({ limit: '200' });
+  const params = new URLSearchParams({ limit: '500' });
   if (atsFilter) params.set('ats', atsFilter);
   if (q) params.set('q', q);
 
@@ -2018,7 +2018,7 @@ async function loadBrowse() {
   <div class="match-card-actions">
     <a href="${job.url}" target="_blank" class="apply-btn">View Job →</a>
     <button class="btn-cancel-form" onclick="browseScoreCard(this, '${job.id.replace(/'/g,"\\'")}', ${JSON.stringify(JSON.stringify(job)).slice(1,-1)})" style="font-size:10px">Score against profile</button>
-    ${job.description ? `<button class="desc-btn" id="dbtn-${job.id}" onclick="toggleDesc('${job.id}')">\u25b8 Desc</button>` : ''}
+    ${job.description ? `<button class="desc-btn" id="dbtn-${job.id}" data-desc="${encodeURIComponent(job.description || '')}" onclick="toggleDescBrowse('${job.id}', decodeURIComponent(this.dataset.desc))">\u25b8 Desc</button>` : ''}
   </div>
   ${job.description ? `<div class="desc-panel" id="desc-${job.id}"></div>` : ''}
   <div id="bscore-${job.id}" style="display:none;margin-top:4px"></div>

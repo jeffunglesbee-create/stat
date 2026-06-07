@@ -539,7 +539,13 @@ export async function fetchSuccessFactors(company) {
 
       const title       = cdata('JobTitle') || plain('JobTitle');
       const reqId       = plain('ReqId');
-      const description = cdata('Job-Description');
+      const descRaw = cdata('Job-Description');
+      // SF XML descriptions contain HTML + literal \r\n sequences — strip both
+      const description = descRaw
+        .replace(/\\r\\n/g, ' ').replace(/\\n/g, ' ').replace(/\\r/g, ' ')
+        .replace(/&#?[a-zA-Z0-9]+;/g, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ').trim();
       const location    = filterVal(7);   // "City, ST"
       const workSetting = filterVal(8);   // "Hybrid|On-site: 90-100%|Remote"
       const affiliate   = filterVal(2);   // "Johns Hopkins Hospital" etc.
