@@ -394,7 +394,11 @@ async function handleFetch(request, env) {
   // GET /ui — HTML dashboard (served inline from ui.html)
   if (url.pathname === '/ui' && request.method === 'GET') {
     return new Response(UI_HTML, {
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     });
   }
 
