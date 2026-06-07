@@ -1,0 +1,561 @@
+STAT — ATS Adapter Specifications
+Updated: 2026-06-07
+Source of truth: src/adapters.js
+Companion: STAT-ARCHITECTURE.txt
+
+All adapters return Array<NormalizedJob> or [].
+All errors caught internally — callers never throw.
+All ship in src/adapters.js; dispatched by fetchCompanyJobs(company, env).
+
+════════════════════════════════════════════════════════════════════════════
+ADAPTER STATUS SUMMARY
+════════════════════════════════════════════════════════════════════════════
+
+Adapter         | Verified | Method          | Notes
+─────────────── | ──────── | ─────────────── | ──────────────────────────────
+Greenhouse      | YES      | JSON GET        | Clean public API, no auth
+Lever           | YES      | JSON GET        | Clean public API, no auth
+Ashby           | YES      | JSON GET        | Best salary data of all ATS
+Workday         | PARTIAL  | POST JSON       | Path slug fix applied; SSR fallback only for custom domains
+iCIMS           | YES      | HTML GET        | in_iframe=1 trick; CF IPs not blocked
+SuccessFactors  | YES      | XML GET         | Full description in feed; Hopkins SFHUP verified
+Taleo           | YES      | BR + HTML GET   | BR for search SPA; plain fetch for detail
+HiringCafe      | YES      | HTML GET        | ssrHits key fix 2026-06-07; no keyword filtering in SSR
+
+
+════════════════════════════════════════════════════════════════════════════
+1. GREENHOUSE
+════════════════════════════════════════════════════════════════════════════
+
+Status: VERIFIED FULL
+Verification: Live API response confirmed; no auth required; JSON clean.
+
+Endpoint:
+  GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true
+
+Auth: None — public
+
+Response shape:
+  { jobs: [ { id, title, location, absolute_url, updated_at, metadata, content } ] }
+
+Field mapping:
+  id          → j.id                (integer)
+  title       → j.title
+  location    → j.location.name ?? j.offices[0].name
+  environment → j.metadata[name~='remote'].value ?? location-contains-remote
+  salary      → j.metadata[name~='salary'].value (text; varies by employer)
+  url         → j.absolute_url ?? boards.greenhouse.io/{token}/jobs/{id}
+  postedAt    → j.updated_at
+  description → j.content          (HTML; only with ?content=true)
+  atsSource   → 'greenhouse'
+
+Ghost signal: updated_at — if unchanged across polls, job is likely filled
+Description: INCLUDED in list response with ?content=true — no second-pass needed
+Salary: Present in metadata fields for employers that disclose; varies widely
+Poll interval: 120s (default; greenhouse is fast and reliable)
+
+Config example:
+  { name: 'Mass General Brigham', ats: 'greenhouse', token: 'massgeneral' }
+
+
+════════════════════════════════════════════════════════════════════════════
+2. LEVER
+════════════════════════════════════════════════════════════════════════════
+
+Status: VERIFIED FULL
+Verification: Live API response confirmed; no auth required; JSON clean.
+
+Endpoint:
+  GET https://api.lever.co/v0/postings/{token}?mode=json&limit=250
+
+Auth: None — public
+
+Response shape:
+  [ { id, text, categories, hostedUrl, createdAt, salaryRange, description } ]
+
+Field mapping:
+  id          → j.id
+  title       → j.text
+  location    → j.categories.location ?? j.categories.allLocations[0]
+  environment → categories.commitment~='remote' OR location~='remote'
+  salary      → j.salaryRange.min / .max (structured numbers)
+  url         → j.hostedUrl ?? jobs.lever.co/{token}/{id}
+  postedAt    → new Date(j.createdAt).toISOString()
+  description → j.description.content ?? j.descriptionBody.content (HTML)
+  atsSource   → 'lever'
+
+Ghost signal: createdAt — Lever does not update this when job is bumped
+Description: INCLUDED in list response — no second-pass needed
+Salary: Best structured salary of clean-API adapters (salaryRange.min/max)
+Poll interval: 120s
+
+Config example:
+  { name: 'Epic Consulting Co', ats: 'lever', token: 'epicco' }
+
+
+════════════════════════════════════════════════════════════════════════════
+3. ASHBY
+════════════════════════════════════════════════════════════════════════════
+
+Status: VERIFIED FULL
+Verification: Live API response confirmed; no auth required; JSON clean.
+
+Endpoint:
+  GET https://api.ashbyhq.com/posting-api/job-board/{token}?includeCompensation=true
+
+Auth: None — public
+
+Response shape:
+  { jobs: [ { id, title, location, jobUrl, publishedAt, workplaceType,
+              compensation, jobDescription } ] }
+
+Field mapping:
+  id          → j.id
+  title       → j.title
+  location    → j.location
+  environment → j.workplaceType.toLowerCase() ('remote'|'hybrid'|'onsite')
+  salary      → j.compensation.summaryComponents[0].label + .value
+  salaryRaw   → { min, max } from compensation range
+  url         → j.jobUrl
+  postedAt    → j.publishedAt
+  description → j.jobDescription.descriptionHtml ?? .description
+  atsSource   → 'ashby'
+
+Ghost signal: publishedAt — Ashby refreshes this when job is re-posted
+Description: INCLUDED in list response — no second-pass needed
+Salary: BEST structured salary data of all adapters (summaryComponents, structured)
+Environment: Most reliable workplaceType field of all ATS
+Poll interval: 120s
+
+Config example:
+  { name: 'Health IT Startup', ats: 'ashby', token: 'healthit' }
+
+
+════════════════════════════════════════════════════════════════════════════
+4. WORKDAY
+════════════════════════════════════════════════════════════════════════════
+
+Status: PARTIAL — API path fix applied; SSR fallback for custom domains
+Verification: Domain live confirmed; path slugs verified via probe 2026-06-06.
+              No full end-to-end job return verified yet.
+
+Strategy (in priority order):
+  1. POST /wday/cxs/{tenant}/{slug}/jobs — JSON API (fast, structured)
+  2. GET company.url → parse __NEXT_DATA__
+  3. GET company.url → parse window.__reactiveStore
+
+Endpoint (API):
+  POST https://{tenant}.wd{n}.myworkdayjobs.com/wday/cxs/{tenant}/{slug}/jobs
+  Body: { appliedFacets: {}, limit: 20, offset: 0, searchText: '' }
+  Auth: None
+
+CRITICAL — Path slug derivation:
+  The slug is the last segment of the company.url path, NOT 'External_Career_Site'.
+  Example: url='jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions'
+    tenant = 'jhhs'
+    slug   = 'JHH_External_Positions'
+    apiUrl = '...wd5.myworkdayjobs.com/wday/cxs/jhhs/JHH_External_Positions/jobs'
+
+  This was hardcoded to External_Career_Site before 2026-06-06 fix (commit 86f17bc).
+  Every Workday tenant uses a unique slug — none are External_Career_Site.
+
+API response shape:
+  { jobPostings: [ { title, externalPath, locationsText, bulletFields, postedOn } ] }
+
+Field mapping (API path):
+  id          → j.bulletFields[0] ?? j.title ?? random
+  title       → j.title
+  location    → j.locationsText ?? j.bulletFields[1]
+  environment → locationsText~='remote' ? 'remote' : locationsText~='hybrid' ? 'hybrid' : ''
+  salary      → null (Workday rarely discloses salary in listing JSON)
+  url         → {origin}{j.externalPath} ?? company.url
+  postedAt    → j.postedOn ?? null
+  atsSource   → 'workday'
+
+Description: Fetched in second pass by enrich.js — og:description from detail page
+             Plain fetch() works (Workday pages are server-rendered)
+
+Custom domain handling:
+  Some companies (e.g. Cleveland Clinic → jobs.clevelandclinic.org) use a custom
+  career domain. The /wday/cxs/ API is NOT accessible on custom domains.
+  For these, Attempt 1 fails silently; Attempt 2 (SSR parse) is the only path.
+  SSR parse may also return empty if the page requires JS to load job data.
+  These companies may need manual verification or should be moved to BATCH_WATCHLIST.
+
+Known seed list issues:
+  UCSF Health: removed — confirmed on Avature (careers.ucsf.edu), not Workday
+  Cleveland Clinic: custom domain, SSR-only path
+
+Poll interval: 240s (default Workday)
+
+Config example:
+  { name: 'Johns Hopkins Health System', ats: 'workday', token: 'jhhs',
+    url: 'https://jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions',
+    mdApproved: true }
+
+
+════════════════════════════════════════════════════════════════════════════
+5. iCIMS
+════════════════════════════════════════════════════════════════════════════
+
+Status: VERIFIED FULL
+Verification: Live probe 2026-06-06, VHC Health.
+  Step 1: 42KB HTML, 8 job IDs extracted, 423ms, not blocked
+  Step 2: Job 13916 detail — 32KB, full description confirmed
+  Routing fix: iCIMS moved from NEEDS_BROWSER_FETCH → NEEDS_PLAIN_FETCH (commit 4a64203)
+
+Key insight — the ?in_iframe=1 parameter:
+  Without it: URL returns branded wrapper HTML (VHC wrapper, not iCIMS portal)
+  With it: iCIMS serves the iframe-optimized variant — actual portal content,
+           no wrapper redirect, server-rendered with job data embedded for SEO
+
+Step 1 — Search (list):
+  GET {base}/jobs/search?ss=1&searchKeyword=&in_iframe=1
+  Returns: ~42KB HTML with job IDs in canonical href links
+  Extraction: /jobs/(\d{4,6})/ regex pattern from raw HTML
+  Confirmed: 8+ job IDs per response, Cloudflare Worker IPs not blocked
+
+Step 2 — Detail (description, via enrich.js):
+  GET {base}/jobs/{id}/job?in_iframe=1
+  Returns: ~32KB server-rendered HTML with full job description
+  Title in <title> tag; description in body text
+  Routing: NEEDS_PLAIN_FETCH — plain fetch(), NOT Browser Rendering (BR is blocked by iCIMS WAF)
+
+Field mapping (from list):
+  id          → extracted digit string from href (e.g. '13916')
+  title       → '' (populated by enrich.js second-pass from detail page)
+  location    → '' (populated by enrich.js second-pass)
+  environment → '' (populated by enrich.js from description text)
+  url         → {base}/jobs/{id}/{slug}
+  atsSource   → 'icims'
+
+Ghost signal: none in list page; lastmod from sitemap (future optimization)
+Description: Second-pass via enrich.js fetchPlainDescription() with ?in_iframe=1
+Salary: Not available in iCIMS listing
+Poll interval: 240s
+
+Verified seed (2026-06-06):
+  VHC Health: careers-vhchealth.icims.com ✓
+  UCI Health: careers-uci.icims.com ✓
+  Infirmary Health: careers-infirmaryhealth.icims.com ✓
+  PHS: careers-phs.icims.com ✓
+
+Removed from seed (migrated away from iCIMS):
+  HCA Healthcare → Oracle Taleo/other
+  Dignity Health → migrated
+  Encompass Health → migrated
+  Tenet Healthcare → Oracle Fusion HCM
+
+Config example:
+  { name: 'VHC Health', ats: 'icims', token: 'vhchealth',
+    url: 'https://careers-vhchealth.icims.com/jobs/search' }
+
+
+════════════════════════════════════════════════════════════════════════════
+6. SAP SUCCESSFACTORS
+════════════════════════════════════════════════════════════════════════════
+
+Status: VERIFIED FULL
+Verification: Hopkins SFHUP XML feed live, 8MB, 1000+ jobs confirmed.
+              XML tag structure verified against SAP KBA 2428902.
+
+Endpoint:
+  GET https://career4.successfactors.com/career
+    ?company={id}&career_ns=job_listing_summary&resultType=XML
+
+Auth: None — public XML feed
+
+Response shape (XML):
+  <Job-Listing>
+    <Job>
+      <JobTitle><![CDATA[...]]></JobTitle>
+      <ReqId>669439</ReqId>
+      <Job-Description><![CDATA[full HTML description]]></Job-Description>
+      <filter1><label>Job Category</label><value>...</value></filter1>
+      <filter2><label>Affiliate</label><value>Johns Hopkins Hospital</value></filter2>
+      <filter3><label>Shift</label><value>...</value></filter3>
+      <filter7><label>Location</label><value>Baltimore, MD</value></filter7>
+      <filter8><label>Work Setting</label><value>Hybrid|On-site|Remote</value></filter8>
+      <filter10><label>Job Status</label><value>Full Time|Part Time</value></filter10>
+    </Job>
+  </Job-Listing>
+
+Field mapping:
+  id          → ReqId (plain text element)
+  title       → JobTitle (CDATA)
+  company     → filter2/value (Affiliate) ?? company.name
+  location    → filter7/value ("City, ST")
+  environment → filter8/value — 'remote'|'hybrid'|'onsite' normalized
+  salary      → null (SF XML feed does not disclose salary)
+  url         → career4.successfactors.com/career?company={id}&career_job_req_id={reqId}
+                &career_ns=job_listing&navBarLevel=JOB_SEARCH
+  atsSource   → 'successfactors'
+
+Ghost signal: SF XML feed does not include post date (postedAt: null)
+Description: INCLUDED in list response (Job-Description CDATA) — no second-pass needed.
+             This is the only adapter that provides full HTML description at list level
+             without any additional HTTP requests.
+Salary: Not disclosed in SF listing XML
+
+Quirks:
+  - company.url stores the full XML feed URL (not the job portal URL)
+  - ReqId is the unique job identifier across the SF tenant
+  - Affiliate (filter2) often more specific than company.name for large health systems
+  - Large tenants (Hopkins) return 1000+ jobs per feed; parser handles all
+
+Config example:
+  { name: 'Johns Hopkins Medicine', ats: 'successfactors', token: 'SFHUP',
+    url: 'https://career4.successfactors.com/career?company=SFHUP&career_ns=job_listing_summary&resultType=XML' }
+
+
+════════════════════════════════════════════════════════════════════════════
+7. ORACLE TALEO
+════════════════════════════════════════════════════════════════════════════
+
+Status: VERIFIED FULL
+Verification: Live probe 2026-06-06, TUHS (tuhs.taleo.net).
+  Step 1: Browser Rendering returns 20 real jobdetail.ftl URLs in ~3.8s
+  Step 2: Plain fetch() on each detail page — server-rendered HTML confirmed
+
+Architecture — why Browser Rendering is required for search:
+  Taleo's search page (/careersection/{n}/jobsearch.ftl) is a JavaScript SPA.
+  Job data is loaded via XHR after JS executes. Plain fetch() returns the shell
+  HTML with zero job data. Browser Rendering (Cloudflare Puppeteer) renders the
+  SPA fully and extracts jobdetail.ftl?job={id} links from the DOM.
+
+Step 1 — Search (Browser Rendering):
+  URL: {tenant}.taleo.net/careersection/{n}/jobsearch.ftl
+  Method: puppeteer.launch(env.MYBROWSER) → page.goto → waitUntil:networkidle0
+  Extract: querySelectorAll('a[href]').filter(h => h.includes('jobdetail') && h.includes('job='))
+  Returns: up to 50 job detail URLs
+  Requires: env.MYBROWSER binding in wrangler.toml
+
+Step 2 — Detail (plain fetch):
+  URL: {detail_url} extracted from Step 1
+  Returns: server-rendered HTML (~variable KB)
+  Note: og:description is Taleo boilerplate ("Click the link to apply for the job")
+        Real title is in <title> tag; description in body (handled by enrich.js)
+
+Field mapping:
+  id          → 'taleo:' + jobId (from ?job={id} param)
+  title       → <title> tag, cleaned of "Job Description -" prefix
+  location    → class~='location' span ?? "City, ST" pattern
+  environment → '' (populated by enrich.js from description text)
+  salary      → null (Taleo does not disclose salary)
+  url         → detail URL from jobdetail.ftl
+  postedAt    → "posted|opening date" pattern match ?? null
+  atsSource   → 'taleo'
+
+Ghost signal: Taleo does include postedDate/openDate for some tenants
+Description: Second-pass via enrich.js — Browser Rendering handles Taleo detail
+             (enrich.js NEEDS_BROWSER_FETCH includes 'taleo')
+             Note: detail pages are server-rendered; plain fetch may also work
+Poll interval: 480s (Taleo is slowest adapter)
+
+Fragility note:
+  Taleo HTML varies significantly across tenant versions. If a Taleo company
+  returns zero results, inspect the raw HTML for the careersection path and
+  confirm the SPA structure hasn't changed.
+
+Known seed list (4 companies):
+  UAB Medicine: uabmedicine.taleo.net
+  Indiana University Health: iuhealth.taleo.net
+  Froedtert Health: froedtert.taleo.net
+  Fairview Health Services: fairview.taleo.net
+
+Config example:
+  { name: 'TUHS', ats: 'taleo', token: 'tuhs',
+    url: 'https://tuhs.taleo.net/careersection/10041/jobsearch.ftl' }
+
+
+════════════════════════════════════════════════════════════════════════════
+8. HIRINGCAFE (Wide-Net Cron)
+════════════════════════════════════════════════════════════════════════════
+
+Status: VERIFIED — ssrHits fix applied 2026-06-07 (commit d16162d)
+Role: NOT a company-specific DO adapter. Wide-net cron scrape for keyword
+      matching across the full job index (~3.5M jobs as of 2026-06-07).
+
+Endpoint:
+  GET https://hiring.cafe/?q={keyword}&environment={env}
+  Note: See search relevance caveat below.
+
+Auth: None — public SSR page
+
+__NEXT_DATA__ structure (verified 2026-06-07):
+  pageProps keys: ssrHits, ssrPage, ssrTotalCount, ssrCompanyCount,
+                  ssrPageSize, ssrIsLastPage, ssrError, initialSearchState
+
+  ssrHits: Array of job objects (152 items per response observed)
+  ssrTotalCount: total index size (3,475,525 as of 2026-06-07)
+
+CRITICAL LIMITATION — Search relevance:
+  The ?q= and ?environment= parameters do NOT filter the SSR payload.
+  HiringCafe filters client-side via Algolia after the page loads.
+  The SSR payload (ssrHits) appears to be a popularity/recency global feed
+  that ignores the query string entirely.
+  Evidence: All four keyword searches returned IDENTICAL 152-item lists.
+  
+  Implication: fetchHiringCafe('epic analyst') == fetchHiringCafe('epic cadence').
+  STAT's matchJob() filters downstream — only Epic/healthcare IT jobs trigger alerts.
+  But the cron is processing 152 identical jobs × 31 terms × 2 envs = 9,424 objects
+  per cycle. All deduped by seen-set; alerts only fire on actual keyword matches.
+  
+  TODO: Switch to Algolia search API for targeted keyword results.
+        Algolia app ID + search key are embedded in initialSearchState.
+        Would reduce per-cycle processing from 9,424 to <20 targeted results.
+
+Job object shape (verified 2026-06-07):
+  Top-level keys:
+    id, board_token, source, apply_url, source_and_board_token,
+    job_information, v5_processed_job_data, enriched_company_data,
+    _geoloc, original_source_id, requisition_id, collapse_key,
+    is_expired, objectID
+
+  job_information keys (2026-06-07):
+    title, job_title_raw
+    (description NOT in list response — was present in earlier version)
+
+  v5_processed_job_data keys (verified present 2026-06-07):
+    core_job_title, requirements_summary, technical_tools,
+    licenses_or_certifications, associates/bachelors/masters/doctorate_degree_*,
+    min_industry_and_role_yoe, 401k_matching, min_management_and_leadership_yoe,
+    job_category, role_activities, commitment, role_type, seniority_level,
+    workplace_countries, boundless_workplace_states, boundless_workplace_countries,
+    boundless_workplace_continents, workplace_continents, workplace_states,
+    workplace_cities, workplace_type, yearly_min/max_compensation,
+    is_compensation_transparent, visa_sponsorship, estimated_publish_date
+
+  v5 fields the adapter maps:
+    workplace_type        → environment ('Remote'|'Hybrid'|'Onsite')
+    workplace_states      → job.hc.workplaceStates (e.g. ['Texas, US'])
+    boundless_workplace_states → job.hc.boundlessStates (remote-approved states)
+    is_workplace_worldwide_ok  → job.hc.isWorldwide
+    yearly_min_compensation    → salary range min
+    yearly_max_compensation    → salary range max
+    seniority_level            → job.hc.seniorityLevel
+    requirements_summary       → job.hc.requirementsSummary
+    estimated_publish_date     → postedAt
+    technical_tools            → job.hc.technicalTools
+    licenses_or_certifications → job.hc.certifications
+    visa_sponsorship           → job.hc.visaSponsorship
+    min_industry_and_role_yoe  → job.hc.minYoe
+    is_compensation_transparent → job.hc.salaryTransparent
+
+  enriched_company_data: { name, nb_employees, year_founded, industries }
+
+DESCRIPTION CHANGE (2026-06-07):
+  job_information no longer contains 'description' or 'descriptionHtml' in the
+  SSR response. The description was previously available in job_information.
+  It may be available on HiringCafe's job detail page, but second-pass fetch
+  is not currently implemented for HiringCafe.
+  description: '' in all returned job objects until fixed.
+
+Field mapping:
+  id          → j.id ?? j.requisition_id ?? j.objectID
+  title       → j.job_information.title ?? .job_title_raw
+  company     → j.enriched_company_data.name ?? j.companyName
+  location    → v5.formatted_workplace_location ?? j.location.display ?? j.location
+  environment → v5.workplace_type ?? v5.workplace_physical_environment
+  salary      → normalizeSalary(v5.yearly_min_compensation, v5.yearly_max_compensation)
+  url         → j.apply_url ?? j.applicationUrl
+  postedAt    → v5.estimated_publish_date ?? j.postedAt
+  atsSource   → 'hiringcafe'
+  description → '' (see above)
+  job.hc      → full enrichment struct (workplaceStates, boundlessStates, etc.)
+
+Poll mechanism: 1-minute cron, not DO alarm. Runs via handleScheduled() → runHiringCafeScrape().
+ATS auto-promotion: source + board_token available for future DO spawning from HC matches.
+
+
+════════════════════════════════════════════════════════════════════════════
+UNBUILT ADAPTERS — DISCUSSION
+════════════════════════════════════════════════════════════════════════════
+
+BRASSRING (IBM Kenexa)
+  Status: Not built. Previously misassigned to UCSF (sjobs.brassring.com, HTTP 500).
+  Evidence of migration: Both known UCSF portal IDs (partnerid=6495) and UM academic
+    (partnerid=25965) return HTTP 500 — these health systems have migrated off.
+  Platform: sjobs.brassring.com — still live for other tenants.
+  API pattern: /TGnewUI/Search/home/HomeWithPreLoad?partnerid={id}&siteid={sid}
+               is an HTML SPA; no public JSON API known.
+  Fetch method needed: Likely Browser Rendering (SPA) or reverse-engineering XHR.
+  ROI: Before building, verify that any current STAT seed companies actually use
+       live BrassRing portals. Both confirmed health system portals were dead.
+  Verdict: Build only if a verified live health system tenant is found.
+
+AVATURE
+  Status: Not built. UCSF confirmed on Avature (careers.ucsf.edu, avature.portal.name).
+  Platform: avature.net — enterprise talent management SaaS.
+  URL pattern: careers.{org}.edu or {org}.avature.net
+  API: Avature has a public job search feed. Likely REST or XML; tenant-specific.
+       The careers.ucsf.edu HTML loads all job data client-side (no SSR payload visible).
+       May need BR or Avature's documented feed endpoint.
+  Portal ID: UCSF portal ID = 9 (from avature.portal.id meta tag).
+  Job search API: Likely GET /api/... or /xml/jobs?portal=9 (needs probe).
+  ROI: UCSF Health is a high-value Epic employer. Worth building if feed is accessible.
+  Next step: Probe careers.ucsf.edu/api/jobs or similar to find the data endpoint.
+
+PHENOM PEOPLE
+  Status: Not built. University of Miami Health confirmed on Phenom (careers.miami.edu,
+          tenant UOMUOMUS). Phenom is a careers CRM that wraps underlying ATS (Workday).
+  Platform: careers.miami.edu (hosted by Phenom), all assets from cdn.phenompeople.com.
+  API: Phenom has a widgets API (widgetApiEndpoint: careers.miami.edu/widgets).
+       Job search is Algolia-backed (same as HiringCafe's underlying mechanism).
+       Phenom public job feed: GET /api/jobs or /api/jobs/search (needs probe).
+  ROI: UMiami Health is a major health system. Worth probing if Epic hiring is high.
+  Note: Phenom wraps Workday underneath — Workday API may be reachable through a
+        different path (Phenom exposes Workday job IDs in their search results).
+
+ORACLE FUSION HCM (Taleo successor)
+  Status: Not built. Tenet Healthcare confirmed migrated from iCIMS to Oracle Fusion HCM.
+  Platform: Oracle's enterprise HCM platform; successor to Taleo.
+  URL pattern: typically {org}.fa.us1.oraclecloud.com/hcmUI/CandidateExperience/
+  API: Oracle HCM has a public candidate experience API; REST-based.
+       Some tenants expose job listings at /hcmRestApi/resources/latest/recruitingCEJobRequisitions
+  ROI: Large health systems (Tenet ~65 hospitals) are high-value.
+
+ORACLE TALEO ENTERPRISE (tbe.taleo.net)
+  Status: Partially built (fetchTaleo handles taleo.net). tbe.taleo.net (newer Taleo v2)
+          may have different URL patterns. Mount Sinai was on phg.tbe.taleo.net.
+  Difference: tbe.taleo.net appears to use different SPA structure vs taleo.net.
+  Action: Add probe for phg.tbe.taleo.net to confirm if current adapter handles it.
+
+SUCCESSFACTORS (EU datacenter)
+  Status: Not confirmed needed. career4.successfactors.com is US. EU tenants use
+          successfactors.eu — unlikely for US health systems.
+
+
+════════════════════════════════════════════════════════════════════════════
+NOTES ON CONFIG FIELDS
+════════════════════════════════════════════════════════════════════════════
+
+company.ats       — adapter selector string: 'greenhouse'|'lever'|'ashby'|
+                    'workday'|'icims'|'successfactors'|'taleo'
+company.token     — ATS board token or tenant subdomain
+company.url       — required for workday, icims, successfactors, taleo
+                    optional for greenhouse, lever, ashby (built from token)
+company.mdApproved — boolean: company is known to hire remotely in Maryland
+
+Missing url for workday: adapter returns [].
+Missing MYBROWSER for taleo: adapter skips with console.warn, returns [].
+Unknown ats type: fetchCompanyJobs returns [] silently.
+
+
+════════════════════════════════════════════════════════════════════════════
+ENRICH.JS ROUTING
+════════════════════════════════════════════════════════════════════════════
+
+Second-pass description fetch (fetchDescription in enrich.js):
+
+  NEEDS_PLAIN_FETCH = ['workday', 'icims']
+    → fetchPlainDescription() — plain HTTP GET, server-rendered HTML
+    → Workday: og:description meta tag (~200ms)
+    → iCIMS: ?in_iframe=1 body text (job title as anchor, content after)
+
+  NEEDS_BROWSER_FETCH = ['taleo']
+    → fetchBrowserDescription() — Browser Rendering (puppeteer)
+    → Taleo: job detail pages may also work with plain fetch (future optimization)
+
+  All other ATS types (greenhouse, lever, ashby, successfactors, hiringcafe):
+    → Description included in list response — no second-pass needed
