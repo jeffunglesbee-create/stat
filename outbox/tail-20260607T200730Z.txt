@@ -1,0 +1,18 @@
+=== wrangler tail stat-job-watcher 20260607T200730Z ===
+Capturing 30s of live Worker console output...
+
+
+ ⛅️ wrangler 4.98.0
+───────────────────
+Successfully created tail, expires at 2026-06-08T02:07:32Z
+Connected to stat-job-watcher, waiting for logs...
+GET https://stat-store/get?key=seen_ids - Ok @ 6/7/2026, 8:07:54 PM
+GET https://stat-store/get?key=custom_keywords - Ok @ 6/7/2026, 8:07:54 PM
+GET https://stat-store/get?key=company_list - Ok @ 6/7/2026, 8:07:26 PM
+POST https://stat-store/set?key=seen_ids - Ok @ 6/7/2026, 8:07:54 PM
+GET https://stat-store/get?key=unmatched_jobs - Ok @ 6/7/2026, 8:07:57 PM
+POST https://stat-store/set?key=unmatched_jobs - Ok @ 6/7/2026, 8:07:57 PM
+GET https://stat-store/get?key=log_buffer - Ok @ 6/7/2026, 8:07:58 PM
+POST https://stat-store/set?key=log_buffer - Ok @ 6/7/2026, 8:07:58 PM
+
+=== tail complete ===
