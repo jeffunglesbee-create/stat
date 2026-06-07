@@ -38,6 +38,16 @@ jobs:
           echo "--- GET /jobs?limit=10 (recent matches) ---" | tee -a "$OUT"
           curl -sf --max-time 15 "$WORKER/jobs?limit=10" | python3 scripts/parse_browse.py 2>/dev/null | tee -a "$OUT" \
             || echo "ERROR: /jobs unreachable" | tee -a "$OUT"
+          echo "" | tee -a "$OUT"
+
+          echo "--- GET /logs?limit=50 (alarm cycle log buffer) ---" | tee -a "$OUT"
+          curl -sf --max-time 15 "$WORKER/logs?limit=50" | python3 scripts/parse_logs.py 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR: /logs unreachable or empty" | tee -a "$OUT"
+          echo "" | tee -a "$OUT"
+
+          echo "--- GET /logs?ats=workday&limit=20 (Workday BR results) ---" | tee -a "$OUT"
+          curl -sf --max-time 15 "$WORKER/logs?ats=workday&limit=20" | python3 scripts/parse_logs.py 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR: /logs?ats=workday unreachable" | tee -a "$OUT"
 
       - name: Commit results
         if: always()
