@@ -1,0 +1,223 @@
+HiringCafe Live Verification — 20260607T002730Z
+
+=== epic analyst remote ===
+URL: https://hiring.cafe/?q=epic+analyst&environment=remote
+HTTP: 200  bytes: 1191863
+__NEXT_DATA__: PRESENT
+=== Scanning HTML for Algolia credentials ===
+
+=== pageProps keys ===
+['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+
+=== initialSearchState FULL DUMP ===
+{
+  "locations": [
+    {
+      "formatted_address": "United States",
+      "types": [
+        "country"
+      ],
+      "geometry": {
+        "location": {
+          "lat": 41.8483,
+          "lon": -87.6517
+        }
+      },
+      "id": "user_country",
+      "address_components": [
+        {
+          "long_name": "United States",
+          "short_name": "US",
+          "types": [
+            "country"
+          ]
+        }
+      ],
+      "options": {
+        "flexible_regions": [
+          "anywhere_in_continent",
+          "anywhere_in_world"
+        ]
+      }
+    }
+  ]
+}
+
+=== ssrTimings ===
+{
+  "esLatencyMs": 967
+}
+
+=== runtimeConfig / publicRuntimeConfig ===
+
+=== Full data keys ===
+['props', 'page', 'query', 'buildId', 'isFallback', 'isExperimentalCompile', 'gssp', 'scriptLoader']
+data.query: {'q': 'epic analyst', 'environment': 'remote'}
+data.buildId: nNHLR_6aEhf7scqh4Z3NX
+
+=== epic cadence remote ===
+URL: https://hiring.cafe/?q=epic+cadence&environment=remote
+HTTP: 200  bytes: 1191943
+__NEXT_DATA__: PRESENT
+=== Scanning HTML for Algolia credentials ===
+
+=== pageProps keys ===
+['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+
+=== initialSearchState FULL DUMP ===
+{
+  "locations": [
+    {
+      "formatted_address": "United States",
+      "types": [
+        "country"
+      ],
+      "geometry": {
+        "location": {
+          "lat": 41.8483,
+          "lon": -87.6517
+        }
+      },
+      "id": "user_country",
+      "address_components": [
+        {
+          "long_name": "United States",
+          "short_name": "US",
+          "types": [
+            "country"
+          ]
+        }
+      ],
+      "options": {
+        "flexible_regions": [
+          "anywhere_in_continent",
+          "anywhere_in_world"
+        ]
+      }
+    }
+  ]
+}
+
+=== ssrTimings ===
+{
+  "esLatencyMs": 459
+}
+
+=== runtimeConfig / publicRuntimeConfig ===
+
+=== Full data keys ===
+['props', 'page', 'query', 'buildId', 'isFallback', 'isExperimentalCompile', 'gssp', 'scriptLoader']
+data.query: {'q': 'epic cadence', 'environment': 'remote'}
+data.buildId: nNHLR_6aEhf7scqh4Z3NX
+
+=== clinical informatics hybrid ===
+URL: https://hiring.cafe/?q=clinical+informatics+analyst&environment=hybrid
+HTTP: 200  bytes: 1192216
+__NEXT_DATA__: PRESENT
+=== Scanning HTML for Algolia credentials ===
+
+=== pageProps keys ===
+['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+
+=== initialSearchState FULL DUMP ===
+{
+  "locations": [
+    {
+      "formatted_address": "United States",
+      "types": [
+        "country"
+      ],
+      "geometry": {
+        "location": {
+          "lat": 41.8483,
+          "lon": -87.6517
+        }
+      },
+      "id": "user_country",
+      "address_components": [
+        {
+          "long_name": "United States",
+          "short_name": "US",
+          "types": [
+            "country"
+          ]
+        }
+      ],
+      "options": {
+        "flexible_regions": [
+          "anywhere_in_continent",
+          "anywhere_in_world"
+        ]
+      }
+    }
+  ]
+}
+
+=== ssrTimings ===
+{
+  "esLatencyMs": 391
+}
+
+=== runtimeConfig / publicRuntimeConfig ===
+
+=== Full data keys ===
+['props', 'page', 'query', 'buildId', 'isFallback', 'isExperimentalCompile', 'gssp', 'scriptLoader']
+data.query: {'q': 'clinical informatics analyst', 'environment': 'hybrid'}
+data.buildId: nNHLR_6aEhf7scqh4Z3NX
+
+=== epic analyst no-env ===
+URL: https://hiring.cafe/?q=epic+analyst
+HTTP: 200  bytes: 1191684
+__NEXT_DATA__: PRESENT
+=== Scanning HTML for Algolia credentials ===
+
+=== pageProps keys ===
+['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+
+=== initialSearchState FULL DUMP ===
+{
+  "locations": [
+    {
+      "formatted_address": "United States",
+      "types": [
+        "country"
+      ],
+      "geometry": {
+        "location": {
+          "lat": 41.8483,
+          "lon": -87.6517
+        }
+      },
+      "id": "user_country",
+      "address_components": [
+        {
+          "long_name": "United States",
+          "short_name": "US",
+          "types": [
+            "country"
+          ]
+        }
+      ],
+      "options": {
+        "flexible_regions": [
+          "anywhere_in_continent",
+          "anywhere_in_world"
+        ]
+      }
+    }
+  ]
+}
+
+=== ssrTimings ===
+{
+  "esLatencyMs": 714
+}
+
+=== runtimeConfig / publicRuntimeConfig ===
+
+=== Full data keys ===
+['props', 'page', 'query', 'buildId', 'isFallback', 'isExperimentalCompile', 'gssp', 'scriptLoader']
+data.query: {'q': 'epic analyst'}
+data.buildId: nNHLR_6aEhf7scqh4Z3NX
+
+DONE
