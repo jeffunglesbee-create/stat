@@ -15,14 +15,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p outbox
-          python3 scripts/probe_stat.py > outbox/stat-probe-latest.txt 2>&1
-          cat outbox/stat-probe-latest.txt
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          python3 scripts/probe_stat.py | tee outbox/stat-probe-${TS}.txt
+          echo "PROBE_FILE=outbox/stat-probe-${TS}.txt" >> $GITHUB_ENV
       - name: Push results
         run: |
           git config user.email "stat@stat" && git config user.name "STAT"
-          git add outbox/stat-probe-latest.txt
-          git diff --cached --quiet && echo "no changes" && exit 0
-          git commit -m "stat-probe results [skip ci]"
+          git add outbox/
+          git commit -m "stat-probe results [skip ci]" || echo "nothing to commit"
           for i in 1 2 3; do
             git pull --rebase --autostash origin main && git push origin main && break
             sleep $((i*5))
