@@ -988,7 +988,7 @@ async function handleFetch(request, env) {
     let entries  = await readLog(getStatStore(env), 200);
     if (qAts) entries = entries.filter(e => e.ats === qAts);
     entries = entries.slice(0, limit);
-    return ok(entries);
+    return json(entries);
   }
 
   // GET /jobs — recent keyword-matched jobs (rolling 200)
