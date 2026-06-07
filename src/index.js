@@ -187,39 +187,46 @@ async function runHiringCafeScrape(env) {
   const unmatchedJobsHC = [];  // env-filtered HC jobs with no keyword match — Browse capture
   const seenThisRun = new Set();
 
-  for (const term of HIRINGCAFE.search_terms) {
-    for (const envType of HIRINGCAFE.environments) {
-      const jobs = await fetchHiringCafe(term, envType);
-      for (const job of jobs) {
-        if (seenThisRun.has(job.id) || seenIds.has(job.id)) {
-          seenIds.add(job.id);
-          seenThisRun.add(job.id);
-          continue;
-        }
-        seenThisRun.add(job.id);
+  // ── HiringCafe SSR search note (verified 2026-06-07) ──────────────────────
+  // The ?q= keyword param does NOT filter the SSR payload. HiringCafe's ES
+  // backend returns a global popularity/recency feed (152 items) regardless of
+  // search terms. All 31 × 2 = 62 keyword+env combinations return identical
+  // results. We fetch ONCE per environment instead, then run matchJob() across
+  // all 152 results — matchJob() already checks all WATCH_GROUPS keywords.
+  // This eliminates ~18s of redundant HTTP + ~24s of artificial delay per cron.
+  // ─────────────────────────────────────────────────────────────────────────
+  for (const envType of HIRINGCAFE.environments) {
+    // Single fetch per environment — keyword is passed but ignored by SSR
+    const jobs = await fetchHiringCafe('epic analyst', envType);
+    for (const job of jobs) {
+      if (seenThisRun.has(job.id) || seenIds.has(job.id)) {
         seenIds.add(job.id);
-
-        if (job.ghostFlag === 'suppress') continue;
-        // Browse capture for HiringCafe path (Rule 8 — all paths capture unmatched)
-        if (passesEnvFilter(job) && !matchJob(job)) {
-          unmatchedJobsHC.push(job);
-        }
-        if (!passesEnvFilter(job)) continue;
-        const match = matchJob(job);
-        if (!match) continue;
-
-        job.matchedKeyword = match.matchedKw;
-        const adjustedPriority = companyAwarePriority(job, match);
-        const adjustedMatch = adjustedPriority !== match.priority
-          ? { ...match, priority: adjustedPriority }
-          : match;
-        job._matchGroup = adjustedMatch.label;
-        newMatches.push({ job, match: adjustedMatch });
-
-        await maybeAddOrPromoteCompany(env, job);
+        seenThisRun.add(job.id);
+        continue;
       }
-      await new Promise(r => setTimeout(r, 400));
+      seenThisRun.add(job.id);
+      seenIds.add(job.id);
+
+      if (job.ghostFlag === 'suppress') continue;
+      // Browse capture for HiringCafe path (Rule 8 — all paths capture unmatched)
+      if (passesEnvFilter(job) && !matchJob(job)) {
+        unmatchedJobsHC.push(job);
+      }
+      if (!passesEnvFilter(job)) continue;
+      const match = matchJob(job);
+      if (!match) continue;
+
+      job.matchedKeyword = match.matchedKw;
+      const adjustedPriority = companyAwarePriority(job, match);
+      const adjustedMatch = adjustedPriority !== match.priority
+        ? { ...match, priority: adjustedPriority }
+        : match;
+      job._matchGroup = adjustedMatch.label;
+      newMatches.push({ job, match: adjustedMatch });
+
+      await maybeAddOrPromoteCompany(env, job);
     }
+    await new Promise(r => setTimeout(r, 400));
   }
 
   await saveSeenIds(env, seenIds);

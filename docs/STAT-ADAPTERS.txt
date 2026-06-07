@@ -401,9 +401,26 @@ CRITICAL LIMITATION — Search relevance:
   But the cron is processing 152 identical jobs × 31 terms × 2 envs = 9,424 objects
   per cycle. All deduped by seen-set; alerts only fire on actual keyword matches.
   
-  TODO: Switch to Algolia search API for targeted keyword results.
-        Algolia app ID + search key are embedded in initialSearchState.
-        Would reduce per-cycle processing from 9,424 to <20 targeted results.
+  INVESTIGATION RESULT (2026-06-07):
+        HiringCafe does NOT use Algolia for SSR. ssrTimings.esLatencyMs confirms
+        their SSR layer hits an internal Elasticsearch cluster directly. The ES
+        credentials are never exposed to the client.
+        
+        No public search API exists — all /api/* routes return 404.
+        robots.txt disallows /job/, /viewjob/, /jobs/ (individual job pages exist
+        at /job/{id} but are not crawl-friendly by design).
+        
+        The ssrHits payload is a global popularity/recency feed from ES,
+        served identically regardless of ?q= params. Keyword filtering must
+        remain in STAT's matchJob() downstream.
+        
+        WORKAROUND OPTIONS:
+        A) Keep current approach (ssrHits + matchJob filter) — works, low ROI
+           per cycle but dedup prevents alert spam.
+        B) Reduce search terms — since all return same results, run once per
+           environment (not 31 × 2 = 62 times). Single call per cron tick.
+        C) Use HiringCafe's individual job page at /job/{id} for description
+           fetch once a job is matched (plain fetch, server-rendered).
 
 Job object shape (verified 2026-06-07):
   Top-level keys:
