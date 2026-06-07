@@ -1,0 +1,154 @@
+name: Workday Floor Probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe Workday rate limits at decreasing intervals
+        shell: bash
+        run: |
+          mkdir -p outbox
+          OUT="outbox/workday-floor-probe-$(date -u +%Y%m%dT%H%M%SZ).txt"
+
+          # Two confirmed Workday tenants with Epic jobs
+          # jhhs = Johns Hopkins, mayoclinic = Mayo Clinic
+          TENANTS=(
+            "jhhs|jhhs.wd5.myworkdayjobs.com|JHH_External_Positions"
+            "mayoclinic|mayoclinic.wd5.myworkdayjobs.com|mayoclinic"
+            "kaiserpermanente|kp.wd5.myworkdayjobs.com|KP_External_Career_Site"
+          )
+
+          BODY='{"appliedFacets":{},"limit":20,"offset":0,"searchText":"epic ehr within"}'
+
+          call_workday() {
+            local tenant=$1
+            local host=$2
+            local slug=$3
+            local url="https://${host}/wday/cxs/${tenant}/${slug}/jobs"
+
+            local start=$(date +%s%3N)
+            local response=$(curl -s -w "\n%{http_code}" \
+              -X POST "$url" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -H "User-Agent: Mozilla/5.0 (compatible; STAT/1.0)" \
+              -d "$BODY" \
+              --max-time 10)
+
+            local http_code=$(echo "$response" | tail -1)
+            local body=$(echo "$response" | head -1)
+            local end=$(date +%s%3N)
+            local elapsed=$((end - start))
+
+            # Count job postings returned
+            local job_count=$(echo "$body" | python3 -c "
+import sys,json
+try:
+  d=json.load(sys.stdin)
+  print(len(d.get('jobPostings',[])))
+except:
+  print('ERR')
+" 2>/dev/null)
+
+            echo "${http_code}|${elapsed}ms|jobs=${job_count}"
+          }
+
+          {
+            echo "=== Workday Floor Probe ==="
+            echo "Date: $(date -u)"
+            echo "Testing: how fast can we poll before empty responses or 429s"
+            echo ""
+            echo "Method: POST /wday/cxs/{tenant}/{slug}/jobs"
+            echo "Body: searchText='epic ehr within', limit=20"
+            echo ""
+
+            for tenant_str in "${TENANTS[@]}"; do
+              IFS='|' read -r tenant host slug <<< "$tenant_str"
+              echo "--- Tenant: $tenant ($host) ---"
+
+              # Round 1: baseline — single call
+              echo -n "  Baseline (1 call):           "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 5
+
+              # Round 2: 30s interval (well above any floor)
+              echo -n "  30s interval (call 1 of 2):  "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 30
+              echo -n "  30s interval (call 2 of 2):  "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 5
+
+              # Round 3: 10s interval — probe faster
+              echo -n "  10s interval (call 1 of 3):  "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 10
+              echo -n "  10s interval (call 2 of 3):  "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 10
+              echo -n "  10s interval (call 3 of 3):  "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 5
+
+              # Round 4: 5s interval — approaching practical minimum
+              echo -n "  5s interval (call 1 of 3):   "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 5
+              echo -n "  5s interval (call 2 of 3):   "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 5
+              echo -n "  5s interval (call 3 of 3):   "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 5
+
+              # Round 5: rapid-fire — 3 calls with 2s gaps
+              echo -n "  2s interval (call 1 of 3):   "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 2
+              echo -n "  2s interval (call 2 of 3):   "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 2
+              echo -n "  2s interval (call 3 of 3):   "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 5
+
+              # Round 6: rapid-fire with 1s gaps
+              echo -n "  1s interval (call 1 of 3):   "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 1
+              echo -n "  1s interval (call 2 of 3):   "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 1
+              echo -n "  1s interval (call 3 of 3):   "
+              call_workday "$tenant" "$host" "$slug"
+              sleep 10
+
+              echo ""
+            done
+
+            echo "=== INTERPRETATION ==="
+            echo "200 + jobs>0  = working normally"
+            echo "200 + jobs=0  = possible silent throttle (CRITICAL — invisible to STAT)"
+            echo "429           = hard rate limit"
+            echo "403/503       = blocked"
+            echo ""
+            echo "Floor recommendation:"
+            echo "  If all 2s intervals return jobs>0 → floor can be 30s (alarm period)"
+            echo "  If 5s intervals return jobs>0 but 2s starts dropping → floor 60s"
+            echo "  If 10s intervals start silently emptying → floor 2-4min"
+            echo "  Note: STAT polls are spread across companies, not the same tenant"
+            echo "  repeatedly. Inter-call gap per tenant = floor × (total_companies/chunk)"
+
+          } | tee "$OUT"
+
+          git config user.email "stat@stat" && git config user.name "STAT"
+          git add "$OUT"
+          git commit -m "probe: Workday floor results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break || sleep $((i*5))
+          done
