@@ -1,4 +1,4 @@
-name: STAT — Doc Snapshot
+name: STAT - Doc Snapshot
 
 # Runs after every successful deploy
 # Generates a compact snapshot of current state and commits to docs/
@@ -44,7 +44,7 @@ print(total)
           COMMITS=$(git log --oneline -10 | grep -v '\[skip ci\]' | head -5 | sed 's/^/  /')
 
           cat > docs/STAT-SNAPSHOT.txt << EOF
-STAT — Auto-generated Snapshot
+STAT - Auto-generated Snapshot
 Generated: $TIMESTAMP
 HEAD: $HEAD
 Smoke: $SMOKE/21

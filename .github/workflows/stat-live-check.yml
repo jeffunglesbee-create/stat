@@ -1,4 +1,4 @@
-name: STAT — Live Check (push triggered)
+name: STAT - Live Check (push triggered)
 
 on:
   push:

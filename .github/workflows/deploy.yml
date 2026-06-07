@@ -1,6 +1,6 @@
 # .github/workflows/deploy.yml
 #
-# STAT — Deploy Gate
+# STAT - Deploy Gate
 #
 # Triggers on pushes to src/ or wrangler.toml.
 # Deploys to Cloudflare Workers via CLOUDFLARE_API_TOKEN secret.
@@ -19,7 +19,7 @@
 #   wrangler secret put SENDGRID_API_KEY
 #   wrangler secret put ALERT_EMAIL
 #
-# Worker secrets are NOT in GitHub — they live only in Cloudflare Workers.
+# Worker secrets are NOT in GitHub - they live only in Cloudflare Workers.
 # wrangler deploy does NOT overwrite Worker secrets. Set once, persist forever.
 #
 # [skip ci] in commit message skips this workflow entirely → no deploy.
@@ -68,7 +68,7 @@ jobs:
           accountId: b57e9af57ab46c52ca9215804e689c29
           wranglerVersion: "4.98.0"
           # Worker secrets are set directly on Cloudflare via wrangler secret put
-          # and persist across deploys — do not push from CI
+          # and persist across deploys - do not push from CI
 
       - name: Post-deploy bootstrap + verify
         run: |
@@ -93,5 +93,5 @@ jobs:
           if [ "$HTTP" = "200" ]; then
             echo "✅ Worker live and responding"
           else
-            echo "⚠️  Worker returned HTTP $HTTP — check logs"
+            echo "⚠️  Worker returned HTTP $HTTP - check logs"
           fi
