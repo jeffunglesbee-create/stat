@@ -6,13 +6,17 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          token: REDACTED_OLD_PAT
       - name: Probe Workday rate limits
         shell: bash
         run: |
           BODY='{"appliedFacets":{},"limit":5,"offset":0,"searchText":"epic"}'
+          OUT="outbox/wd-floor-$(date -u +%Y%m%dT%H%M%SZ).txt"
+          mkdir -p outbox
           call_wd() {
-            local url="$1"
-            local gap="$2"
+            local url="$1" gap="$2"
             [ "$gap" -gt 0 ] && sleep "$gap"
             local r=$(curl -sf -w '\n%{http_code}' -X POST "$url" \
               -H 'Content-Type: application/json' -H 'Accept: application/json' \
@@ -20,19 +24,29 @@ jobs:
             local code=$(echo "$r" | tail -1)
             local jobs=$(echo "$r" | head -1 | python3 -c \
               "import sys,json; d=json.load(sys.stdin); print(len(d.get('jobPostings',[])))" 2>/dev/null || echo ERR)
-            echo "  gap=${gap}s: HTTP=${code} jobs=${jobs}"
+            printf "  gap=%-3ss  HTTP=%s  jobs=%s\n" "$gap" "$code" "$jobs" | tee -a "$OUT"
           }
-          for row in \
-            "jhhs|jhhs.wd5.myworkdayjobs.com|JHH_External_Positions" \
-            "mayoclinic|mayoclinic.wd5.myworkdayjobs.com|mayoclinic" \
-            "kaiserpermanente|kp.wd5.myworkdayjobs.com|KP_External_Career_Site"; do
-            IFS='|' read -r tenant host slug <<< "$row"
-            URL="https://${host}/wday/cxs/${tenant}/${slug}/jobs"
-            echo "=== $tenant ==="
-            call_wd "$URL" 0   # baseline
-            call_wd "$URL" 30  # 30s gap
-            call_wd "$URL" 10  # 10s gap
-            call_wd "$URL" 5   # 5s gap
-            call_wd "$URL" 2   # 2s gap
-            call_wd "$URL" 1   # 1s gap
-          done
+          {
+            echo "=== Workday Floor Probe $(date -u) ==="
+            for row in \
+              "jhhs|jhhs.wd5.myworkdayjobs.com|JHH_External_Positions" \
+              "mayoclinic|mayoclinic.wd5.myworkdayjobs.com|mayoclinic" \
+              "kaiserpermanente|kp.wd5.myworkdayjobs.com|KP_External_Career_Site"; do
+              IFS='|' read -r tenant host slug <<< "$row"
+              URL="https://${host}/wday/cxs/${tenant}/${slug}/jobs"
+              echo "--- $tenant ---"
+              call_wd "$URL" 0
+              call_wd "$URL" 30
+              call_wd "$URL" 10
+              call_wd "$URL" 5
+              call_wd "$URL" 2
+              call_wd "$URL" 1
+              echo ""
+            done
+          } | tee "$OUT"
+          git config user.email "stat@stat" && git config user.name "STAT"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "probe: Workday floor results [skip ci]"
+          git pull --rebase --autostash origin main
+          git push "https://REDACTED_OLD_PAT@github.com/jeffunglesbee-create/stat.git" main
