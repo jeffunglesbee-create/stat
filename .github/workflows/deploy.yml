@@ -66,7 +66,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: b57e9af57ab46c52ca9215804e689c29
-          wranglerVersion: "3.109.0"
+          wranglerVersion: "4.98.0"
           secrets: |
             GEMINI_KEY
             RESEND_API_KEY
