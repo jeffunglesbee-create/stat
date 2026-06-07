@@ -30,18 +30,14 @@ jobs:
             || echo "ERROR: /platform/workday/status unreachable" | tee -a "$OUT"
           echo "" | tee -a "$OUT"
 
-          echo "--- Workday floor probe (jhhs, ~60s) ---" | tee -a "$OUT"
-          curl -sf --max-time 90 \
-            "$WORKER/workday-probe?tenant=jhhs&host=jhhs.wd5.myworkdayjobs.com&slug=JHH_External_Positions" \
-            | python3 scripts/parse_workday_probe.py 2>/dev/null | tee -a "$OUT" \
-            || echo "ERROR: /workday-probe unreachable" | tee -a "$OUT"
+          echo "--- GET /browse?limit=10 (sample unmatched jobs) ---" | tee -a "$OUT"
+          curl -sf --max-time 15 "$WORKER/browse?limit=10" | python3 scripts/parse_browse.py 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR: /browse unreachable" | tee -a "$OUT"
           echo "" | tee -a "$OUT"
 
-          echo "--- Workday floor probe (mayoclinic, ~60s) ---" | tee -a "$OUT"
-          curl -sf --max-time 90 \
-            "$WORKER/workday-probe?tenant=mayoclinic&host=mayoclinic.wd5.myworkdayjobs.com&slug=mayoclinic" \
-            | python3 scripts/parse_workday_probe.py 2>/dev/null | tee -a "$OUT" \
-            || echo "ERROR: /workday-probe unreachable" | tee -a "$OUT"
+          echo "--- GET /jobs?limit=10 (recent matches) ---" | tee -a "$OUT"
+          curl -sf --max-time 15 "$WORKER/jobs?limit=10" | python3 scripts/parse_browse.py 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR: /jobs unreachable" | tee -a "$OUT"
 
       - name: Commit results
         if: always()
