@@ -103,7 +103,7 @@ export class BatchPollerDO {
           }
           if (job.ghostFlag === 'suppress') continue;
           // Browse capture: env-filter BEFORE dedup (same fix as platform-do.js)
-          if (passesEnvFilter(job) && !matchJob(job)) {
+          if (passesEnvFilter(job) && !matchJob(job, customKeywords)) {
             unmatchedJobs.push(job);
           }
 
@@ -112,7 +112,7 @@ export class BatchPollerDO {
           seenIds.add(job.id);
 
           if (!passesEnvFilter(job)) continue;
-          const match = matchJob(job);
+          const match = matchJob(job, customKeywords);
           if (!match) continue; // already captured above
 
           const liveness = await checkJobLiveness(job);

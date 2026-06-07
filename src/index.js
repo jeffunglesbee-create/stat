@@ -94,6 +94,71 @@ async function saveMatchCounts(env, c) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PROFILE-DRIVEN KEYWORD GENERATION
+// When a profile is stored, generate a personalized keyword list via Gemini
+// and store it in StateStoreDO. matchJob() uses this list + the static list.
+// Gives STAT contextual understanding of what jobs fit this specific person.
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function generateAndStoreKeywords(profile, env) {
+  if (!profile || !env.GEMINI_KEY) return null;
+  try {
+    const prompt = `You are a healthcare IT job search expert. Given this candidate profile, generate job title keywords that identify relevant positions.
+
+PROFILE:
+- Role: ${profile.headline || ''}
+- Years experience: ${profile.yearsExperience || '?'}
+- Epic modules: ${(profile.epicModules || []).join(', ')}
+- Certifications: ${(profile.certifications || []).join(', ')}
+- Skills: ${(profile.skills || []).join(', ')}
+- Target roles: ${(profile.targetRoles || []).join(', ')}
+
+Generate at THREE levels:
+1. EXACT: phrases verbatim in Epic/EHR job titles (e.g. "epic ambulatory analyst")
+2. BROAD: single words strongly indicating relevance (e.g. "ambulatory", "cogito", "clarity")
+3. ADJACENT: related roles this person could pivot to (e.g. "clinical informatics", "application coordinator")
+
+Return ONLY JSON, no markdown:
+{"exact":["phrase1","phrase2"],"broad":["word1","word2"],"adjacent":["phrase1","phrase2"]}
+
+Max 20 per category. All lowercase.`;
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${env.GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 600, temperature: 0.1 },
+        }),
+      }
+    );
+    const data = await res.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+    const keywords = JSON.parse(cleaned);
+
+    // Store in StateStoreDO
+    const stub = getStatStore(env);
+    await storeSet(stub, 'custom_keywords', JSON.stringify({
+      keywords,
+      generatedAt: new Date().toISOString(),
+      profileHeadline: profile.headline || '',
+    }));
+
+    console.log('[STAT keywords] Generated:', 
+      keywords.exact?.length, 'exact,',
+      keywords.broad?.length, 'broad,',
+      keywords.adjacent?.length, 'adjacent');
+    return keywords;
+  } catch (e) {
+    console.warn('[STAT keywords] Generation failed:', e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ONEDRIVE RESUME AUTO-FETCH
 // Fetches resume from a OneDrive public share link, extracts text,
 // and stores the profile — no user interaction required.
@@ -299,6 +364,12 @@ async function bootstrapDOs(env) {
 // On a new company match, adds them to the watchlist and spawns a DO.
 // ─────────────────────────────────────────────────────────────────────────────
 async function runHiringCafeScrape(env) {
+  // Load profile-generated custom keywords for contextual matching
+  let hcCustomKeywords = null;
+  try {
+    const ckRaw = await storeGet(getStatStore(env), 'custom_keywords');
+    if (ckRaw) hcCustomKeywords = JSON.parse(ckRaw).keywords || null;
+  } catch {}
   const seenIds = await loadSeenIds(env);
   const newMatches = [];
   const unmatchedJobsHC = [];  // env-filtered HC jobs with no keyword match — Browse capture
@@ -330,7 +401,7 @@ async function runHiringCafeScrape(env) {
         unmatchedJobsHC.push(job);
       }
       if (!passesEnvFilter(job)) continue;
-      const match = matchJob(job);
+      const match = matchJob(job, hcCustomKeywords);
       if (!match) continue;
 
       job.matchedKeyword = match.matchedKw;
@@ -618,6 +689,16 @@ async function handleFetch(request, env) {
     return json({ ok: true, newMatches: count, time: new Date().toISOString() });
   }
 
+  // POST /regenerate-keywords — regenerate profile-driven keyword list from stored profile
+  if (url.pathname === '/regenerate-keywords' && request.method === 'POST') {
+    const profile = await loadProfile(env).catch(() => null);
+    if (!profile) return json({ error: 'No profile stored — upload resume first' }, 404);
+    if (!env.GEMINI_KEY) return json({ error: 'GEMINI_KEY not configured' }, 503);
+    const keywords = await generateAndStoreKeywords(profile, env);
+    if (!keywords) return json({ error: 'Keyword generation failed' }, 500);
+    return json({ ok: true, keywords, generatedFrom: profile.headline });
+  }
+
   // POST /bootstrap — manually spawn all DOs
   if (url.pathname === '/bootstrap' && request.method === 'POST') {
     const result = await bootstrapDOs(env);
@@ -631,6 +712,10 @@ async function handleFetch(request, env) {
         if (profile) {
           profile._fetchedAt = new Date().toISOString();
           await saveProfile(env, profile);
+          // Generate keywords from OneDrive-fetched profile
+          generateAndStoreKeywords(profile, env).catch(e =>
+            console.warn('[STAT] keyword gen failed:', e.message)
+          );
           resumeStatus = 'fetched: ' + (profile.headline || 'ok');
         } else {
           resumeStatus = 'fetch failed — check ONEDRIVE_RESUME_URL';
@@ -1127,6 +1212,10 @@ Return ONLY the JSON object, no markdown, no explanation.`;
     let profile;
     try { profile = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
     await saveProfile(env, profile);
+    // Auto-generate personalized keywords from the new profile (non-blocking)
+    generateAndStoreKeywords(profile, env).catch(e =>
+      console.warn('[STAT] keyword gen failed:', e.message)
+    );
     return json({
       ok: true, name: profile.name || '(unnamed)',
       fitScoring: env.GEMINI_KEY

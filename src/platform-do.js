@@ -108,6 +108,16 @@ class PlatformDO {
       seenIds = raw ? new Set(JSON.parse(raw)) : new Set();
     } catch (e) { console.warn(`[STAT ${this.ats}] seenIds load failed (dedup may be incomplete):`, e.message); seenIds = new Set(); }
 
+    // Load profile-generated custom keywords (profile-driven contextual matching)
+    let customKeywords = null;
+    try {
+      const ckRaw = await storeGet(getStatStore(this.env), 'custom_keywords');
+      if (ckRaw) {
+        const ckData = JSON.parse(ckRaw);
+        customKeywords = ckData.keywords || null;
+      }
+    } catch { /* custom keywords optional — static list is fallback */ }
+
     // Also load global KV seen-set for cross-platform dedup
     let globalSeen;
     try {
@@ -157,7 +167,7 @@ class PlatformDO {
           // every poll cycle, not just the first. Seen-set dedup is for alert
           // dedup only — Browse is a "jobs you might have missed" surface and
           // intentionally ignores seen status.
-          if (passesEnvFilter(job) && !matchJob(job)) {
+          if (passesEnvFilter(job) && !matchJob(job, customKeywords)) {
             unmatchedJobs.push(job);
           }
 
@@ -167,7 +177,7 @@ class PlatformDO {
           globalSeen.add(job.id);
 
           if (!passesEnvFilter(job)) continue;
-          const match = matchJob(job);
+          const match = matchJob(job, customKeywords);
           if (!match) continue; // already captured above
 
           const liveness = await checkJobLiveness(job);
