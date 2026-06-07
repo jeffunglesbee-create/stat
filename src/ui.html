@@ -556,6 +556,19 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
 .review-btn:hover { background: var(--teal-pale); border-color: var(--teal-mid); }
 .review-btn.loading { color: var(--dim); cursor: default; }
 .review-btn.open { background: var(--teal-pale); border-color: var(--teal-mid); }
+.feedback-btn {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  font-size: 10px; font-family: var(--sans); font-weight: 600;
+  cursor: pointer; border: 1px solid var(--rule);
+  background: var(--paper2); color: var(--muted);
+  transition: all .15s;
+}
+.feedback-btn:hover { border-color: var(--rule2); color: var(--body); }
+.feedback-btn.applied { background: var(--p3-pale); border-color: var(--p3); color: var(--p3); }
+.feedback-btn.skip    { background: var(--p1-pale); border-color: var(--p1); color: var(--p1); }
+.feedback-btn:disabled { opacity: 0.5; cursor: default; }
 .md-badge {
   display: inline-block;
   padding: 2px 7px;
@@ -1251,6 +1264,7 @@ function renderMatches() {
     return;
   }
   el.innerHTML = matches.map(renderMatchCard).join('');
+  restoreFeedback(matches);
 }
 
 function renderMatchCard({ job, match, alertedAt }) {
@@ -1287,6 +1301,12 @@ function renderMatchCard({ job, match, alertedAt }) {
     <a href="${job.url}" target="_blank" class="apply-btn">Apply →</a>
     <button class="review-btn" id="rbtn-${job.id}" onclick="toggleReview('${job.id}')" title="Claude fit review">
       ✦ Review
+    </button>
+    <button class="feedback-btn" id="fbtn-applied-${job.id}" onclick="sendFeedback('${job.id}','applied',this)" title="Mark as applied">
+      ✓ Applied
+    </button>
+    <button class="feedback-btn" id="fbtn-skip-${job.id}" onclick="sendFeedback('${job.id}','skip',this)" title="Skip this role">
+      ✕ Skip
     </button>
     <button class="btn-cancel-form" onclick="scoreFromCard('${job.id}')" style="font-size:10px">Score</button>
   </div>
@@ -1407,6 +1427,62 @@ async function toggleReview(jobId) {
     content.textContent = '⚠ ' + e.message;
   } finally {
     btn.classList.remove('loading');
+  }
+}
+
+// ── Feedback (Applied / Skip) ──────────────────────────────────────────────
+async function sendFeedback(jobId, action, btn) {
+  // Restore previously selected feedback for this job if any
+  const appliedBtn = document.getElementById('fbtn-applied-' + jobId);
+  const skipBtn    = document.getElementById('fbtn-skip-' + jobId);
+
+  // Toggle off if clicking the already-active action
+  const isActive = btn.classList.contains(action);
+  [appliedBtn, skipBtn].forEach(b => { if (b) { b.classList.remove('applied','skip'); b.disabled = false; } });
+  if (isActive) {
+    // Un-mark — no server call needed, just visual reset
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const res = await fetch(WORKER_URL + '/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId, action }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) {
+      btn.classList.add(action);
+      btn.disabled = false;
+      // Dim the other button
+      const other = action === 'applied' ? skipBtn : appliedBtn;
+      if (other) { other.disabled = true; other.style.opacity = '0.3'; }
+      toast(action === 'applied' ? '✓ Marked as applied' : '✕ Skipped', action === 'applied' ? 'success' : '');
+    } else {
+      btn.disabled = false;
+      toast('Feedback failed: ' + (data.error || res.status), 'error');
+    }
+  } catch (e) {
+    btn.disabled = false;
+    toast('Feedback error: ' + e.message, 'error');
+  }
+}
+
+// Restore feedback state from match data when cards render
+function restoreFeedback(matches) {
+  for (const { job } of matches) {
+    if (!job?.feedback) continue;
+    const appliedBtn = document.getElementById('fbtn-applied-' + job.id);
+    const skipBtn    = document.getElementById('fbtn-skip-' + job.id);
+    if (!appliedBtn || !skipBtn) continue;
+    if (job.feedback === 'applied') {
+      appliedBtn.classList.add('applied');
+      skipBtn.disabled = true; skipBtn.style.opacity = '0.3';
+    } else if (job.feedback === 'skip') {
+      skipBtn.classList.add('skip');
+      appliedBtn.disabled = true; appliedBtn.style.opacity = '0.3';
+    }
   }
 }
 

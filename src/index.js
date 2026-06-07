@@ -600,6 +600,57 @@ async function handleFetch(request, env) {
     });
   }
 
+  // POST /feedback — record user action on a matched job
+  // Body: { jobId, action } where action is 'applied' | 'skip'
+  // Writes feedback back into the matching recent_matches entry.
+  // Used by the scoring layer to learn from actual user behavior.
+  if (url.pathname === '/feedback' && request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+    const { jobId, action } = body;
+    if (!jobId || !['applied', 'skip'].includes(action)) {
+      return json({ error: 'jobId and action (applied|skip) required' }, 400);
+    }
+
+    const stub    = getStatStore(env);
+    const matches = await loadRecentMatches(stub);
+    const idx     = matches.findIndex(m => m.job?.id === jobId);
+    if (idx === -1) return json({ error: 'Job not found' }, 404);
+
+    // Write feedback into the match entry
+    matches[idx].feedback   = action;
+    matches[idx].feedbackAt = new Date().toISOString();
+
+    // Persist
+    try {
+      await storeSet(stub, 'recent_matches', JSON.stringify(matches));
+    } catch (e) {
+      return json({ error: 'Store write failed: ' + e.message }, 500);
+    }
+
+    console.log(`[STAT feedback] ${action}: ${matches[idx].job?.title} @ ${matches[idx].job?.company}`);
+    return json({ ok: true, jobId, action });
+  }
+
+  // GET /feedback/summary — recent feedback for scorer context
+  // Returns last 50 feedback signals: title, company, action, fitScore
+  if (url.pathname === '/feedback/summary' && request.method === 'GET') {
+    const matches = await loadRecentMatches(getStatStore(env));
+    const signals = matches
+      .filter(m => m.feedback)
+      .map(m => ({
+        title:     m.job?.title || '',
+        company:   m.job?.company || '',
+        action:    m.feedback,
+        fitScore:  m.job?.fitScore ?? null,
+        environment: m.job?.environment || '',
+        salary:    m.job?.salary || '',
+        feedbackAt: m.feedbackAt,
+      }))
+      .slice(0, 50);
+    return json({ ok: true, count: signals.length, signals });
+  }
+
   // GET /browse — env-filtered jobs that didn't match any keyword
   // Useful for manually spotting roles STAT missed. ?ats= ?q= ?limit=
   if (url.pathname === '/browse' && request.method === 'GET') {
@@ -752,6 +803,17 @@ Score this candidate profile against the job description. Return ONLY valid JSON
       ? `\n\nCANDIDATE PROFILE SUMMARY:\n${JSON.stringify(profile, null, 2).slice(0, 800)}`
       : '';
 
+    // Include recent feedback history so Claude learns from past decisions
+    const allMatches = await loadRecentMatches(getStatStore(env)).catch(() => []);
+    const feedbackSignals = allMatches
+      .filter(m => m.feedback)
+      .slice(0, 20)
+      .map(m => `${m.feedback.toUpperCase()}: ${m.job?.title || '?'} @ ${m.job?.company || '?'}${m.job?.environment ? ' (' + m.job.environment + ')' : ''}`)
+      .join('\n');
+    const feedbackCtx = feedbackSignals
+      ? `\n\nRECENT DECISIONS (learn from these):\n${feedbackSignals}`
+      : '';
+
     const jobText = [
       `Title: ${title}`,
       `Company: ${company || 'Unknown'}`,
@@ -771,7 +833,7 @@ Be direct and specific. No filler. Format your response with these exact section
 
 Keep the entire response under 200 words. Use the candidate profile if provided.`;
 
-    const userText = `REVIEW THIS JOB:\n${jobText}${profileCtx}`;
+    const userText = `REVIEW THIS JOB:\n${jobText}${profileCtx}${feedbackCtx}`;
 
     // Call Anthropic API with streaming
     let anthropicRes;
