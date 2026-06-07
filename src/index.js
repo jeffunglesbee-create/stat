@@ -868,6 +868,37 @@ async function handleFetch(request, env) {
     }
   }
 
+  // GET /jobhive-manifest — fetch jobhive manifest + Workday slice stats
+  // Used to verify storage.stapply.ai accessibility and current data freshness.
+  if (url.pathname === '/jobhive-manifest' && request.method === 'GET') {
+    try {
+      const manifestRes = await fetch('https://storage.stapply.ai/jobhive/v1/manifest.json',
+        { headers: { 'User-Agent': 'STAT-job-watcher/1.0' } });
+      if (!manifestRes.ok) return json({ error: `manifest ${manifestRes.status}` }, 502);
+      const manifest = await manifestRes.json();
+      // Extract key fields — full manifest may be large
+      const { generated_at, stats, by_ats } = manifest;
+      const wdEntry  = by_ats?.workday  ?? null;
+      const talEntry = by_ats?.taleo    ?? null;
+      const icEntry  = by_ats?.icims    ?? null;
+      const sfEntry  = by_ats?.successfactors ?? null;
+      const ghEntry  = by_ats?.greenhouse ?? null;
+      return json({
+        generated_at,
+        stats,
+        slices: {
+          workday:        wdEntry  ? { rows: wdEntry.rows,  size_mb: +(wdEntry.size_bytes/1e6).toFixed(1),  csv: wdEntry.csv  } : null,
+          taleo:          talEntry ? { rows: talEntry.rows, size_mb: +(talEntry.size_bytes/1e6).toFixed(1), csv: talEntry.csv } : null,
+          icims:          icEntry  ? { rows: icEntry.rows,  size_mb: +(icEntry.size_bytes/1e6).toFixed(1),  csv: icEntry.csv  } : null,
+          successfactors: sfEntry  ? { rows: sfEntry.rows,  size_mb: +(sfEntry.size_bytes/1e6).toFixed(1),  csv: sfEntry.csv  } : null,
+          greenhouse:     ghEntry  ? { rows: ghEntry.rows,  size_mb: +(ghEntry.size_bytes/1e6).toFixed(1),  csv: ghEntry.csv  } : null,
+        },
+      });
+    } catch (e) {
+      return json({ error: e.message }, 500);
+    }
+  }
+
   if (url.pathname === '/companies' && request.method === 'POST') {
     const company = await request.json();
     if (!company.name || !company.ats) {
