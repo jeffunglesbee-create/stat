@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-07T23:06:06Z
-HEAD: 79496d2
-Smoke: 45/45
+Generated: 2026-06-07T23:20:07Z
+HEAD: e0f1332
+Smoke: 50/50
 
 COMPANIES
   SEED total: 180
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  79496d2 feat: URL→ATS auto-detection — paste career URL to add companies fast
+  e0f1332 feat: auto-discovery fires from all match paths + healthcare gate
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
