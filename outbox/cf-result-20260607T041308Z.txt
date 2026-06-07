@@ -1,0 +1,14 @@
+=== CF API Probe [20260607T041308Z] ===
+Request: GET https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/workers/versions/b28e56d6-0b35-4e43-bd84-53e19be4f9c0
+
+{
+    "success": false,
+    "errors": [
+        {
+            "code": 10001,
+            "message": "Unable to authenticate request"
+        }
+    ],
+    "messages": [],
+    "result": null
+}
