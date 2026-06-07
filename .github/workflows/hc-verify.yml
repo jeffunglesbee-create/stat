@@ -1,4 +1,4 @@
-name: STAT — HiringCafe Live Verify
+name: STAT — HiringCafe Live Verify v2
 
 on:
   workflow_dispatch:
