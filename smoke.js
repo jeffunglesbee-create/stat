@@ -115,6 +115,26 @@ const adaptersSrc = read('adapters.js');
 assert('adapters.js: no escaped backticks',
   countEscapedBackticks(adaptersSrc) === 0);
 
+// ─── JS syntax check on ui.html script block ────────────────────────────────
+// A single syntax error in the <script> block silently kills the entire UI —
+// loadStatus(), tab switching, all event listeners. node --check catches it
+// before it reaches CI. (Discovered: literal \n in regex = SyntaxError.)
+const { execSync } = require('child_process');
+try {
+  const uiContent = read('ui.html');
+  const scriptMatch = uiContent.match(/<script>([\s\S]*?)<\/script>/);
+  if (scriptMatch) {
+    const fs = require('fs');
+    fs.writeFileSync('/tmp/_stat_smoke_ui.js', scriptMatch[1]);
+    execSync('node --check /tmp/_stat_smoke_ui.js', { stdio: 'pipe' });
+    assert('ui.html: script block has valid JS syntax', true);
+  } else {
+    assert('ui.html: script block found', false);
+  }
+} catch (e) {
+  assert('ui.html: script block has valid JS syntax — ' + e.message.split('\n').slice(0,2).join(' '), false);
+}
+
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
 const failed = results.filter(r => !r.ok);
