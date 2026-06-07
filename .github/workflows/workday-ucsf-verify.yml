@@ -18,10 +18,6 @@ name: STAT — Workday/BrassRing UCSF Verify
 
 on:
   workflow_dispatch:
-
-permissions:
-  contents: write
-
 jobs:
   verify:
     runs-on: ubuntu-latest

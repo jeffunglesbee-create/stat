@@ -35,15 +35,6 @@ name: STAT — iCIMS IP Block Validation
 
 on:
   workflow_dispatch:
-    inputs:
-      tenant_url:
-        description: 'iCIMS tenant URL to test (default: VHC Health)'
-        required: false
-        default: 'https://careers-vhchealth.icims.com/jobs/search?ss=1&searchKeyword=analyst'
-
-permissions:
-  contents: write
-
 jobs:
   validate:
     name: iCIMS headless fetch validation

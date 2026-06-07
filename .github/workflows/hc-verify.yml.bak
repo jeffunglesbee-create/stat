@@ -1,0 +1,71 @@
+name: STAT — HiringCafe Live Verify v2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Probe HiringCafe
+        shell: bash
+        run: |
+          set +e
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/hc-verify-${TS}.txt"
+          mkdir -p outbox
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          probe() {
+            local LABEL="$1" URL="$2"
+            printf '\n=== %s ===\nURL: %s\n' "$LABEL" "$URL" >> "$OUT"
+            local TF; TF=$(mktemp)
+            local HC
+            HC=$(curl -s --max-time 25 -L -o "$TF" -w "%{http_code}" \
+              -H "User-Agent: $UA" \
+              -H "Accept: text/html,*/*" \
+              -H "Accept-Language: en-US,en;q=0.9" \
+              "$URL" 2>/dev/null)
+            printf 'HTTP: %s  bytes: %d\n' "$HC" "$(wc -c < "$TF")" >> "$OUT"
+            if grep -q '__NEXT_DATA__' "$TF"; then
+              printf '__NEXT_DATA__: PRESENT\n' >> "$OUT"
+              python3 scripts/analyze_hc.py "$TF" >> "$OUT" 2>&1
+              python3 scripts/find_algolia.py "$TF" >> "$OUT" 2>&1
+            else
+              printf '__NEXT_DATA__: MISSING\n' >> "$OUT"
+              head -c 400 "$TF" >> "$OUT"
+            fi
+            rm -f "$TF"
+          }
+
+          printf 'HiringCafe Live Verification — %s\n' "$TS" > "$OUT"
+          probe "epic analyst remote" "https://hiring.cafe/?q=epic+analyst&environment=remote"
+          probe "epic cadence remote" "https://hiring.cafe/?q=epic+cadence&environment=remote"
+          probe "clinical informatics hybrid" "https://hiring.cafe/?q=clinical+informatics+analyst&environment=hybrid"
+          probe "epic analyst no-env" "https://hiring.cafe/?q=epic+analyst"
+          printf '\nDONE\n' >> "$OUT"
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          cat "$OUT"
+          exit 0
+
+      - name: Push results
+        run: |
+          git config user.email "stat@stat" && git config user.name "STAT"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "hc-verify results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break
+            sleep $((i*5))
+          done
+        env:
+          OUT: ${{ env.OUT }}
+
+# NOTE: workflow updated to also run find_algolia.py on first response

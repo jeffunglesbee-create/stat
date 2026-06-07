@@ -1,14 +1,7 @@
 name: STAT — HiringCafe Company Harvest
 
 on:
-  push:
-    paths:
-      - 'outbox/.trigger-hc-harvest'
   workflow_dispatch:
-
-permissions:
-  contents: write
-
 jobs:
   harvest:
     runs-on: ubuntu-latest

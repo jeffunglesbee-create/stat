@@ -30,14 +30,7 @@
 name: STAT — Web Fetch Probe
 
 on:
-  push:
-    paths:
-      - 'outbox/.trigger-web-fetch'
   workflow_dispatch:
-
-permissions:
-  contents: write
-
 jobs:
   fetch:
     runs-on: ubuntu-latest

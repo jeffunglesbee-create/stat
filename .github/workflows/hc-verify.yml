@@ -2,10 +2,6 @@ name: STAT — HiringCafe Live Verify v2
 
 on:
   workflow_dispatch:
-
-permissions:
-  contents: write
-
 jobs:
   verify:
     runs-on: ubuntu-latest

@@ -2,10 +2,6 @@ name: STAT — UMiami Health ATS Verify
 
 on:
   workflow_dispatch:
-
-permissions:
-  contents: write
-
 jobs:
   verify:
     runs-on: ubuntu-latest
