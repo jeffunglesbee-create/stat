@@ -194,37 +194,33 @@ export async function fetchWorkday(company) {
     const pathParts = parsed.pathname.split('/').filter(Boolean);
     const pathSlug = pathParts[pathParts.length - 1] || 'External_Career_Site';
     const apiUrl = `${parsed.origin}/wday/cxs/${tenant}/${pathSlug}/jobs`;
-    // Search for Epic/EHR roles directly — don't fetch all jobs and filter.
-    // Workday's searchText param is AND-combined with limit/offset.
-    // We run one search per keyword group and deduplicate by job ID.
-    const EPIC_TERMS = ['epic', 'ehr', 'clinical informatics', 'health information', 'clarity'];
-    const allJobs = new Map();
-    for (const term of EPIC_TERMS) {
-      const body = JSON.stringify({
-        appliedFacets: {},
-        limit: 20,
-        offset: 0,
-        searchText: term,
-      });
-      try {
-        const res = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': UA,
-          },
-          body,
-        });
-        if (!res.ok) continue;
-        const data = await res.json();
-        for (const j of data.jobPostings ?? []) {
-          const id = j.bulletFields?.[0] ?? j.title ?? Math.random().toString(36);
-          if (!allJobs.has(id)) allJobs.set(id, j);
-        }
-      } catch {}
+    // Search for Epic/EHR roles directly at the Workday API level.
+    // Single search — Workday treats multi-word searchText as OR across words.
+    // "epic ehr" returns jobs containing 'epic' OR 'ehr' in title/description.
+    // Much faster than 5 separate API calls: 1 call per company, not 5.
+    const body = JSON.stringify({
+      appliedFacets: {},
+      limit: 50,       // higher limit to catch all Epic roles at large health systems
+      offset: 0,
+      searchText: 'epic ehr analyst informatics',  // OR semantics in Workday
+    });
+    const allJobs = new Map(); // populated below
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': UA,
+      },
+      body,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      for (const j of data.jobPostings ?? []) {
+        const id = j.bulletFields?.[0] ?? j.title ?? Math.random().toString(36);
+        allJobs.set(id, j);
+      }
     }
-    const body = null; // sentinel — skip the single-fetch below
     if (allJobs.size > 0) {
       return [...allJobs.values()].map(j => makeJob({
           id:          j.bulletFields?.[0] ?? j.title ?? Math.random().toString(36),

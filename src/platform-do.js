@@ -119,8 +119,28 @@ class PlatformDO {
     const unmatchedJobs = [];   // env-filtered, not keyword-matched
     let polledCount  = 0;
 
-    // Fetch each company — polite delay between requests
-    for (const company of allCompanies) {
+    // CHUNKED POLLING with cursor rotation.
+    // Platform DOs have ~30s CPU per alarm. With 400ms delay between fetches,
+    // max ~70 companies per alarm safely. We rotate through the full list using
+    // a cursor stored in DO storage, so every company gets polled over time.
+    const CHUNK_SIZE = 15; // 15 companies × 400ms = 6s, well within 30s limit
+    let cursor = 0;
+    try {
+      cursor = (await this.storage.get('poll_cursor') ?? 0) % allCompanies.length;
+    } catch {}
+
+    // Slice the chunk starting at cursor, wrapping around
+    const chunk = [];
+    for (let i = 0; i < CHUNK_SIZE && i < allCompanies.length; i++) {
+      chunk.push(allCompanies[(cursor + i) % allCompanies.length]);
+    }
+    // Advance cursor for next alarm
+    try {
+      await this.storage.put('poll_cursor', (cursor + CHUNK_SIZE) % allCompanies.length);
+    } catch {}
+
+    // Fetch each company in this chunk — polite delay between requests
+    for (const company of chunk) {
       try {
         const jobs = await this._fetchJobs(company);
         polledCount++;
@@ -168,7 +188,7 @@ class PlatformDO {
         }
 
         // Polite inter-company delay
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 150)); // Epic-first search is lighter
 
       } catch (e) {
         console.warn(`[STAT ${this.ats}] ${company.name} error:`, e.message);

@@ -256,13 +256,12 @@ export const HIRINGCAFE = {
 // Use for: general companies, logistics firms, CS employers — the long tail.
 // ─────────────────────────────────────────────────────────────────────────────
 export const BATCH_POLLER = {
-  // How long to wait between individual ATS fetches in the batch (ms)
-  // Polite pacing — prevents thundering herd on ATS endpoints
-  delay_between_fetches_ms: 400,
-  // Max companies to fetch per alarm cycle (controls cycle duration)
-  companies_per_cycle: 50,
-  // Alarm interval for the BatchPollerDO itself (one alarm, cycles through list)
-  alarm_interval_ms: 4 * 60_000,  // 4 min — one slot per business-hours window
+  // Polite pacing between ATS fetches — Tier 2.5 companies, not fragile
+  delay_between_fetches_ms: 200,   // was 400ms — batch companies are robust APIs
+  // Max companies per alarm cycle — 25 × 200ms = 5s, well within 30s limit
+  companies_per_cycle: 25,         // was 50 — safer with 200ms delay
+  // Faster alarm interval for better coverage of the batch watchlist
+  alarm_interval_ms: 2 * 60_000,  // was 4 min — 2 min covers list faster
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
