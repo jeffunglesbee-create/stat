@@ -41,8 +41,13 @@ jobs:
           echo "" | tee -a "$OUT"
 
           echo "--- GET /logs?limit=50 (alarm cycle log buffer) ---" | tee -a "$OUT"
-          curl -sf --max-time 15 "$WORKER/logs?limit=50" | python3 scripts/parse_logs.py 2>/dev/null | tee -a "$OUT" \
-            || echo "ERROR: /logs unreachable or empty" | tee -a "$OUT"
+          LOG_RAW=$(curl -sf --max-time 15 "$WORKER/logs?limit=50" 2>/dev/null)
+          echo "Raw bytes: ${#LOG_RAW}" | tee -a "$OUT"
+          if [ -n "$LOG_RAW" ]; then
+            echo "$LOG_RAW" | python3 scripts/parse_logs.py 2>/dev/null | tee -a "$OUT"
+          else
+            echo "Empty response from /logs" | tee -a "$OUT"
+          fi
           echo "" | tee -a "$OUT"
 
           echo "--- GET /logs?ats=workday&limit=20 (Workday BR results) ---" | tee -a "$OUT"
