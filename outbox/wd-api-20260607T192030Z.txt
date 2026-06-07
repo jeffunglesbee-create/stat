@@ -1,0 +1,22 @@
+=== Workday Header Isolation Probe 20260607T192030Z ===
+
+--- jharemza exact (Content-Type only) ---
+HTTP: 422
+jobPostings count: 0
+
+--- Content-Type + Accept ---
+HTTP: 422
+jobPostings count: 0
+
+--- Content-Type + Mozilla UA ---
+HTTP: 422
+jobPostings count: 0
+
+--- No headers (curl default UA) ---
+HTTP: 422
+jobPostings count: 0
+
+--- python-requests UA ---
+HTTP: 422
+jobPostings count: 0
+
