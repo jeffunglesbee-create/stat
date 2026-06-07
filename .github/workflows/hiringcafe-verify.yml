@@ -1,0 +1,196 @@
+name: STAT — HiringCafe Adapter Verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify HiringCafe live response structure
+        shell: bash
+        run: |
+          set +e
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/hiringcafe-verify-${TS}.txt"
+          mkdir -p outbox
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          printf 'HiringCafe Adapter Verification — %s\n' "$TS" > "$OUT"
+          printf 'QUESTIONS:\n' >> "$OUT"
+          printf '  1. Is __NEXT_DATA__ present in hiring.cafe response?\n' >> "$OUT"
+          printf '  2. What is the actual jobs array key (pp.jobs / pp.jobListings / pp.results / pp.data.jobs)?\n' >> "$OUT"
+          printf '  3. Is v5_processed_job_data present on job objects?\n' >> "$OUT"
+          printf '  4. What fields exist on a real job object?\n' >> "$OUT"
+          printf '  5. Does the search return Epic/healthcare IT jobs?\n' >> "$OUT"
+          printf '  6. Is hiring.cafe accessible from Cloudflare Worker IPs (Azure ranges)?\n' >> "$OUT"
+
+          # Test 1: plain fetch with keyword "epic analyst"
+          printf '\n════════ TEST 1: epic analyst search ════════\n' >> "$OUT"
+          TF=$(mktemp)
+          HTTP=$(curl -s --max-time 20 -L -o "$TF" -w "%{http_code}" \
+            -H "User-Agent: $UA" \
+            -H "Accept: text/html,*/*" \
+            "https://hiring.cafe/?q=epic+analyst&environment=remote" 2>/dev/null)
+          printf 'HTTP: %s\n' "$HTTP" >> "$OUT"
+          printf 'Body size: %d bytes\n' "$(wc -c < "$TF")" >> "$OUT"
+
+          # Check for __NEXT_DATA__
+          if grep -q '__NEXT_DATA__' "$TF"; then
+            printf '__NEXT_DATA__: PRESENT\n' >> "$OUT"
+            # Extract and analyze
+            python3 << 'PYEOF' >> "$OUT" 2>&1
+import json, re, sys
+
+with open('$TF', 'r', errors='replace') as f:
+    html = f.read()
+
+m = re.search(r'<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)</script>', html)
+if not m:
+    print('ERROR: __NEXT_DATA__ not found by regex')
+    sys.exit(0)
+
+try:
+    data = json.loads(m.group(1))
+except Exception as e:
+    print(f'JSON parse error: {e}')
+    sys.exit(0)
+
+pp = data.get('props', {}).get('pageProps', {})
+
+print(f'\npageProps keys: {list(pp.keys())[:20]}')
+
+# Try all known job array keys
+for key in ['jobs', 'jobListings', 'results', 'data']:
+    val = pp.get(key)
+    if val is not None:
+        if isinstance(val, list):
+            print(f'\njobs array key: pp.{key} — {len(val)} jobs')
+            if val:
+                j = val[0]
+                print(f'First job keys: {list(j.keys())[:30]}')
+                print(f'  id: {j.get("id") or j.get("requisition_id") or j.get("objectID")}')
+                print(f'  source (ATS): {j.get("source")}')
+                print(f'  board_token: {j.get("board_token")}')
+                inf = j.get('job_information', {})
+                print(f'  job_information keys: {list(inf.keys())[:15]}')
+                print(f'  title: {inf.get("title") or inf.get("job_title_raw") or j.get("title")}')
+                print(f'  company: {j.get("enriched_company_data", {}).get("name") or j.get("companyName")}')
+                v5 = j.get('v5_processed_job_data', {})
+                if v5:
+                    print(f'\n  v5_processed_job_data PRESENT — keys: {list(v5.keys())[:30]}')
+                    print(f'    workplace_type: {v5.get("workplace_type")}')
+                    print(f'    workplace_states: {v5.get("workplace_states", [])[:5]}')
+                    print(f'    boundless_workplace_states: {v5.get("boundless_workplace_states", [])[:5]}')
+                    print(f'    is_workplace_worldwide_ok: {v5.get("is_workplace_worldwide_ok")}')
+                    print(f'    yearly_min_compensation: {v5.get("yearly_min_compensation")}')
+                    print(f'    yearly_max_compensation: {v5.get("yearly_max_compensation")}')
+                    print(f'    seniority_level: {v5.get("seniority_level")}')
+                    print(f'    requirements_summary: {str(v5.get("requirements_summary",""))[:100]}')
+                    print(f'    estimated_publish_date: {v5.get("estimated_publish_date")}')
+                    print(f'    technical_tools: {v5.get("technical_tools", [])[:5]}')
+                    print(f'    licenses_or_certifications: {v5.get("licenses_or_certifications", [])[:5]}')
+                else:
+                    print(f'\n  v5_processed_job_data: MISSING — job keys that exist: {list(j.keys())}')
+                apply_url = j.get('apply_url') or j.get('applicationUrl') or j.get('applyUrl')
+                print(f'  apply_url: {apply_url}')
+                desc = inf.get('description') or inf.get('descriptionHtml') or ''
+                print(f'  description present: {bool(desc)}, length: {len(desc)}')
+                print(f'\nSample jobs (title + company + env):')
+                for jj in val[:5]:
+                    v = jj.get('v5_processed_job_data', {})
+                    ii = jj.get('job_information', {})
+                    t = ii.get('title') or ii.get('job_title_raw') or jj.get('title','?')
+                    c = jj.get('enriched_company_data',{}).get('name') or jj.get('companyName','?')
+                    e = v.get('workplace_type','?')
+                    print(f'  [{e}] {t} @ {c}')
+        elif isinstance(val, dict):
+            print(f'  pp.{key} is a dict, not a list — checking pp.{key}.jobs')
+            inner = val.get('jobs', [])
+            if inner:
+                print(f'  pp.{key}.jobs: {len(inner)} jobs')
+
+PYEOF
+          else
+            printf '__NEXT_DATA__: MISSING\n' >> "$OUT"
+            printf 'Response body (first 500 chars):\n' >> "$OUT"
+            head -c 500 "$TF" >> "$OUT"
+          fi
+          rm -f "$TF"
+
+          # Test 2: different keyword to check consistency
+          printf '\n════════ TEST 2: epic cadence search ════════\n' >> "$OUT"
+          TF2=$(mktemp)
+          HTTP2=$(curl -s --max-time 20 -L -o "$TF2" -w "%{http_code}" \
+            -H "User-Agent: $UA" \
+            -H "Accept: text/html,*/*" \
+            "https://hiring.cafe/?q=epic+cadence&environment=remote" 2>/dev/null)
+          printf 'HTTP: %s\n' "$HTTP2" >> "$OUT"
+          if grep -q '__NEXT_DATA__' "$TF2"; then
+            python3 -c "
+import json, re
+with open('$TF2', 'r', errors='replace') as f: html = f.read()
+m = re.search(r'<script id=\"__NEXT_DATA__\"[^>]*>([\s\S]*?)</script>', html)
+if m:
+    d = json.loads(m.group(1))
+    pp = d.get('props',{}).get('pageProps',{})
+    for k in ['jobs','jobListings','results']:
+        v = pp.get(k)
+        if isinstance(v, list):
+            print(f'pp.{k}: {len(v)} jobs')
+            for j in v[:3]:
+                ii = j.get('job_information',{})
+                t = ii.get('title') or ii.get('job_title_raw') or '?'
+                c = j.get('enriched_company_data',{}).get('name') or '?'
+                print(f'  {t} @ {c}')
+            break
+" >> "$OUT" 2>&1
+          fi
+          rm -f "$TF2"
+
+          # Test 3: try no-environment filter
+          printf '\n════════ TEST 3: no env filter (all modes) ════════\n' >> "$OUT"
+          TF3=$(mktemp)
+          HTTP3=$(curl -s --max-time 20 -L -o "$TF3" -w "%{http_code}" \
+            -H "User-Agent: $UA" \
+            -H "Accept: text/html,*/*" \
+            "https://hiring.cafe/?q=epic+analyst" 2>/dev/null)
+          printf 'HTTP: %s — size: %d\n' "$HTTP3" "$(wc -c < "$TF3")" >> "$OUT"
+          if grep -q '__NEXT_DATA__' "$TF3"; then
+            python3 -c "
+import json, re
+with open('$TF3', 'r', errors='replace') as f: html = f.read()
+m = re.search(r'<script id=\"__NEXT_DATA__\"[^>]*>([\s\S]*?)</script>', html)
+if m:
+    d = json.loads(m.group(1))
+    pp = d.get('props',{}).get('pageProps',{})
+    for k in ['jobs','jobListings','results']:
+        v = pp.get(k)
+        if isinstance(v, list):
+            print(f'pp.{k}: {len(v)} jobs (no env filter)')
+            break
+" >> "$OUT" 2>&1
+          fi
+          rm -f "$TF3"
+
+          printf '\nDONE\n' >> "$OUT"
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          cat "$OUT"
+          exit 0
+
+      - name: Push results
+        run: |
+          git config user.email "stat@stat" && git config user.name "STAT"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "hiringcafe-verify results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break
+            sleep $((i*5))
+          done
+        env:
+          OUT: ${{ env.OUT }}
