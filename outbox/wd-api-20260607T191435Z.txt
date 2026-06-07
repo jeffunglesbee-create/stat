@@ -1,0 +1,15 @@
+=== Workday JSON API Probe 20260607T191435Z ===
+Runner: GitHub Actions (Azure IPs, not Cloudflare)
+
+--- JHHS empty | searchText='' ---
+HTTP: 422
+jobPostings count: 0
+
+--- JHHS epic ehr | searchText='epic ehr' ---
+HTTP: 422
+jobPostings count: 0
+
+--- Mayo empty | searchText='' ---
+HTTP: 422
+jobPostings count: 0
+
