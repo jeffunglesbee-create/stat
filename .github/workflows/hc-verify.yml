@@ -37,6 +37,7 @@ jobs:
             if grep -q '__NEXT_DATA__' "$TF"; then
               printf '__NEXT_DATA__: PRESENT\n' >> "$OUT"
               python3 scripts/analyze_hc.py "$TF" >> "$OUT" 2>&1
+              python3 scripts/find_algolia.py "$TF" >> "$OUT" 2>&1
             else
               printf '__NEXT_DATA__: MISSING\n' >> "$OUT"
               head -c 400 "$TF" >> "$OUT"
@@ -66,3 +67,5 @@ jobs:
           done
         env:
           OUT: ${{ env.OUT }}
+
+# NOTE: workflow updated to also run find_algolia.py on first response
