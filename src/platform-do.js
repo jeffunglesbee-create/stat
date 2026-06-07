@@ -157,8 +157,8 @@ class PlatformDO {
         const jobs = await this._fetchJobs(company);
         polledCount++;
         // Capture Workday BR path result for /logs diagnostic
-        if (this.ats === 'workday' && jobs._source) {
-          brLog.push({ company: company.name, source: jobs._source, jobs: jobs.length });
+        if (this.ats === 'workday') {
+          brLog.push({ company: company.name, source: jobs._source || 'empty', jobs: jobs.length });
         }
 
         for (const job of jobs) {
