@@ -2,37 +2,56 @@ name: STAT — Live Worker Probe
 
 on:
   workflow_dispatch:
+
 jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Probe all endpoints
+      - name: Probe live endpoints
         shell: bash
         run: |
           BASE="https://stat-job-watcher.jeffunglesbee.workers.dev"
-          
-          echo "## STAT Worker Probe $(date -u)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          for path in "/ui" "/" "/companies" "/jobs?limit=1"; do
-            URL="${BASE}${path}"
-            echo "### GET ${path}" >> $GITHUB_STEP_SUMMARY
-            RESULT=$(curl -s -w "\n\nHTTP_STATUS:%{http_code}\nCONTENT_TYPE:%{content_type}\nSIZE_BYTES:%{size_download}" \
-              -H "Accept: application/json, text/html" \
-              -H "User-Agent: STAT-probe/1.0" \
-              -D /tmp/headers.txt \
-              --max-time 15 \
-              "$URL" 2>&1)
-            
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            # For /ui just show headers + first 200 chars
-            if [ "$path" = "/ui" ]; then
-              cat /tmp/headers.txt >> $GITHUB_STEP_SUMMARY
-              echo "${RESULT}" | tail -5 >> $GITHUB_STEP_SUMMARY
-            else
-              echo "${RESULT}" | head -60 >> $GITHUB_STEP_SUMMARY
-            fi
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-          done
+
+          echo "=== GET /browse?limit=5 (all) ==="
+          curl -s -H "Accept: application/json" "$BASE/browse?limit=5" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+print('total:', d.get('total'), 'count:', d.get('count'))
+for item in d.get('jobs',[])[:5]:
+    j=item.get('job',{})
+    print(' ',j.get('title','?'),'@',j.get('company','?'),'env=',j.get('environment','?'))
+"
+
+          echo ""
+          echo "=== GET /browse?q=epic&limit=10 ==="
+          curl -s -H "Accept: application/json" "$BASE/browse?q=epic&limit=10" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+print('total:', d.get('total'), 'epic matches:', d.get('count'))
+for item in d.get('jobs',[])[:10]:
+    j=item.get('job',{})
+    print(' ',j.get('title','?'),'@',j.get('company','?'))
+"
+
+          echo ""
+          echo "=== GET /jobs?limit=5 ==="
+          curl -s -H "Accept: application/json" "$BASE/jobs?limit=5" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+print('total matches:', d.get('count'))
+for item in d.get('jobs',[])[:5]:
+    j=item.get('job',{})
+    print(' P'+str(item.get('match',{}).get('priority','?')),j.get('title','?'),'@',j.get('company','?'))
+"
+
+          echo ""
+          echo "=== GET / (status) ==="
+          curl -s -H "Accept: application/json" "$BASE/" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+print('activeDOs:', d.get('activeDOs'))
+print('seenJobIds:', d.get('seenJobIds'))
+print('watchedCompanies:', d.get('watchedCompanies'))
+print('fitScoring:', d.get('fitScoring','?'))
+"
