@@ -11,6 +11,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
       - name: Run live checks + Workday floor probe
         shell: bash
         run: |
@@ -93,5 +95,5 @@ except Exception as e: print('ERROR:', e)
           git diff --cached --quiet && echo "no changes" && exit 0
           git commit -m "probe: Workday floor + live check results [skip ci]"
           for i in 1 2 3; do
-            git pull --rebase --autostash origin main && git push origin main && break || sleep $((i*5))
+            git pull --rebase --autostash origin main && git push "https://x:${STAT_PAT}@github.com/jeffunglesbee-create/stat.git" main && break || sleep $((i*5))
           done
