@@ -402,3 +402,36 @@ Requirements:
 
 Before shipping any UI status element: verify it updates when the
 underlying state changes. A status that never changes is not a status.
+
+---
+
+## Rule 16 — Never defend work that fails to produce results
+
+If a component does not produce the results it was built to produce,
+it is broken — regardless of how much work went into building it,
+how many sessions it took, or how plausible its design seemed.
+
+Sunk cost is not evidence of correctness. Prior effort is not a
+reason to accept failure as "working as designed."
+
+Concrete application:
+- If Workday polling returns 0 Epic matches across all 91 monitored
+  companies after extended operation, the component is not working —
+  even if the adapter code is correct, the DO is running, and the
+  seenCount is growing.
+- If an ATS adapter always falls through to a fallback path that
+  returns generic results, the primary path has failed and must be
+  replaced — not explained.
+- If an alert surfaces jobs that don't match the user's actual
+  target (wrong company type, wrong geography, wrong role), the
+  matching pipeline has failed — even if keyword matching is
+  technically functioning.
+
+The standard: does the system find and surface Epic/Healthcare IT
+jobs that are actually relevant? If not, it is broken. Fix it or
+replace it. Do not rationalize why the broken state is acceptable.
+
+This rule applies to Claude's analysis equally. If Claude finds
+itself constructing an explanation for why zero results is the
+expected outcome, that is a signal to stop and re-examine the
+assumption — not to refine the explanation.
