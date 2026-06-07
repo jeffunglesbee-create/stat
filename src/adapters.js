@@ -707,6 +707,11 @@ export async function fetchHiringCafe(keyword, environment) {
         technicalTools:     v5.technical_tools ?? [],
         atsSource,            // original ATS (greenhouse/workday/etc.)
         boardToken,           // ATS board slug for DO auto-promotion
+        // requisitionId is the HiringCafe-internal short ID used in /job/{id} URLs
+        // DIFFERENT from j.id which is the compound key (source___board___original_id)
+        // Verified: hiring.cafe/job/{requisitionId} returns HTTP 200 + full description
+        // in job_information.description inside __NEXT_DATA__.props.pageProps.job
+        requisitionId:      j.requisition_id ?? '',
         companySize:        j.enriched_company_data?.nb_employees ?? null,
         companyFounded:     j.enriched_company_data?.year_founded ?? null,
         companyIndustries:  j.enriched_company_data?.industries ?? [],

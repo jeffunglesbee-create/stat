@@ -30,7 +30,7 @@ import puppeteer from '@cloudflare/puppeteer';
 // ATS platforms needing plain HTML og:description fetch
 // iCIMS verified 2026-06-06: plain fetch() with ?in_iframe=1 works from CF Worker.
 // Moved from NEEDS_BROWSER_FETCH. See session doc Part 2 for full investigation.
-const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims']);
+const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe']);
 
 // ATS platforms needing JavaScript execution via Browser Rendering.
 // Taleo only — iCIMS moved to NEEDS_PLAIN_FETCH (plain fetch + ?in_iframe=1).
@@ -48,9 +48,17 @@ const NEEDS_BROWSER_FETCH = new Set(['taleo']);
 async function fetchPlainDescription(job) {
   if (!job.url) return '';
 
+  // For HiringCafe: build URL from hc.requisitionId — job.url is the ATS apply URL
+  // The description lives on hiring.cafe/job/{requisitionId}, not on the apply URL.
+  // Verified 2026-06-07: plain fetch returns __NEXT_DATA__ with full description.
+  let fetchUrl = job.url;
+  if (job.atsSource === 'hiringcafe') {
+    const rid = job.hc?.requisitionId;
+    if (!rid) return '';
+    fetchUrl = `https://hiring.cafe/job/${rid}`;
+  }
   // For iCIMS: append ?in_iframe=1 to the job detail URL
   // This bypasses the branded wrapper redirect and returns the iCIMS portal HTML.
-  let fetchUrl = job.url;
   if (job.atsSource === 'icims') {
     // Ensure /job path and add in_iframe=1
     // URL format: {base}/jobs/{id}/{slug}
@@ -101,6 +109,37 @@ async function fetchPlainDescription(job) {
       const content    = bodyText.slice(contentStart, contentStart + 4000).trim();
 
       return content.length > 50 ? content : bodyText.slice(0, 3000);
+    }
+
+    // HiringCafe: description lives in __NEXT_DATA__.props.pageProps.job.job_information.description
+    // The job detail page (hiring.cafe/job/{requisitionId}) is fully server-rendered.
+    // Verified 2026-06-07: pp.job.job_information.description contains full HTML description.
+    // Note: fetchUrl is overridden to the HC job page URL (not the apply_url).
+    if (job.atsSource === 'hiringcafe') {
+      try {
+        const nd = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+        if (nd) {
+          const data = JSON.parse(nd[1]);
+          const pp = data?.props?.pageProps ?? {};
+          const jobObj = pp.job ?? {};
+          const inf = jobObj.job_information ?? {};
+          const desc = inf.description ?? inf.descriptionHtml ?? '';
+          if (desc && desc.length > 20) {
+            return desc
+              .replace(/<style[\s\S]*?<\/style>/gi, '')
+              .replace(/<script[\s\S]*?<\/script>/gi, '')
+              .replace(/<[^>]+>/g, ' ')
+              .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+              .replace(/&nbsp;/g, ' ').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+              .replace(/\s+/g, ' ').trim();
+          }
+        }
+      } catch {}
+      // Fallback: og:description (truncated but available)
+      const ogFb = html.match(/<meta[^>]+(?:name|property)="og:description"[^>]+content="([^"]{20,})"/i)
+                || html.match(/<meta[^>]+content="([^"]{20,})"[^>]+(?:name|property)="og:description"/i);
+      if (ogFb) return decodeHtmlEntities(ogFb[1]);
+      return '';
     }
 
     // Workday: og:description in meta tag
