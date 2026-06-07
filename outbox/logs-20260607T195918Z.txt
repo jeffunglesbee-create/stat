@@ -1,0 +1,4 @@
+=== STAT Worker Logs 20260607T195918Z ===
+
+--- All recent entries (limit=100) ---
+parse error: Expecting value: line 1 column 1 (char 0)
