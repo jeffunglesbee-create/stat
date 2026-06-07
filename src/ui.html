@@ -1317,25 +1317,60 @@ function renderMatchCard({ job, match, alertedAt }) {
     <button class="feedback-btn" id="fbtn-skip-${job.id}" onclick="sendFeedback('${job.id}','skip',this)" title="Skip this role">
       ✕ Skip
     </button>
-    <button class="btn-cancel-form" onclick="scoreFromCard('${job.id}')" style="font-size:10px">Score</button>
+    <button class="btn-cancel-form" id="sbtn-${job.id}" onclick="scoreFromCard(this,'${job.id}')" style="font-size:10px">Score</button>
   </div>
+  <div class="review-panel" id="score-result-${job.id}" style="margin-top:8px;display:none"></div>
   <div class="review-panel" id="rpanel-${job.id}">
     <div class="review-panel-content" id="rcontent-${job.id}"></div>
   </div>
 </div>`;
 }
 
-function scoreFromCard(jobId) {
+async function scoreFromCard(btn, jobId) {
+  // Score inline on the card — no tab switch needed
   const entry = matches.find(m => m.job.id === jobId);
   if (!entry) return;
-  // Switch to Resume tab and populate JD from match description
-  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
-  document.querySelector('[data-tab="resume"]').classList.add('active');
-  document.getElementById('tab-resume').classList.add('active');
-  const jd = [entry.job.title, entry.job.company, entry.job.description || ''].join('\n\n');
-  document.getElementById('jd-text').value = jd;
-  toast('Job loaded — click Score This Job');
+
+  if (!resumeProfile) {
+    toast('Extract your resume profile first (Resume tab)', 'error');
+    return;
+  }
+
+  const resultEl = document.getElementById('score-result-' + jobId);
+  if (!resultEl) return;
+
+  // Toggle off
+  if (resultEl.style.display === 'block') {
+    resultEl.style.display = 'none';
+    btn.textContent = 'Score';
+    return;
+  }
+
+  btn.textContent = 'Scoring…';
+  btn.disabled = true;
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div class="review-loading">Scoring against your profile…</div>';
+
+  try {
+    const jd = [entry.job.title, entry.job.company, entry.job.description || ''].join('\n\n');
+    const result = await scoreJobDescription(resumeProfile, jd);
+    const scoreClass = result.score >= 7 ? 'high' : result.score <= 4 ? 'low' : '';
+    const fitColor = { high: 'var(--p3)', low: 'var(--p1)', '': 'var(--teal)' }[scoreClass];
+    resultEl.innerHTML = `
+<div class="score-result" style="margin-top:8px">
+  <span class="score-number" style="color:${fitColor}">${result.score}</span><span style="font-size:12px;color:var(--dim)">/10</span>
+  <div class="score-verdict" style="font-size:12px;margin-top:4px">${result.verdict}</div>
+  ${(result.strengths||[]).length ? `<div style="font-size:11px;margin-top:6px"><strong>Strengths</strong><br>${result.strengths.map(s=>'• '+s).join('<br>')}</div>` : ''}
+  ${(result.gaps||[]).length ? `<div style="font-size:11px;margin-top:4px"><strong>Gaps</strong><br>${result.gaps.map(g=>'• '+g).join('<br>')}</div>` : ''}
+  ${result.coverOpener ? `<div style="font-size:11px;margin-top:4px"><strong>Cover opener</strong><br>${result.coverOpener}</div>` : ''}
+</div>`;
+    btn.textContent = 'Score ✓';
+  } catch(e) {
+    resultEl.innerHTML = `<div style="font-size:11px;color:var(--p1)">Error: ${e.message}</div>`;
+    toast('Scoring failed', 'error');
+    btn.textContent = 'Score';
+  }
+  btn.disabled = false;
 }
 
 // ── Claude inline review ──────────────────────────────────────────────────
@@ -1803,21 +1838,47 @@ async function loadBrowse() {
     <a href="${job.url}" target="_blank" class="apply-btn">View Job →</a>
     <button class="btn-cancel-form" onclick="browseScoreCard(this, '${job.id.replace(/'/g,"\\'")}', ${JSON.stringify(JSON.stringify(job)).slice(1,-1)})" style="font-size:10px">Score against profile</button>
   </div>
+  <div id="bscore-${job.id}" style="display:none;margin-top:4px"></div>
 </div>`;
   }).join('');
 }
 
-function browseScoreCard(btn, jobId, jobJson) {
-  // Switch to Resume tab with title+company pre-filled in JD box
+async function browseScoreCard(btn, jobId, jobJson) {
+  // Score inline on Browse card — no tab switch
+  if (!resumeProfile) {
+    toast('Extract your resume profile first (Resume tab)', 'error');
+    return;
+  }
   try {
     const job = JSON.parse(jobJson);
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
-    document.querySelector('[data-tab="resume"]').classList.add('active');
-    document.getElementById('tab-resume').classList.add('active');
-    document.getElementById('jd-text').value = [job.title, job.company, job.location, job.description || ''].filter(Boolean).join('\n\n');
-    toast('Job loaded in Resume tab — click Score This Job');
-  } catch(e) { toast('Could not load job', 'error'); }
+    const resultEl = document.getElementById('bscore-' + jobId);
+    if (!resultEl) return;
+
+    if (resultEl.style.display === 'block') {
+      resultEl.style.display = 'none';
+      btn.textContent = 'Score against profile';
+      return;
+    }
+
+    btn.textContent = 'Scoring…'; btn.disabled = true;
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = '<div class="review-loading">Scoring against your profile…</div>';
+
+    const jd = [job.title, job.company, job.location, job.description || ''].filter(Boolean).join('\n\n');
+    const result = await scoreJobDescription(resumeProfile, jd);
+    const fitColor = result.score >= 7 ? 'var(--p3)' : result.score <= 4 ? 'var(--p1)' : 'var(--teal)';
+    resultEl.innerHTML = `
+<div style="padding-top:8px;border-top:1px solid var(--rule)">
+  <span class="score-number" style="color:${fitColor}">${result.score}</span><span style="font-size:12px;color:var(--dim)">/10</span>
+  <div style="font-size:12px;margin-top:4px">${result.verdict}</div>
+  ${(result.strengths||[]).length ? `<div style="font-size:11px;margin-top:6px"><strong>Strengths</strong><br>${result.strengths.map(s=>'• '+s).join('<br>')}</div>` : ''}
+  ${(result.gaps||[]).length ? `<div style="font-size:11px;margin-top:4px"><strong>Gaps</strong><br>${result.gaps.map(g=>'• '+g).join('<br>')}</div>` : ''}
+</div>`;
+    btn.textContent = 'Score ✓'; btn.disabled = false;
+  } catch(e) {
+    toast('Scoring failed: ' + e.message, 'error');
+    btn.textContent = 'Score against profile'; btn.disabled = false;
+  }
 }
 
 document.getElementById('btn-refresh-browse').onclick = loadBrowse;
