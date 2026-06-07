@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-07T23:20:07Z
-HEAD: e0f1332
-Smoke: 50/50
+Generated: 2026-06-07T23:51:55Z
+HEAD: 5f0ae85
+Smoke: 54/54
 
 COMPANIES
   SEED total: 180
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  e0f1332 feat: auto-discovery fires from all match paths + healthcare gate
+  5f0ae85 fix: Browse desc button broken + UNMATCHED_MAX 500→2000 + SF \r\n cleanup
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
