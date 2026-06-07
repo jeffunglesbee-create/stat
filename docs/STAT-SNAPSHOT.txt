@@ -1,20 +1,20 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-07T22:31:35Z
-HEAD: 8d604ad
+Generated: 2026-06-07T22:47:16Z
+HEAD: c53302e
 Smoke: 38/38
 
 COMPANIES
   SEED total: 180
-  Workday: 91 (searchText: 'epic ehr within')
+  Workday: 90 (searchText: 'epic ehr within')
   Greenhouse: 59
 
 RECENT COMMITS
-  8d604ad feat: Workday — searchText injection + DataImpulse residential proxy
+  c53302e fix: UPMC — workday → taleo (upmcjobs.taleo.net/careersection/UPMC_External)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
   2. Platform DOs: 7 DOs, CHUNK_SIZE=15, cursor rotation
-     Workday sweep (91 cos): ~24min | GH sweep (59 cos): ~8min
+     Workday sweep (90 cos): ~24min | GH sweep (59 cos): ~8min
   3. BatchPollerDO: 57 cos, 25/cycle, 2min interval
   4. Backfill: manual POST /backfill-browse
 
