@@ -1256,8 +1256,15 @@ Return ONLY the JSON object, no markdown, no explanation.`;
 
   // POST /reset-seen — clear global seen IDs
   if (url.pathname === '/reset-seen' && request.method === 'POST') {
-    await storeSet(getStatStore(env), 'seen_ids', JSON.stringify([]));
-    return json({ ok: true, message: 'Seen IDs cleared — next run will re-alert all current jobs' });
+    const stub = getStatStore(env);
+    // Count before clearing so UI can verify
+    let cleared = 0;
+    try {
+      const raw = await storeGet(stub, 'seen_ids');
+      cleared = raw ? JSON.parse(raw).length : 0;
+    } catch {}
+    await storeSet(stub, 'seen_ids', JSON.stringify([]));
+    return json({ ok: true, cleared, message: `Cleared ${cleared} seen IDs — next poll re-evaluates all live Epic roles` });
   }
 
   // POST /reset-all — nuclear reset

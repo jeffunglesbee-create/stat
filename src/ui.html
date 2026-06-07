@@ -1198,12 +1198,52 @@ document.getElementById('btn-trigger').onclick = async () => {
 document.getElementById('btn-bootstrap').onclick = async () => {
   const b = document.getElementById('btn-bootstrap');
   b.classList.add('loading');
-  log('Bootstrapping DOs…');
+  b.textContent = 'Bootstrapping…';
+  log('Bootstrapping DOs — spawning watchers, fetching resume, generating keywords…');
   try {
     const { ok, data } = await api('/bootstrap', { method:'POST' });
-    if (ok) { log('Bootstrap: ' + data.spawned + ' new DOs'); toast('Bootstrap complete'); await loadStatus(); }
-  } catch(e) { toast('Bootstrap failed','error'); }
+    if (!ok) { toast('Bootstrap failed — check Activity Log', 'error'); return; }
+
+    // Verify what actually happened
+    const spawned = data.spawned ?? 0;
+    const total   = data.total ?? 0;
+    const resume  = data.resumeStatus || 'skipped';
+
+    log(`Bootstrap complete: ${spawned} new DOs spawned (${total} total companies)`, 'match');
+    if (resume !== 'skipped') log(`Resume: ${resume}`, 'info');
+
+    // Verify DOs are actually running by checking status
+    await new Promise(r => setTimeout(r, 1500)); // brief pause for DOs to init
+    const { ok: sok, data: sdata } = await api('/');
+    if (sok) {
+      const active = sdata.activeDOs ?? 0;
+      const expected = 7; // greenhouse, lever, ashby, workday, icims, sf, taleo
+      if (active >= expected) {
+        log(`Verified: ${active} DOs active ✓`, 'match');
+        toast(`Bootstrap verified — ${active} watchers active, ${total} companies`, 'success');
+      } else {
+        log(`Warning: only ${active}/${expected} DOs active — try Bootstrap again`, 'warn');
+        toast(`Only ${active}/${expected} DOs active — try again`, 'error');
+      }
+    }
+
+    // Also regenerate keywords if profile exists
+    try {
+      const kr = await api('/regenerate-keywords', { method: 'POST' });
+      if (kr.ok && kr.data?.keywords) {
+        const kw = kr.data.keywords;
+        const total_kw = (kw.exact?.length||0) + (kw.broad?.length||0) + (kw.adjacent?.length||0);
+        log(`Profile keywords regenerated: ${total_kw} terms (${kw.exact?.length} exact, ${kw.broad?.length} broad, ${kw.adjacent?.length} adjacent)`, 'match');
+      }
+    } catch { /* keywords optional */ }
+
+    await loadStatus();
+  } catch(e) {
+    log('Bootstrap error: ' + e.message, 'warn');
+    toast('Bootstrap failed: ' + e.message, 'error');
+  }
   b.classList.remove('loading');
+  b.textContent = 'Bootstrap watchers';
 };
 
 document.getElementById('btn-refresh').onclick = async () => { await loadStatus(); toast('Refreshed'); };
@@ -1224,8 +1264,33 @@ document.getElementById('btn-backfill').onclick = async () => {
 
 document.getElementById('btn-reset').onclick = async () => {
   if (!confirm('Clear all seen job IDs? STAT will re-alert on all currently live matching jobs on the next poll.')) return;
-  const { ok } = await api('/reset-seen', { method:'POST' });
-  if (ok) { log('Seen IDs cleared','warn'); toast('Seen IDs cleared','success'); await loadStatus(); }
+  const b = document.getElementById('btn-reset');
+  b.textContent = 'Clearing…'; b.disabled = true;
+  try {
+    const { ok, data } = await api('/reset-seen', { method:'POST' });
+    if (!ok) { toast('Reset failed', 'error'); return; }
+
+    // Verify: seen count should now be 0
+    await new Promise(r => setTimeout(r, 500));
+    const { ok: sok, data: sdata } = await api('/');
+    if (sok) {
+      const seen = sdata.seenJobIds ?? '?';
+      if (seen === 0 || seen === '0') {
+        log(`Seen IDs cleared ✓ — was ${data.cleared ?? '?'} jobs, now 0. Next poll will re-evaluate all live Epic roles.`, 'warn');
+        toast('Seen IDs cleared ✓ — STAT will re-scan on next poll', 'success');
+      } else {
+        log(`Seen IDs cleared — now showing ${seen} (may include freshly matched jobs)`, 'warn');
+        toast(`Cleared ✓ — ${seen} jobs in seen set`, 'success');
+      }
+    } else {
+      log('Seen IDs cleared (could not verify count)', 'warn');
+      toast('Seen IDs cleared', 'success');
+    }
+    await loadStatus();
+  } catch(e) {
+    toast('Reset failed: ' + e.message, 'error');
+  }
+  b.textContent = 'Clear seen IDs'; b.disabled = false;
 };
 
 document.getElementById('btn-show-add').onclick = () => {
