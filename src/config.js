@@ -703,3 +703,5 @@ export const BATCH_WATCHLIST = [
   { name: 'Infor',                     ats: 'workday', token: 'infor',
     url: 'https://infor.wd5.myworkdayjobs.com/en-US/External' },
 ];
+
+// doc-snapshot trigger: 2026-06-07
