@@ -930,6 +930,22 @@ async function handleFetch(request, env) {
   }
 
   // POST /companies — add a company to the watchlist
+  // POST /detect-ats — auto-detect ATS type and token from a career URL
+  // Body: { url: "https://boards.greenhouse.io/nordicglobal" }
+  // Returns: { ats, token, url } or { error }
+  // Powers the UI "Paste URL" fast-add flow.
+  if (url.pathname === '/detect-ats' && request.method === 'POST') {
+    try {
+      const { url: rawUrl } = await request.json();
+      if (!rawUrl) return json({ error: 'url required' }, 400);
+      const result = detectAts(rawUrl);
+      if (!result) return json({ error: 'ATS not recognized from URL' }, 422);
+      return json(result);
+    } catch (e) {
+      return json({ error: e.message }, 400);
+    }
+  }
+
   if (url.pathname === '/companies' && request.method === 'POST') {
     const company = await request.json();
     if (!company.name || !company.ats) {
@@ -1748,6 +1764,69 @@ function json(data, status = 200) {
 // ─────────────────────────────────────────────────────────────────────────────
 // WORKER EXPORTS
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// ATS URL DETECTOR
+// Parses a career page URL and returns { ats, token, url } or null.
+// Supports: Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, SuccessFactors.
+// Custom domains (e.g. careers.medstarhealth.org) return null — can't detect
+// without a network fetch, which the UI can handle via a fallback message.
+// ─────────────────────────────────────────────────────────────────────────────
+function detectAts(rawUrl) {
+  try {
+    const u   = new URL(rawUrl.trim());
+    const host = u.hostname;
+    const path = u.pathname;
+
+    // Greenhouse: boards.greenhouse.io/{token}
+    if (host === 'boards.greenhouse.io') {
+      const token = path.replace(/^\//, '').split('/')[0];
+      return token ? { ats: 'greenhouse', token, url: null } : null;
+    }
+
+    // Lever: jobs.lever.co/{token}
+    if (host === 'jobs.lever.co') {
+      const token = path.replace(/^\//, '').split('/')[0];
+      return token ? { ats: 'lever', token, url: null } : null;
+    }
+
+    // Ashby: jobs.ashbyhq.com/{token}
+    if (host === 'jobs.ashbyhq.com') {
+      const token = path.replace(/^\//, '').split('/')[0];
+      return token ? { ats: 'ashby', token, url: null } : null;
+    }
+
+    // Workday: {tenant}.wd{N}.myworkdayjobs.com
+    const wdMatch = host.match(/^([^.]+)\.wd\d+\.myworkdayjobs\.com$/);
+    if (wdMatch) {
+      return { ats: 'workday', token: wdMatch[1], url: rawUrl };
+    }
+
+    // iCIMS: {tenant}.icims.com
+    if (host.endsWith('.icims.com')) {
+      const tenant = host.split('.')[0];
+      return { ats: 'icims', token: tenant,
+               url: `https://\${host}/jobs/search` };
+    }
+
+    // Taleo: {tenant}.taleo.net
+    if (host.endsWith('.taleo.net')) {
+      const tenant = host.split('.')[0];
+      const csMatch = path.match(/\/careersection\/([^\/]+)\//);
+      const cs = csMatch ? csMatch[1] : '2';
+      return { ats: 'taleo', token: tenant,
+               url: `https://\${host}/careersection/\${cs}/jobsearch.ftl` };
+    }
+
+    // SuccessFactors: career4.successfactors.com?company={token}
+    if (host.includes('successfactors.com')) {
+      const company = u.searchParams.get('company');
+      return company ? { ats: 'successfactors', token: company, url: rawUrl } : null;
+    }
+
+    return null;
+  } catch { return null; }
+}
+
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(handleScheduled(env));

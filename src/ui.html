@@ -813,6 +813,14 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
 
       <div class="add-form" id="add-form" style="display:none">
         <div class="form-title">Add Company to Watchlist</div>
+        <div class="form-field" style="margin-bottom:14px">
+          <label>Career Page URL <span style="font-weight:400;text-transform:none;letter-spacing:0">(paste to auto-detect)</span></label>
+          <div style="display:flex;gap:8px">
+            <input type="url" id="f-url-detect" placeholder="https://boards.greenhouse.io/company  or  https://company.wd5.myworkdayjobs.com/…" style="flex:1">
+            <button id="btn-detect" style="padding:8px 14px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius);font-size:11px;font-family:var(--sans);cursor:pointer;white-space:nowrap">Detect →</button>
+          </div>
+          <div id="detect-status" style="font-size:11px;color:var(--muted);margin-top:4px;display:none"></div>
+        </div>
         <div class="form-grid">
           <div class="form-field">
             <label>Company Name</label>
@@ -1291,6 +1299,36 @@ document.getElementById('btn-reset').onclick = async () => {
     toast('Reset failed: ' + e.message, 'error');
   }
   b.textContent = 'Clear seen IDs'; b.disabled = false;
+};
+
+document.getElementById('btn-detect').onclick = async () => {
+  const rawUrl = document.getElementById('f-url-detect').value.trim();
+  if (!rawUrl) return;
+  const status = document.getElementById('detect-status');
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = 'Detecting…';
+  try {
+    const { ok, data } = await api('/detect-ats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: rawUrl }),
+    });
+    if (ok && data.ats) {
+      document.getElementById('f-ats').value = data.ats;
+      if (data.token) document.getElementById('f-token').value = data.token;
+      if (data.url)   document.getElementById('f-url').value = data.url;
+      status.style.color = '#16a34a';
+      status.textContent = `✓ Detected: ${data.ats}  token: ${data.token}`;
+      document.getElementById('f-name').focus();
+    } else {
+      status.style.color = '#dc2626';
+      status.textContent = data.error || 'Could not detect ATS — fill in manually';
+    }
+  } catch (e) {
+    status.style.color = '#dc2626';
+    status.textContent = 'Detection failed — fill in manually';
+  }
 };
 
 document.getElementById('btn-show-add').onclick = () => {

@@ -163,6 +163,10 @@ assert('store: appendLog exported', read('store.js').includes('export async func
 assert('store: readLog exported', read('store.js').includes('export async function readLog'));
 assert('index: readLog imported', read('index.js').includes('readLog'));
 assert('index: /logs endpoint present', read('index.js').includes("pathname === '/logs'"));
+assert('index: /detect-ats endpoint present', read('index.js').includes("pathname === '/detect-ats'"));
+assert('index: detectAts function defined', read('index.js').includes('function detectAts(rawUrl)'));
+assert('ui: detect-ats URL field present', read('ui.html').includes('f-url-detect'));
+assert('ui: btn-detect handler wired', read('ui.html').includes("'/detect-ats'"));
 assert('platform-do: appendLog imported', read('platform-do.js').includes('appendLog'));
 assert('platform-do: appendLog called in alarm loop', read('platform-do.js').includes('await appendLog('));
 assert('platform-do: brLog declared in alarm loop', read('platform-do.js').includes('const brLog'));
