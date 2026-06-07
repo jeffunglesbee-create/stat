@@ -1,0 +1,108 @@
+HiringCafe API Probe
+
+=== GET /api/search?q=epic+analyst ===
+URL: https://hiring.cafe/api/search?q=epic+analyst&environment=remote&page=1
+HTTP: 404  bytes: 37773
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><title data-next-head="">HiringCafe - 404</title><meta name="description" content="The #1 Job Search Engine." data-next-head=""/><meta name="robots" content="noindex,follow" data-next-head=""/><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-KJCD0N6Q7T"></script><script>
+              window.dataLayer = window.dataLayer || [];
+    
+
+=== GET /api/jobs?q=epic ===
+URL: https://hiring.cafe/api/jobs?q=epic+analyst&environment=remote
+HTTP: 404  bytes: 37773
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><title data-next-head="">HiringCafe - 404</title><meta name="description" content="The #1 Job Search Engine." data-next-head=""/><meta name="robots" content="noindex,follow" data-next-head=""/><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-KJCD0N6Q7T"></script><script>
+              window.dataLayer = window.dataLayer || [];
+    
+
+=== GET /api/jobs/search ===
+URL: https://hiring.cafe/api/jobs/search?q=epic+analyst
+HTTP: 404  bytes: 37773
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><title data-next-head="">HiringCafe - 404</title><meta name="description" content="The #1 Job Search Engine." data-next-head=""/><meta name="robots" content="noindex,follow" data-next-head=""/><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-KJCD0N6Q7T"></script><script>
+              window.dataLayer = window.dataLayer || [];
+    
+
+=== POST /api/search ===
+URL: https://hiring.cafe/api/search
+HTTP: 404  bytes: 37773
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><title data-next-head="">HiringCafe - 404</title><meta name="description" content="The #1 Job Search Engine." data-next-head=""/><meta name="robots" content="noindex,follow" data-next-head=""/><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-KJCD0N6Q7T"></script><script>
+              window.dataLayer = window.dataLayer || [];
+    
+
+=== GET /api/v1/search ===
+URL: https://hiring.cafe/api/v1/search?q=epic+analyst
+HTTP: 404  bytes: 37773
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><title data-next-head="">HiringCafe - 404</title><meta name="description" content="The #1 Job Search Engine." data-next-head=""/><meta name="robots" content="noindex,follow" data-next-head=""/><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-KJCD0N6Q7T"></script><script>
+              window.dataLayer = window.dataLayer || [];
+    
+
+=== GET /api/v2/search ===
+URL: https://hiring.cafe/api/v2/search?q=epic+analyst
+HTTP: 404  bytes: 37773
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><title data-next-head="">HiringCafe - 404</title><meta name="description" content="The #1 Job Search Engine." data-next-head=""/><meta name="robots" content="noindex,follow" data-next-head=""/><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-KJCD0N6Q7T"></script><script>
+              window.dataLayer = window.dataLayer || [];
+    
+
+=== GET /api/widgets ===
+URL: https://hiring.cafe/api/widgets?q=epic
+HTTP: 404  bytes: 37773
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><title data-next-head="">HiringCafe - 404</title><meta name="description" content="The #1 Job Search Engine." data-next-head=""/><meta name="robots" content="noindex,follow" data-next-head=""/><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-KJCD0N6Q7T"></script><script>
+              window.dataLayer = window.dataLayer || [];
+    
+
+=== robots.txt ===
+URL: https://hiring.cafe/robots.txt
+HTTP: 200  bytes: 516
+User-agent: *
+Allow: /$
+Allow: /about
+Allow: /work-here
+Allow: /work-here/
+Allow: /careers
+Allow: /careers/
+Allow: /talent-network
+Allow: /terms-and-conditions
+Allow: /private-policy
+Disallow: /job/
+Disallow: /viewjob/
+Disallow: /jobs/
+Disallow: /org/
+Disallow: /company/
+Disallow: /b/
+Disallow: /*?searchState=*
+
+# Private/admin areas
+Disallow: /account
+Disallow: /inbox
+Disallow: /invite/
+Disallow: /applicant/
+Disallow: /share/
+Disallow: /myhiringcafe/
+Disallow: /admin/
+
+Sitemap: https://hiring.c
+
+=== sitemap.xml ===
+URL: https://hiring.cafe/sitemap.xml
+HTTP: 200  bytes: 2371
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>https://hiring.cafe/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://hiring.cafe/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://hiring.cafe/work-here</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://hiri
+
+DONE
