@@ -1,0 +1,82 @@
+name: STAT — Live Check (push triggered)
+
+on:
+  push:
+    paths:
+      - 'outbox/.run-live-check'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check live endpoints
+        shell: bash
+        run: |
+          BASE="https://stat-job-watcher.jeffunglesbee.workers.dev"
+          mkdir -p outbox
+          OUT="outbox/live-check-$(date -u +%Y%m%dT%H%M%SZ).txt"
+
+          {
+            echo "=== STAT Live Check $(date -u) ==="
+            echo ""
+            echo "--- GET / (status) ---"
+            curl -s -H "Accept: application/json" "$BASE/" | python3 -c "
+import sys,json
+try:
+  d=json.load(sys.stdin)
+  print('seenJobIds:', d.get('seenJobIds'))
+  print('watchedCompanies:', d.get('watchedCompanies'))
+  print('activeDOs:', d.get('activeDOs'))
+  print('fitScoring:', d.get('fitScoring','?'))
+except Exception as e:
+  print('ERROR:', e)
+"
+            echo ""
+            echo "--- GET /jobs?limit=10 (matches) ---"
+            curl -s -H "Accept: application/json" "$BASE/jobs?limit=10" | python3 -c "
+import sys,json
+try:
+  d=json.load(sys.stdin)
+  print('total matches:', d.get('count',0))
+  for item in d.get('jobs',[])[:10]:
+    j=item.get('job',{})
+    m=item.get('match',{})
+    print(f'  P{m.get(\"priority\",\"?\")} {j.get(\"title\",\"?\")} @ {j.get(\"company\",\"?\")} [{j.get(\"atsSource\",\"?\")}] env={j.get(\"environment\",\"?\")} kw={m.get(\"matchedKw\",\"?\")}')
+except Exception as e:
+  print('ERROR:', e)
+"
+            echo ""
+            echo "--- GET /browse?limit=5 (sample unmatched) ---"
+            curl -s -H "Accept: application/json" "$BASE/browse?limit=5" | python3 -c "
+import sys,json
+try:
+  d=json.load(sys.stdin)
+  print('total unmatched stored:', d.get('total',0))
+  for item in d.get('jobs',[])[:5]:
+    j=item.get('job',{})
+    print(f'  {j.get(\"title\",\"?\")} @ {j.get(\"company\",\"?\")} env={j.get(\"environment\",\"?\")}')
+except Exception as e:
+  print('ERROR:', e)
+"
+            echo ""
+            echo "--- GET /browse?q=epic&limit=10 ---"
+            curl -s -H "Accept: application/json" "$BASE/browse?q=epic&limit=10" | python3 -c "
+import sys,json
+try:
+  d=json.load(sys.stdin)
+  print('epic in browse:', d.get('count',0), 'of', d.get('total',0))
+  for item in d.get('jobs',[])[:10]:
+    j=item.get('job',{})
+    print(f'  {j.get(\"title\",\"?\")} @ {j.get(\"company\",\"?\")}')
+except Exception as e:
+  print('ERROR:', e)
+"
+          } | tee "$OUT"
+
+          git config user.email "stat@stat" && git config user.name "STAT"
+          git add "$OUT"
+          git commit -m "live-check results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break || sleep $((i*5))
+          done
