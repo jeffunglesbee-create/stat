@@ -639,17 +639,23 @@ export async function fetchHiringCafe(keyword, environment) {
     //
     // CRITICAL: ssrHits contains the full result set (152 items observed).
     // The ?q= and ?environment= query params DO NOT filter the SSR payload —
-    // HiringCafe filters client-side via Algolia. The SSR payload appears to be
-    // a popularity/recency-sorted global feed regardless of search terms.
+    // HiringCafe SSR feed is a global popularity/recency feed (152 jobs).
+    // The ?q= and ?environment= params DO NOT filter the SSR payload.
+    //
+    // CONFIRMED (session 2, 2026-06-07, live CI probes):
+    //   Backend: Elasticsearch — NOT Algolia.
+    //   Evidence: __NEXT_DATA__.ssrTimings.esLatencyMs (391-967ms observed).
+    //   Algolia credentials searched exhaustively across page + all 49 JS chunks
+    //   and all /api/* routes (all 404) — not present anywhere.
+    //   ES cluster is private VPC infrastructure — not publicly routable.
     //
     // Implication: fetchHiringCafe('epic analyst') and fetchHiringCafe('epic cadence')
-    // return the SAME 152 jobs. Keyword relevance is enforced by STAT's matchJob()
-    // downstream, not by HiringCafe's SSR. This is acceptable — matchJob() filters
-    // to Epic/healthcare IT keywords before any alert fires.
+    // return the SAME 152 jobs. Keyword relevance is enforced by matchJob() downstream.
     //
-    // TODO: Switch to HiringCafe's Algolia search API for true keyword filtering.
-    //       Algolia app ID and search key are embedded in initialSearchState.
-    //       That would return <20 targeted results instead of 152 generic ones.
+    // UNBUILT path: Browser Rendering (env.MYBROWSER binding exists, used for Taleo).
+    //   Would intercept the client-side XHR that hits the actual ES search endpoint.
+    //   Returns real keyword-filtered results instead of the global SSR feed.
+    //   Build cost: ~4-6hrs. Current approach works; BR is an optimization.
     // ─────────────────────────────────────────────────────────────────────────
     const jobs = pp.ssrHits ?? [];
     if (!Array.isArray(jobs)) return [];
