@@ -13,46 +13,26 @@ jobs:
       - name: STAT status + Workday floor probe
         shell: bash
         run: |
-          BASE="https://stat-job-watcher.jeffunglesbee.workers.dev"
-          BODY='{"appliedFacets":{},"limit":5,"offset":0,"searchText":"epic ehr within"}'
+          WORKER="https://stat-job-watcher.jeffunglesbee.workers.dev"
           mkdir -p outbox
 
-          call_wd() {
-            local url="$1" gap="$2"
-            [ "$gap" -gt 0 ] && sleep "$gap"
-            local r=$(curl -sf -w '\n%{http_code}' -X POST "$url" \
-              -H 'Content-Type: application/json' -H 'Accept: application/json' \
-              -H 'User-Agent: Mozilla/5.0' -d "$BODY" --max-time 8 2>/dev/null)
-            local code=$(echo "$r" | tail -1)
-            local jobs=$(echo "$r" | head -1 | python3 -c \
-              "import sys,json; d=json.load(sys.stdin); print(len(d.get('jobPostings',[])))" 2>/dev/null || echo ERR)
-            printf "  gap=%-3ss  HTTP=%s  jobs=%s\n" "$gap" "$code" "$jobs"
-          }
-
-          echo "=== STAT status ===" && curl -s "$BASE/" | python3 -c "
-import sys,json
-try:
-  d=json.load(sys.stdin)
-  print('seenJobIds:', d.get('seenJobIds'))
-  print('activeDOs:', d.get('activeDOs'))
-except: print('ERROR')
-"
+          echo "=== STAT status ==="
+          curl -sf --max-time 15 "$WORKER/" | python3 scripts/parse_stat_status.py || echo "ERROR: Worker unreachable"
           echo ""
-          echo "=== Workday Floor Probe $(date -u) ==="
-          echo "200+jobs>0=OK  200+jobs=0=SILENT_THROTTLE  429=RATE_LIMITED"
+
+          echo "=== Workday Floor Probe via Worker $(date -u) ==="
+          echo "Worker runs from Cloudflare IPs (not blocked by Workday WAF)"
+          echo ""
+
           for row in \
             "jhhs|jhhs.wd5.myworkdayjobs.com|JHH_External_Positions" \
             "mayoclinic|mayoclinic.wd5.myworkdayjobs.com|mayoclinic" \
             "kaiserpermanente|kp.wd5.myworkdayjobs.com|KP_External_Career_Site"; do
             IFS='|' read -r tenant host slug <<< "$row"
-            URL="https://${host}/wday/cxs/${tenant}/${slug}/jobs"
             echo "--- $tenant ---"
-            call_wd "$URL" 0
-            call_wd "$URL" 30
-            call_wd "$URL" 10
-            call_wd "$URL" 5
-            call_wd "$URL" 2
-            call_wd "$URL" 1
+            curl -sf --max-time 90 \
+              "$WORKER/workday-probe?tenant=$tenant&host=$host&slug=$slug" \
+              | python3 scripts/parse_workday_probe.py || echo "  Worker call failed"
             echo ""
           done
       - name: Commit and push results
@@ -64,5 +44,6 @@ except: print('ERROR')
           git diff --cached --quiet && echo "nothing to commit" && exit 0
           git commit -m "probe: live-check results [skip ci]"
           for i in 1 2 3; do
-            git pull --rebase --autostash origin main &&             git push origin main && break || sleep $((i*5))
+            git pull --rebase --autostash origin main && \
+            git push origin main && break || sleep $((i*5))
           done

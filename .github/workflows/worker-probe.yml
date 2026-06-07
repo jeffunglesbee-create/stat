@@ -33,27 +33,15 @@ jobs:
           echo "--- Workday floor probe (jhhs, ~60s) ---" | tee -a "$OUT"
           curl -sf --max-time 90 \
             "$WORKER/workday-probe?tenant=jhhs&host=jhhs.wd5.myworkdayjobs.com&slug=JHH_External_Positions" \
-            | python3 -c "
-import sys,json
-d=json.load(sys.stdin)
-print('anyThrottle:', d['anyThrottle'])
-print('lowestSafeGap:', d['lowestSafeGapSeconds'], 's')
-for r in d['results']:
-    print(f'  gap={r[\"gap\"]:2d}s  HTTP={r[\"http\"]}  jobs={r[\"jobs\"]}  [{r[\"verdict\"]}]')
-" 2>/dev/null | tee -a "$OUT" || echo "ERROR: /workday-probe unreachable" | tee -a "$OUT"
+            | python3 scripts/parse_workday_probe.py 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR: /workday-probe unreachable" | tee -a "$OUT"
           echo "" | tee -a "$OUT"
 
           echo "--- Workday floor probe (mayoclinic, ~60s) ---" | tee -a "$OUT"
           curl -sf --max-time 90 \
             "$WORKER/workday-probe?tenant=mayoclinic&host=mayoclinic.wd5.myworkdayjobs.com&slug=mayoclinic" \
-            | python3 -c "
-import sys,json
-d=json.load(sys.stdin)
-print('anyThrottle:', d['anyThrottle'])
-print('lowestSafeGap:', d['lowestSafeGapSeconds'], 's')
-for r in d['results']:
-    print(f'  gap={r[\"gap\"]:2d}s  HTTP={r[\"http\"]}  jobs={r[\"jobs\"]}  [{r[\"verdict\"]}]')
-" 2>/dev/null | tee -a "$OUT" || echo "ERROR: /workday-probe unreachable" | tee -a "$OUT"
+            | python3 scripts/parse_workday_probe.py 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR: /workday-probe unreachable" | tee -a "$OUT"
 
       - name: Commit results
         if: always()

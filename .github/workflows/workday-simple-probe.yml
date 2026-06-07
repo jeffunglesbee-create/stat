@@ -32,20 +32,13 @@ jobs:
             echo "(takes ~60s — tests gaps 0,30,10,5,2,1s)" | tee -a "$OUT"
             curl -sf --max-time 90 \
               "$WORKER/workday-probe?tenant=$tenant&host=$host&slug=$slug" \
-              | python3 -c "
-import sys,json
-d=json.load(sys.stdin)
-print('anyThrottle:', d['anyThrottle'])
-print('lowestSafeGap:', d['lowestSafeGapSeconds'], 's')
-for r in d['results']:
-    print(f'  gap={r[\"gap\"]:2d}s  HTTP={r[\"http\"]}  jobs={r[\"jobs\"]}  {r[\"elapsed\"]}ms  [{r[\"verdict\"]}]')
-" 2>/dev/null | tee -a "$OUT" || echo "  Worker call failed" | tee -a "$OUT"
+              | python3 scripts/parse_workday_probe.py 2>/dev/null | tee -a "$OUT" \
+              || echo "  Worker call failed" | tee -a "$OUT"
             echo "" | tee -a "$OUT"
           done
 
           echo "=== SUMMARY ===" | tee -a "$OUT"
           echo "KEY: floor=lowest gap where all 3 tenants return jobs>0" | tee -a "$OUT"
-          cat "$OUT"
       - name: Commit and push results
         if: always()
         shell: bash
