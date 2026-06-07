@@ -90,6 +90,31 @@ assert('store: loadUnmatchedJobs exported',
 assert('store: UNMATCHED_MAX cap defined',
   store.includes('UNMATCHED_MAX'));
 
+// ─── JS syntax: no escaped backticks ─────────────────────────────────────────
+// Escaped backticks (\`) inside JS source are never valid — they appear when
+// Python string escaping bleeds into template literals, producing a syntax
+// error that crashes the entire Worker on every request (CF error 1101).
+// This check catches the failure mode before CI runs wrangler deploy.
+
+function countEscapedBackticks(src) {
+  // Count \` sequences that are NOT inside a string literal comment
+  // Simple heuristic: any \` in JS source is wrong
+  const matches = src.match(/\\`/g);
+  return matches ? matches.length : 0;
+}
+
+const indexSrc = read('index.js');
+assert('index.js: no escaped backticks (would cause Worker 1101 crash)',
+  countEscapedBackticks(indexSrc) === 0);
+
+const enrichSrc = read('enrich.js');
+assert('enrich.js: no escaped backticks',
+  countEscapedBackticks(enrichSrc) === 0);
+
+const adaptersSrc = read('adapters.js');
+assert('adapters.js: no escaped backticks',
+  countEscapedBackticks(adaptersSrc) === 0);
+
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
 const failed = results.filter(r => !r.ok);
