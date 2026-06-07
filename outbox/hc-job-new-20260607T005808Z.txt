@@ -1,0 +1,31 @@
+URL: https://hiring.cafe/job/87d1yy8wokpdomna
+HTTP:200 FINAL:https://hiring.cafe/job/87d1yy8wokpdomna  bytes: 68160
+og:title: Health Information Analyst at Seattle Children&#x27;s
+og:description: Bachelor&#x27;s degree or at least two years college coursework in health information or related field, minimum 2 years related experience, experience with Epic or C
+description: Bachelor&#x27;s degree or at least two years college coursework in health information or related field, minimum 2 years related experience, experience with Epic or C
+
+pageProps keys: ['job']
+
+pp.job (dict, 14 keys: ['id', 'board_token', 'source', 'apply_url', 'source_and_board_token', 'job_information', 'v5_processed_job_data', 'enriched_company_data', '_geoloc', 'original_source_id', 'requisition_id', 'collapse_key', 'is_expired', 'objectID']):
+  .id: 'workday___seattlechildrens-wd5-external___health-information-analyst_r262693'
+  .board_token: 'seattlechildrens-wd5-external'
+  .source: 'workday'
+  .apply_url: 'https://seattlechildrens.wd5.myworkdayjobs.com/external/job/Seattle-WA/Health-Information-Analyst_R262693'
+  .source_and_board_token: 'workday_seattlechildrens-wd5-external'
+  .job_information: {'title': 'Health Information Analyst', 'job_title_raw': 'Health Information Analyst', 'description': '<p>With minimal supervision provide a variety of analysis and support functions including troubleshooting, user training, assistance and orientatio
+  .v5_processed_job_data: {'core_job_title': 'Health Information Analyst', 'requirements_summary': "Bachelor's degree or at least two years college coursework in health information or related field, minimum 2 years related experience, experience with Epic or Cerner preferred,
+  .enriched_company_data: {'enriched_at': '2026-03-12T13:19:21.855Z', 'status': 'VALID_COMPANY', 'name': "Seattle Children's", 'homepage_uri': 'seattlechildrens.org', 'hq_country': 'US', 'parent_company': None, 'subsidiaries': ["Seattle Children's Research Institute", "Seattl
+  .original_source_id: 'workday___seattlechildrens-wd5-external___health-information-analyst_r262693'
+  .requisition_id: '87d1yy8wokpdomna'
+  .collapse_key: '294e996fcc2b28854e380c2e76cff9255659a6e0818077e3f8f1ca2b6a7019e3'
+  .is_expired: False
+  .objectID: 'workday___seattlechildrens-wd5-external___health-information-analyst_r262693'
+
+--- Raw HTML (first 3000) ---
+<!DOCTYPE html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1" data-next-head=""/><meta charSet="utf-8" data-next-head=""/><title data-next-head="">Health Information Analyst at Seattle Children&#x27;s</title><meta property="og:title" content="Health Information Analyst at Seattle Children&#x27;s" data-next-head=""/><meta property="og:description" content="Bachelor&#x27;s degree or at least two years college coursework in health information or related field, minimum 2 years related experience, experience with Epic or C" data-next-head=""/><meta name="description" property="description" content="Bachelor&#x27;s degree or at least two years college coursework in health information or related field, minimum 2 years related experience, experience with Epic or C" data-next-head=""/><meta property="og:url" content="https://hiring.cafe/job/87d1yy8wokpdomna" data-next-head=""/><link rel="canonical" href="https://hiring.cafe/job/87d1yy8wokpdomna" data-next-head=""/><meta property="og:type" content="website" data-next-head=""/><meta property="og:image" content="https://s2.googleusercontent.com/s2/favicons?domain=seattlechildrens.org&amp;sz=128" data-next-head=""/><meta name="twitter:card" content="summary_large_image" data-next-head=""/><meta name="twitter:title" content="Health Information Analyst at Seattle Children&#x27;s" data-next-head=""/><meta name="twitter:description" content="Bachelor&#x27;s degree or at least two years college coursework in health information or related field, minimum 2 years related experience, experience with Epic or C" data-next-head=""/><meta name="twitter:image" content="https://s2.googleusercontent.com/s2/favicons?domain=seattlechildrens.org&amp;sz=128" data-next-head=""/><meta name="robots" content="noindex,follow" data-next-head=""/><meta property="og:site_name" content="HiringCafe: Job Search Engine" data-next-head=""/><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-KJCD0N6Q7T"></script><script>
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-KJCD0N6Q7T');
+            </script><link rel="manifest" href="/manifest.json"/><meta name="mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="white"/><meta name="apple-mobile-web-app-title" content="HiringCafe"/><link rel="preload" href="/_next/static/chunks/b040b00cc4baa796.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" as="style"/><link rel="stylesheet" href="/_next/static/chunks/b040b00cc4baa796.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" data-n-g=""/><link rel="preload" href="/_next/static/chunks/2d5c1f22abdd42a0.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" as="style"/><link rel="stylesheet" href="/_next/static/chunks/2d5c1f22abdd42a0.css?dpl=dpl_BtiH7jQnb7HftEd3EPW4GhK17phM" data-n-g=""/><link rel="preload" href="/_next/static/chunks/83c32224a5
+DONE
