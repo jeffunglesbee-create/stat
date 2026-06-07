@@ -1,2 +1,2 @@
 method=GET
-url=https://stat-job-watcher.jeffunglesbee.workers.dev/profile
+url=https://stat-job-watcher.jeffunglesbee.workers.dev/browse?limit=20&q=epic
