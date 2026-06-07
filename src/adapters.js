@@ -618,7 +618,26 @@ export async function fetchHiringCafe(keyword, environment) {
     if (!match) return [];
     const data = JSON.parse(match[1]);
     const pp = data?.props?.pageProps ?? {};
-    const jobs = pp.jobs ?? pp.jobListings ?? pp.results ?? pp.data?.jobs ?? [];
+
+    // ── HiringCafe SSR structure (verified 2026-06-07) ──────────────────────
+    // pageProps keys: ssrHits, ssrPage, ssrTotalCount, ssrCompanyCount,
+    //                 ssrPageSize, ssrIsLastPage, ssrError, initialSearchState
+    //
+    // CRITICAL: ssrHits contains the full result set (152 items observed).
+    // The ?q= and ?environment= query params DO NOT filter the SSR payload —
+    // HiringCafe filters client-side via Algolia. The SSR payload appears to be
+    // a popularity/recency-sorted global feed regardless of search terms.
+    //
+    // Implication: fetchHiringCafe('epic analyst') and fetchHiringCafe('epic cadence')
+    // return the SAME 152 jobs. Keyword relevance is enforced by STAT's matchJob()
+    // downstream, not by HiringCafe's SSR. This is acceptable — matchJob() filters
+    // to Epic/healthcare IT keywords before any alert fires.
+    //
+    // TODO: Switch to HiringCafe's Algolia search API for true keyword filtering.
+    //       Algolia app ID and search key are embedded in initialSearchState.
+    //       That would return <20 targeted results instead of 152 generic ones.
+    // ─────────────────────────────────────────────────────────────────────────
+    const jobs = pp.ssrHits ?? [];
     if (!Array.isArray(jobs)) return [];
 
     return jobs.map(j => {
