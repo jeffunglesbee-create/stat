@@ -569,6 +569,34 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
 .feedback-btn.applied { background: var(--p3-pale); border-color: var(--p3); color: var(--p3); }
 .feedback-btn.skip    { background: var(--p1-pale); border-color: var(--p1); color: var(--p1); }
 .feedback-btn:disabled { opacity: 0.5; cursor: default; }
+/* ── Description slide panel ─────────────────────────────────────────────── */
+.desc-btn {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 4px 9px;
+  border-radius: var(--radius);
+  font-size: 10px; font-family: var(--sans); font-weight: 600;
+  cursor: pointer; border: 1px solid var(--rule);
+  background: var(--paper2); color: var(--muted);
+  transition: all .15s;
+}
+.desc-btn:hover { border-color: var(--rule2); color: var(--body); }
+.desc-btn.open  { background: var(--paper3); border-color: var(--rule2); color: var(--body); }
+.desc-panel {
+  display: none;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--paper2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--body);
+  max-height: 260px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.desc-panel.open { display: block; }
 .md-badge {
   display: inline-block;
   padding: 2px 7px;
@@ -1318,7 +1346,9 @@ function renderMatchCard({ job, match, alertedAt }) {
       ✕ Skip
     </button>
     <button class="btn-cancel-form" id="sbtn-${job.id}" onclick="scoreFromCard(this,'${job.id}')" style="font-size:10px">Score</button>
+    ${job.description ? `<button class="desc-btn" id="dbtn-${job.id}" onclick="toggleDescBrowse('${job.id}', ${JSON.stringify(job.description || '')})">\u25b8 Desc</button>` : ''}
   </div>
+  ${job.description ? `<div class="desc-panel" id="desc-${job.id}"></div>` : ''}
   <div class="review-panel" id="score-result-${job.id}" style="margin-top:8px;display:none"></div>
   <div class="review-panel" id="rpanel-${job.id}">
     <div class="review-panel-content" id="rcontent-${job.id}"></div>
@@ -1375,6 +1405,54 @@ async function scoreFromCard(btn, jobId) {
 
 // ── Claude inline review ──────────────────────────────────────────────────
 const reviewCache = {}; // jobId → rendered text
+
+async function toggleDesc(id) {
+  const panel = document.getElementById('desc-' + id);
+  const btn   = document.getElementById('dbtn-' + id);
+  if (!panel || !btn) return;
+  const open = panel.classList.contains('open');
+  if (!open && !panel.dataset.loaded) {
+    // Find the job in matches or use data attribute
+    const entry = matches.find(m => m.job.id === id);
+    const desc = entry?.job?.description || '';
+    panel.textContent = desc
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\n')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/  +/g, ' ')
+      .trim() || 'No description available.';
+    panel.dataset.loaded = '1';
+  }
+  panel.classList.toggle('open', !open);
+  btn.classList.toggle('open', !open);
+  btn.textContent = open ? '\u25b8 Desc' : '\u25be Desc';
+}
+
+// For browse cards: populate desc panel from JSON stored on the button
+function toggleDescBrowse(id, descRaw) {
+  const panel = document.getElementById('desc-' + id);
+  const btn   = document.getElementById('dbtn-' + id);
+  if (!panel || !btn) return;
+  const open = panel.classList.contains('open');
+  if (!open && !panel.dataset.loaded) {
+    panel.textContent = (descRaw || '')
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\n')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/  +/g, ' ')
+      .trim() || 'No description available.';
+    panel.dataset.loaded = '1';
+  }
+  panel.classList.toggle('open', !open);
+  btn.classList.toggle('open', !open);
+  btn.textContent = open ? '\u25b8 Desc' : '\u25be Desc';
+}
 
 async function toggleReview(jobId) {
   const panel  = document.getElementById('rpanel-' + jobId);
@@ -1837,7 +1915,9 @@ async function loadBrowse() {
   <div class="match-card-actions">
     <a href="${job.url}" target="_blank" class="apply-btn">View Job →</a>
     <button class="btn-cancel-form" onclick="browseScoreCard(this, '${job.id.replace(/'/g,"\\'")}', ${JSON.stringify(JSON.stringify(job)).slice(1,-1)})" style="font-size:10px">Score against profile</button>
+    ${job.description ? `<button class="desc-btn" id="dbtn-${job.id}" onclick="toggleDesc('${job.id}')">\u25b8 Desc</button>` : ''}
   </div>
+  ${job.description ? `<div class="desc-panel" id="desc-${job.id}"></div>` : ''}
   <div id="bscore-${job.id}" style="display:none;margin-top:4px"></div>
 </div>`;
   }).join('');

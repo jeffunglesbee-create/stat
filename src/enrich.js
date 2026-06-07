@@ -369,5 +369,12 @@ function decodeHtmlEntities(str) {
 }
 
 function stripHtml(html) {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return html
+    .replace(/\\r\\n/g, ' ')   // literal \r\n escape sequences (SF XML artifact)
+    .replace(/\\n/g, ' ')        // literal \n escape sequences
+    .replace(/\\r/g, ' ')        // literal \r escape sequences
+    .replace(/&#?[a-zA-Z0-9]+;/g, ' ')  // HTML entities
+    .replace(/<[^>]+>/g, ' ')     // HTML tags
+    .replace(/\s+/g, ' ')
+    .trim();
 }
