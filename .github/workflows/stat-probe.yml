@@ -8,22 +8,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Bootstrap + probe
+      - name: Probe all endpoints
         shell: bash
         run: |
           BASE="https://stat-job-watcher.jeffunglesbee.workers.dev"
-          echo "=== POST /bootstrap ==="
-          curl -s -w "\nHTTP:%{http_code}\n" -X POST \
-            -H "Content-Type: application/json" \
-            "$BASE/bootstrap" | head -100
-          echo ""
-          sleep 5
-          echo "=== GET / ==="
-          curl -s -w "\nHTTP:%{http_code}\n" \
-            -H "Accept: application/json" \
-            "$BASE/" | head -100
-          echo ""
-          echo "=== GET /companies ==="
-          curl -s -w "\nHTTP:%{http_code}\n" \
-            -H "Accept: application/json" \
-            "$BASE/companies" | head -100
+          
+          echo "## STAT Worker Probe $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          for path in "/ui" "/" "/companies" "/jobs?limit=1"; do
+            URL="${BASE}${path}"
+            echo "### GET ${path}" >> $GITHUB_STEP_SUMMARY
+            RESULT=$(curl -s -w "\n\nHTTP_STATUS:%{http_code}\nCONTENT_TYPE:%{content_type}\nSIZE_BYTES:%{size_download}" \
+              -H "Accept: application/json, text/html" \
+              -H "User-Agent: STAT-probe/1.0" \
+              -D /tmp/headers.txt \
+              --max-time 15 \
+              "$URL" 2>&1)
+            
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            # For /ui just show headers + first 200 chars
+            if [ "$path" = "/ui" ]; then
+              cat /tmp/headers.txt >> $GITHUB_STEP_SUMMARY
+              echo "${RESULT}" | tail -5 >> $GITHUB_STEP_SUMMARY
+            else
+              echo "${RESULT}" | head -60 >> $GITHUB_STEP_SUMMARY
+            fi
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
