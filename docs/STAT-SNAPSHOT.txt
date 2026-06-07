@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-07T19:07:16Z
-HEAD: 5ea9411
-Smoke: 21/21
+Generated: 2026-06-07T19:51:40Z
+HEAD: 61f3526
+Smoke: 26/26
 
 COMPANIES
   SEED total: 180
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  5ea9411 fix: Workday searchText 'epic ehr within' → 'epic ehr' — 'within' causes 422
+  61f3526 fix: Workday — Browser Rendering XHR intercept replaces failed plain fetch
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
