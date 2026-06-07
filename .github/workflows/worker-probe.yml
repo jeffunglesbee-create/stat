@@ -1,0 +1,69 @@
+name: worker-probe
+on:
+  push:
+    paths: ['outbox/.worker-probe']
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+      - name: Call Worker probe endpoints
+        shell: bash
+        run: |
+          WORKER="https://stat-job-watcher.jeffunglesbee.workers.dev"
+          mkdir -p outbox
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/worker-status-${TS}.txt"
+
+          echo "=== STAT Worker Status $TS ===" | tee "$OUT"
+          echo "" | tee -a "$OUT"
+
+          echo "--- GET / (status) ---" | tee -a "$OUT"
+          curl -sf --max-time 15 "$WORKER/" | python3 -m json.tool 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR: Worker / unreachable" | tee -a "$OUT"
+          echo "" | tee -a "$OUT"
+
+          echo "--- GET /platform/workday/status ---" | tee -a "$OUT"
+          curl -sf --max-time 15 "$WORKER/platform/workday/status" | python3 -m json.tool 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR: /platform/workday/status unreachable" | tee -a "$OUT"
+          echo "" | tee -a "$OUT"
+
+          echo "--- Workday floor probe (jhhs, ~60s) ---" | tee -a "$OUT"
+          curl -sf --max-time 90 \
+            "$WORKER/workday-probe?tenant=jhhs&host=jhhs.wd5.myworkdayjobs.com&slug=JHH_External_Positions" \
+            | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+print('anyThrottle:', d['anyThrottle'])
+print('lowestSafeGap:', d['lowestSafeGapSeconds'], 's')
+for r in d['results']:
+    print(f'  gap={r[\"gap\"]:2d}s  HTTP={r[\"http\"]}  jobs={r[\"jobs\"]}  [{r[\"verdict\"]}]')
+" 2>/dev/null | tee -a "$OUT" || echo "ERROR: /workday-probe unreachable" | tee -a "$OUT"
+          echo "" | tee -a "$OUT"
+
+          echo "--- Workday floor probe (mayoclinic, ~60s) ---" | tee -a "$OUT"
+          curl -sf --max-time 90 \
+            "$WORKER/workday-probe?tenant=mayoclinic&host=mayoclinic.wd5.myworkdayjobs.com&slug=mayoclinic" \
+            | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+print('anyThrottle:', d['anyThrottle'])
+print('lowestSafeGap:', d['lowestSafeGapSeconds'], 's')
+for r in d['results']:
+    print(f'  gap={r[\"gap\"]:2d}s  HTTP={r[\"http\"]}  jobs={r[\"jobs\"]}  [{r[\"verdict\"]}]')
+" 2>/dev/null | tee -a "$OUT" || echo "ERROR: /workday-probe unreachable" | tee -a "$OUT"
+
+      - name: Commit results
+        if: always()
+        shell: bash
+        run: |
+          git config user.email "stat-ci@stat" && git config user.name "STAT CI"
+          git add outbox/worker-status-*.txt
+          git diff --cached --quiet && echo "nothing to commit" && exit 0
+          git commit -m "probe: worker status results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && \
+            git push origin main && break || sleep $((i*5))
+          done
