@@ -15,57 +15,33 @@ jobs:
           mkdir -p outbox
           TS=$(date -u +%Y%m%dT%H%M%SZ)
           OUT="outbox/wd-api-${TS}.txt"
-
-          echo "=== Workday JSON API Probe from GitHub Runner $TS ===" | tee "$OUT"
-          echo "Runner IP space: Azure (not Cloudflare)" | tee -a "$OUT"
+          echo "=== Workday JSON API Probe $TS ===" | tee "$OUT"
+          echo "Runner: GitHub Actions (Azure IPs, not Cloudflare)" | tee -a "$OUT"
           echo "" | tee -a "$OUT"
 
-          test_wd_api() {
-            local name="$1" api_url="$2" search="$3"
+          test_api() {
+            local name="$1" url="$2" search="$3"
             echo "--- $name | searchText='$search' ---" | tee -a "$OUT"
-            echo "URL: $api_url" | tee -a "$OUT"
-            result=$(curl -s -o /tmp/wd_resp.json -w "%{http_code}" \
-              -X POST "$api_url" \
+            http=$(curl -s -o /tmp/wd_resp.json -w "%{http_code}" \
+              -X POST "$url" \
               -H "Content-Type: application/json" \
               -H "Accept: application/json" \
               -H "User-Agent: Mozilla/5.0" \
               -d "{\"appliedFacets\":{},\"limit\":5,\"offset\":0,\"searchText\":\"$search\"}" \
-              --max-time 15 2>/dev/null)
-            echo "HTTP: $result" | tee -a "$OUT"
-            if [ "$result" = "200" ]; then
-              echo "Response (first 500 chars):" | tee -a "$OUT"
-              cat /tmp/wd_resp.json | python3 -c "
-import sys,json
-try:
-  d=json.load(sys.stdin)
-  jobs=d.get('jobPostings',[])
-  print(f'jobPostings count: {len(jobs)}')
-  for j in jobs[:2]:
-    print(f'  title: {j.get(\"title\",\"?\")}')
-except Exception as e:
-  print('parse error:', e)
-  print(sys.stdin.read()[:300])
-" | tee -a "$OUT"
-            else
-              echo "Error body: $(cat /tmp/wd_resp.json | head -c 300)" | tee -a "$OUT"
-            fi
+              --max-time 15)
+            echo "HTTP: $http" | tee -a "$OUT"
+            python3 scripts/parse_wd_api.py | tee -a "$OUT"
             echo "" | tee -a "$OUT"
           }
 
-          # Test JHHS with empty searchText (like jharemza)
-          test_wd_api "JHHS empty" \
-            "https://jhhs.wd5.myworkdayjobs.com/wday/cxs/jhhs/JHH_External_Positions/jobs" \
-            ""
+          test_api "JHHS empty" \
+            "https://jhhs.wd5.myworkdayjobs.com/wday/cxs/jhhs/JHH_External_Positions/jobs" ""
 
-          # Test JHHS with 'epic ehr'
-          test_wd_api "JHHS epic ehr" \
-            "https://jhhs.wd5.myworkdayjobs.com/wday/cxs/jhhs/JHH_External_Positions/jobs" \
-            "epic ehr"
+          test_api "JHHS epic ehr" \
+            "https://jhhs.wd5.myworkdayjobs.com/wday/cxs/jhhs/JHH_External_Positions/jobs" "epic ehr"
 
-          # Test Mayo with empty
-          test_wd_api "Mayo empty" \
-            "https://mayoclinic.wd5.myworkdayjobs.com/wday/cxs/mayoclinic/mayoclinic/jobs" \
-            ""
+          test_api "Mayo empty" \
+            "https://mayoclinic.wd5.myworkdayjobs.com/wday/cxs/mayoclinic/mayoclinic/jobs" ""
 
       - name: Commit results
         if: always()
