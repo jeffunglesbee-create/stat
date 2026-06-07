@@ -8,75 +8,90 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Check live endpoints
+      - name: Run live checks + Workday floor probe
         shell: bash
         run: |
           BASE="https://stat-job-watcher.jeffunglesbee.workers.dev"
           mkdir -p outbox
           OUT="outbox/live-check-$(date -u +%Y%m%dT%H%M%SZ).txt"
+          WDOUT="outbox/workday-floor-$(date -u +%Y%m%dT%H%M%SZ).txt"
 
+          WDBODY='{"appliedFacets":{},"limit":20,"offset":0,"searchText":"epic ehr within"}'
+
+          call_wd() {
+            local url="$1"
+            local start=$(date +%s%3N)
+            local resp=$(curl -sf -w '\n%{http_code}' -X POST "$url" \
+              -H 'Content-Type: application/json' \
+              -H 'Accept: application/json' \
+              -H 'User-Agent: Mozilla/5.0' \
+              -d "$WDBODY" --max-time 10 2>/dev/null)
+            local code=$(printf '%s' "$resp" | tail -1)
+            local body=$(printf '%s' "$resp" | head -1)
+            local ms=$(( $(date +%s%3N) - start ))
+            local jobs=$(printf '%s' "$body" | python3 -c "
+import sys,json
+try: print(len(json.load(sys.stdin).get('jobPostings',[])))
+except: print('ERR')
+" 2>/dev/null)
+            printf '%s|%sms|jobs=%s\n' "$code" "$ms" "$jobs"
+          }
+
+          # ── STAT status check ────────────────────────────────────────────
           {
             echo "=== STAT Live Check $(date -u) ==="
             echo ""
             echo "--- GET / (status) ---"
-            curl -s -H "Accept: application/json" "$BASE/" | python3 -c "
+            curl -s "$BASE/" | python3 -c "
 import sys,json
 try:
   d=json.load(sys.stdin)
   print('seenJobIds:', d.get('seenJobIds'))
-  print('watchedCompanies:', d.get('watchedCompanies'))
   print('activeDOs:', d.get('activeDOs'))
   print('fitScoring:', d.get('fitScoring','?'))
-except Exception as e:
-  print('ERROR:', e)
-"
-            echo ""
-            echo "--- GET /jobs?limit=10 (matches) ---"
-            curl -s -H "Accept: application/json" "$BASE/jobs?limit=10" | python3 -c "
-import sys,json
-try:
-  d=json.load(sys.stdin)
-  print('total matches:', d.get('count',0))
-  for item in d.get('jobs',[])[:10]:
-    j=item.get('job',{})
-    m=item.get('match',{})
-    print(f'  P{m.get(\"priority\",\"?\")} {j.get(\"title\",\"?\")} @ {j.get(\"company\",\"?\")} [{j.get(\"atsSource\",\"?\")}] env={j.get(\"environment\",\"?\")} kw={m.get(\"matchedKw\",\"?\")}')
-except Exception as e:
-  print('ERROR:', e)
-"
-            echo ""
-            echo "--- GET /browse?limit=5 (sample unmatched) ---"
-            curl -s -H "Accept: application/json" "$BASE/browse?limit=5" | python3 -c "
-import sys,json
-try:
-  d=json.load(sys.stdin)
-  print('total unmatched stored:', d.get('total',0))
-  for item in d.get('jobs',[])[:5]:
-    j=item.get('job',{})
-    print(f'  {j.get(\"title\",\"?\")} @ {j.get(\"company\",\"?\")} env={j.get(\"environment\",\"?\")}')
-except Exception as e:
-  print('ERROR:', e)
-"
-            echo ""
-            echo "--- GET /browse?q=epic&limit=10 ---"
-            curl -s -H "Accept: application/json" "$BASE/browse?q=epic&limit=10" | python3 -c "
-import sys,json
-try:
-  d=json.load(sys.stdin)
-  print('epic in browse:', d.get('count',0), 'of', d.get('total',0))
-  for item in d.get('jobs',[])[:10]:
-    j=item.get('job',{})
-    print(f'  {j.get(\"title\",\"?\")} @ {j.get(\"company\",\"?\")}')
-except Exception as e:
-  print('ERROR:', e)
+except Exception as e: print('ERROR:', e)
 "
           } | tee "$OUT"
 
+          # ── Workday floor probe ─────────────────────────────────────────
+          {
+            echo "=== Workday Floor Probe $(date -u) ==="
+            echo "Testing same tenant repeatedly at decreasing intervals"
+            echo "200+jobs>0=OK  200+jobs=0=SILENT_THROTTLE  429=RATE_LIMITED"
+            echo ""
+            for row in \
+              "jhhs|jhhs.wd5.myworkdayjobs.com|JHH_External_Positions" \
+              "mayoclinic|mayoclinic.wd5.myworkdayjobs.com|mayoclinic" \
+              "kaiserpermanente|kp.wd5.myworkdayjobs.com|KP_External_Career_Site"; do
+              IFS='|' read -r tenant host slug <<<"$row"
+              URL="https://${host}/wday/cxs/${tenant}/${slug}/jobs"
+              echo "--- $tenant ---"
+              printf '  %-16s ' "baseline:"; call_wd "$URL"; sleep 5
+              printf '  %-16s ' "30s(1/2):"; call_wd "$URL"; sleep 30
+              printf '  %-16s ' "30s(2/2):"; call_wd "$URL"; sleep 5
+              printf '  %-16s ' "10s(1/3):"; call_wd "$URL"; sleep 10
+              printf '  %-16s ' "10s(2/3):"; call_wd "$URL"; sleep 10
+              printf '  %-16s ' "10s(3/3):"; call_wd "$URL"; sleep 5
+              printf '  %-16s ' "5s(1/3):";  call_wd "$URL"; sleep 5
+              printf '  %-16s ' "5s(2/3):";  call_wd "$URL"; sleep 5
+              printf '  %-16s ' "5s(3/3):";  call_wd "$URL"; sleep 5
+              printf '  %-16s ' "2s(1/3):";  call_wd "$URL"; sleep 2
+              printf '  %-16s ' "2s(2/3):";  call_wd "$URL"; sleep 2
+              printf '  %-16s ' "2s(3/3):";  call_wd "$URL"; sleep 5
+              printf '  %-16s ' "1s(1/3):";  call_wd "$URL"; sleep 1
+              printf '  %-16s ' "1s(2/3):";  call_wd "$URL"; sleep 1
+              printf '  %-16s ' "1s(3/3):";  call_wd "$URL"; sleep 10
+              echo ""
+            done
+          } | tee "$WDOUT"
+
           git config user.email "stat@stat" && git config user.name "STAT"
-          git add "$OUT"
-          git commit -m "live-check results [skip ci]"
+          git add "$OUT" "$WDOUT"
+          git diff --cached --quiet && echo "no changes" && exit 0
+          git commit -m "probe: Workday floor + live check results [skip ci]"
           for i in 1 2 3; do
             git pull --rebase --autostash origin main && git push origin main && break || sleep $((i*5))
           done
