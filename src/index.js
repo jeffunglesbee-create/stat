@@ -94,6 +94,123 @@ async function saveMatchCounts(env, c) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ONEDRIVE RESUME AUTO-FETCH
+// Fetches resume from a OneDrive public share link, extracts text,
+// and stores the profile — no user interaction required.
+// Requires: ONEDRIVE_RESUME_URL secret (share link with "Anyone can view")
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function fetchResumeFromOneDrive(env) {
+  if (!env.ONEDRIVE_RESUME_URL || !env.GEMINI_KEY) return null;
+
+  let downloadUrl = env.ONEDRIVE_RESUME_URL;
+  // OneDrive share links support ?download=1 for direct download
+  const sep = downloadUrl.includes('?') ? '&' : '?';
+  if (!downloadUrl.includes('download=1')) {
+    downloadUrl = downloadUrl + sep + 'download=1';
+  }
+
+  let res;
+  try {
+    res = await fetch(downloadUrl, {
+      headers: { 'User-Agent': 'STAT-resume-fetch/1.0' },
+      redirect: 'follow',
+    });
+  } catch (e) {
+    console.warn('[STAT resume] fetch error:', e.message);
+    return null;
+  }
+
+  if (!res.ok) {
+    console.warn('[STAT resume] OneDrive fetch failed:', res.status);
+    return null;
+  }
+
+  const contentType = res.headers.get('content-type') || '';
+  let resumeText = '';
+
+  if (contentType.includes('text/')) {
+    resumeText = await res.text();
+  } else if (
+    contentType.includes('openxmlformats') ||
+    contentType.includes('msword') ||
+    downloadUrl.match(/\.docx?(\?|$)/i)
+  ) {
+    const bytes = await res.arrayBuffer();
+    resumeText = extractDocxText(bytes);
+  } else {
+    // Try as text for PDF or unknown — works for text-based PDFs
+    resumeText = await res.text();
+  }
+
+  if (!resumeText || resumeText.length < 100) {
+    console.warn('[STAT resume] text too short:', resumeText.length);
+    return null;
+  }
+
+  console.log('[STAT resume] fetched from OneDrive:', resumeText.length, 'chars');
+
+  // Extract structured profile via Gemini
+  const systemPrompt = `You are a healthcare IT hiring specialist with deep knowledge of Epic EHR implementations.
+Extract the candidate profile as JSON with EXACTLY these fields (use empty arrays/null if not present):
+{
+  "headline": "2-3 word professional summary",
+  "yearsExperience": number or null,
+  "epicModules": ["array of Epic module names"],
+  "otherSystems": ["other EHR/HIT systems"],
+  "certifications": ["Epic and other certs"],
+  "skills": ["top 6 technical skills"],
+  "targetRoles": ["appropriate job titles"],
+  "environments": ["remote","hybrid","onsite"],
+  "matchStrengths": ["3 strongest selling points"],
+  "potentialGaps": ["2-3 genuine gaps"]
+}
+Return ONLY the JSON object, no markdown, no explanation.`;
+
+  try {
+    const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + env.GEMINI_KEY;
+    const geminiRes = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ parts: [{ text: resumeText.slice(0, 8000) }] }],
+        generationConfig: { maxOutputTokens: 800, temperature: 0.1 },
+      }),
+    });
+    const geminiData = await geminiRes.json();
+    const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+    const profile = JSON.parse(cleaned);
+    await saveProfile(env, profile);
+    console.log('[STAT resume] profile saved:', profile.headline);
+    return profile;
+  } catch (e) {
+    console.warn('[STAT resume] extraction failed:', e.message);
+    return null;
+  }
+}
+
+function extractDocxText(arrayBuffer) {
+  // docx = ZIP containing word/document.xml
+  // Scan binary for the XML block and extract <w:t> text nodes
+  const decoder = new TextDecoder('utf-8', { fatal: false });
+  const raw = decoder.decode(new Uint8Array(arrayBuffer));
+  const start = raw.indexOf('<w:document');
+  const end = raw.indexOf('</w:document>');
+  if (start === -1) return '';
+  const xml = raw.slice(start, end + 14);
+  const texts = [];
+  const re = /<w:t[^>]*>([^<]*)<\/w:t>/g;
+  let m;
+  while ((m = re.exec(xml)) !== null) {
+    if (m[1].trim()) texts.push(m[1]);
+  }
+  return texts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BOOTSTRAP DOs for all companies in the watchlist
 // Called on first deploy and when new companies are added.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -340,6 +457,27 @@ async function maybeAddOrPromoteCompany(env, job) {
 async function handleScheduled(env) {
   // Bootstrap DOs (idempotent — skips already-running companies)
   await bootstrapDOs(env);
+
+  // Auto-fetch resume from OneDrive if configured and profile missing or stale
+  // Runs on every cron tick but only fetches when needed (profile absent or >7 days old)
+  if (env.ONEDRIVE_RESUME_URL) {
+    try {
+      const existing = await loadProfile(env).catch(() => null);
+      const fetchedAt = existing?._fetchedAt ? new Date(existing._fetchedAt) : null;
+      const stale = !fetchedAt || (Date.now() - fetchedAt.getTime()) > 7 * 24 * 60 * 60 * 1000;
+      if (!existing || stale) {
+        console.log('[STAT resume] fetching from OneDrive...');
+        const profile = await fetchResumeFromOneDrive(env);
+        if (profile) {
+          profile._fetchedAt = new Date().toISOString();
+          await saveProfile(env, profile);
+        }
+      }
+    } catch (e) {
+      console.warn('[STAT resume] cron refresh failed:', e.message);
+    }
+  }
+
   // Wide-net HiringCafe scrape
   await runHiringCafeScrape(env);
   // Auto-refresh salary caches on schedule — no manual intervention required
@@ -483,7 +621,26 @@ async function handleFetch(request, env) {
   // POST /bootstrap — manually spawn all DOs
   if (url.pathname === '/bootstrap' && request.method === 'POST') {
     const result = await bootstrapDOs(env);
-    return json({ ok: true, spawned: result.spawned, total: result.companies.length });
+
+    // Auto-fetch resume from OneDrive if configured and no profile stored yet
+    let resumeStatus = 'skipped';
+    if (env.ONEDRIVE_RESUME_URL) {
+      const existing = await loadProfile(env).catch(() => null);
+      if (!existing) {
+        const profile = await fetchResumeFromOneDrive(env).catch(() => null);
+        if (profile) {
+          profile._fetchedAt = new Date().toISOString();
+          await saveProfile(env, profile);
+          resumeStatus = 'fetched: ' + (profile.headline || 'ok');
+        } else {
+          resumeStatus = 'fetch failed — check ONEDRIVE_RESUME_URL';
+        }
+      } else {
+        resumeStatus = 'profile already stored';
+      }
+    }
+
+    return json({ ok: true, spawned: result.spawned, total: result.companies.length, resumeStatus });
   }
 
   // GET /salary-status — salary inference DO status
