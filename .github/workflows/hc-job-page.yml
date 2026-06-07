@@ -1,0 +1,110 @@
+name: STAT — HiringCafe Job Page Probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Probe HC job page
+        shell: bash
+        run: |
+          set +e
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/hc-job-page-${TS}.txt"
+          mkdir -p outbox
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          probe_page() {
+            local LABEL="$1" URL="$2"
+            printf '\n=== %s ===\nURL: %s\n' "$LABEL" "$URL" >> "$OUT"
+            local TF; TF=$(mktemp)
+            local HC
+            HC=$(curl -s --max-time 20 -L -o "$TF" -w "HTTP:%{http_code} FINAL:%{url_effective}" \
+              -H "User-Agent: $UA" \
+              -H "Accept: text/html,*/*" \
+              "$URL" 2>/dev/null)
+            printf '%s\n' "$HC" >> "$OUT"
+            printf 'bytes: %d\n' "$(wc -c < "$TF")" >> "$OUT"
+            # Check for NEXT_DATA and description content
+            if grep -q '__NEXT_DATA__' "$TF"; then
+              printf '__NEXT_DATA__: present\n' >> "$OUT"
+              python3 -c "
+import sys, json, re
+with open('$TF','r',errors='replace') as f: html=f.read()
+m = re.search(r'<script id=\"__NEXT_DATA__\"[^>]*>([\s\S]*?)</script>', html)
+if m:
+    try:
+        d = json.loads(m.group(1))
+        pp = d.get('props',{}).get('pageProps',{})
+        print('pageProps keys:', list(pp.keys())[:20])
+        job = pp.get('job') or pp.get('jobData') or pp.get('ssrJob')
+        if job:
+            print('job keys:', list(job.keys())[:20])
+            inf = job.get('job_information',{})
+            print('title:', inf.get('title') or job.get('title'))
+            desc = inf.get('description') or inf.get('descriptionHtml') or job.get('description','')
+            print(f'description: present={bool(desc)}, len={len(desc)}')
+            print('description preview:', desc[:300] if desc else 'NONE')
+        else:
+            print('no job object found in pageProps')
+    except Exception as e:
+        print('error:', e)
+" >> "$OUT" 2>&1
+            else
+              printf '__NEXT_DATA__: missing\n' >> "$OUT"
+              # Check for og:description
+              python3 -c "
+import re, sys
+with open('$TF','r',errors='replace') as f: html=f.read()
+og = re.findall(r'<meta[^>]+(?:name|property)=[\"'\'']og:description[\"'\''][^>]+content=[\"'\'']([^\"'\'']+)', html)
+desc = re.findall(r'<meta[^>]+content=[\"'\'']([^\"'\'']+)[\"'\''][^>]+(?:name|property)=[\"'\'']og:description', html)
+print('og:description:', (og or desc or ['NONE'])[0][:300])
+# Also check for JSON-LD
+ld = re.findall(r'<script[^>]+type=[\"'\'']application/ld\+json[\"'\''][^>]*>([\s\S]*?)</script>', html)
+if ld:
+    print('JSON-LD present:', ld[0][:400])
+" >> "$OUT" 2>&1
+            fi
+            head -c 2000 "$TF" >> "$OUT"
+            printf '\n' >> "$OUT"
+            rm -f "$TF"
+          }
+
+          printf 'HiringCafe Job Page Probe — %s\n' "$TS" > "$OUT"
+          printf 'Testing requisition_id from ssrHits probe\n' >> "$OUT"
+
+          # Try the requisition_id as job page URL
+          probe_page "HC /job/requisition_id" "https://hiring.cafe/job/gi0crktty5y4sbqj"
+
+          # Try the objectID as URL key
+          probe_page "HC /job/objectID" "https://hiring.cafe/job/paycor___8a7883d0798f66af0179ce3d19a717e7___8a7885a89e6b0ba1019e9f5386e300e7"
+
+          # Also check if /viewjob/ works (listed in robots.txt as disallowed — confirms it exists)
+          probe_page "HC /viewjob/requisition_id" "https://hiring.cafe/viewjob/gi0crktty5y4sbqj"
+
+          printf '\nDONE\n' >> "$OUT"
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          cat "$OUT"
+          exit 0
+
+      - name: Push results
+        run: |
+          git config user.email "stat@stat" && git config user.name "STAT"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "hc-job-page results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && break
+            sleep $((i*5))
+          done
+        env:
+          OUT: ${{ env.OUT }}
