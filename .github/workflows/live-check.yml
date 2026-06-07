@@ -53,11 +53,14 @@ except: print('ERROR')
             call_wd "$URL" 1
             echo ""
           done
-      - name: Upload results
+      - name: Commit and push results
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: live-check-${{ github.run_id }}
-          path: outbox/
-          retention-days: 7
-          if-no-files-found: warn
+        shell: bash
+        run: |
+          git config user.email "stat-ci@stat" && git config user.name "STAT CI"
+          git add outbox/
+          git diff --cached --quiet && echo "nothing to commit" && exit 0
+          git commit -m "probe: live-check results [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash "https://x:${{ secrets.STAT_PAT }}@github.com/jeffunglesbee-create/stat.git" main &&             git push "https://x:${{ secrets.STAT_PAT }}@github.com/jeffunglesbee-create/stat.git" main && break || sleep $((i*5))
+          done
