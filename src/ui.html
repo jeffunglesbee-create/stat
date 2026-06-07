@@ -951,8 +951,17 @@ let resumeProfile = null;
 // ─── API ─────────────────────────────────────────────────────────────────────
 async function api(path, opts = {}) {
   if (!WORKER_URL) throw new Error('WORKER_URL not configured');
-  const r = await fetch(WORKER_URL + path, opts);
-  return { ok: r.ok, status: r.status, data: await r.json() };
+  // 15s timeout — prevents UI from hanging if Worker is slow to respond
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const r = await fetch(WORKER_URL + path, { signal: controller.signal, ...opts });
+    clearTimeout(timer);
+    return { ok: r.ok, status: r.status, data: await r.json() };
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────

@@ -418,9 +418,13 @@ async function handleFetch(request, env) {
     try {
       const salId = env.SALARY_INFERENCE.idFromName('salary-inference');
       const salStub = env.SALARY_INFERENCE.get(salId);
-      const salRes = await salStub.fetch(new Request('https://stat-salary/status'));
+      // 3s timeout — DO may not be bootstrapped yet, must not hang GET /
+      const salRes = await Promise.race([
+        salStub.fetch(new Request('https://stat-salary/status')),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3000)),
+      ]);
       salaryStatus = await salRes.json();
-    } catch { /* not yet bootstrapped */ }
+    } catch { /* not yet bootstrapped or timed out */ }
 
     const now = Date.now();
     const blsAge = salaryStatus.blsDate
