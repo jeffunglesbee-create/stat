@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-07T21:08:41Z
-HEAD: 2f465d8
-Smoke: 36/36
+Generated: 2026-06-07T22:31:35Z
+HEAD: 8d604ad
+Smoke: 38/38
 
 COMPANIES
   SEED total: 180
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  2f465d8 fix: brLog captures empty Workday returns — source='empty'
+  8d604ad feat: Workday — searchText injection + DataImpulse residential proxy
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
