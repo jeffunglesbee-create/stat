@@ -70,16 +70,28 @@ jobs:
           # Worker secrets are set directly on Cloudflare via wrangler secret put
           # and persist across deploys — do not push from CI
 
-      - name: Post-deploy bootstrap reminder
+      - name: Post-deploy bootstrap + verify
         run: |
           echo "✅ Deployed ${{ github.sha }}"
-          echo ""
-          echo "FIRST DEPLOY CHECKLIST:"
-          echo "  1. wrangler kv:namespace create STAT_KV → paste ID in wrangler.toml"
-          echo "  2. wrangler secret put PUSHOVER_APP_TOKEN"
-          echo "  3. wrangler secret put PUSHOVER_USER_KEY"
-          echo "  4. wrangler secret put SENDGRID_API_KEY"
-          echo "  5. wrangler secret put ALERT_EMAIL"
-          echo "  6. curl -X POST https://stat-job-watcher.<subdomain>.workers.dev/bootstrap"
-          echo ""
-          echo "SUBSEQUENT DEPLOYS: no action needed. Secrets persist."
+          sleep 5
+
+          WORKER="https://stat-job-watcher.jeffunglesbee.workers.dev"
+
+          echo "--- Bootstrapping DOs ---"
+          BOOT=$(curl -s -w "\nHTTP:%{http_code}" -X POST "${WORKER}/bootstrap" \
+            -H "Content-Type: application/json" --max-time 30)
+          echo "$BOOT"
+
+          sleep 3
+
+          echo "--- Verifying status ---"
+          STATUS=$(curl -s -w "\nHTTP:%{http_code}" "${WORKER}/" \
+            -H "Accept: application/json" --max-time 15)
+          echo "$STATUS"
+
+          HTTP=$(echo "$STATUS" | grep "HTTP:" | cut -d: -f2)
+          if [ "$HTTP" = "200" ]; then
+            echo "✅ Worker live and responding"
+          else
+            echo "⚠️  Worker returned HTTP $HTTP — check logs"
+          fi
