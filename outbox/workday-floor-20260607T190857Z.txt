@@ -1,0 +1,42 @@
+=== Workday Floor Probe via Worker 20260607T190857Z ===
+Worker runs from Cloudflare IPs (not blocked by Workday WAF)
+GitHub runner IPs return 422 from Workday directly.
+
+--- jhhs ---
+Calling: https://stat-job-watcher.jeffunglesbee.workers.dev/workday-probe?tenant=jhhs&host=jhhs.wd5.myworkdayjobs.com&slug=JHH_External_Positions
+(takes ~60s — tests gaps 0,30,10,5,2,1s)
+anyThrottle: True
+lowestSafeGap: 30 s
+  gap= 0s  HTTP=422  jobs=0  487ms  [ERROR]
+  gap=30s  HTTP=422  jobs=0  100ms  [ERROR]
+  gap=10s  HTTP=422  jobs=0  103ms  [ERROR]
+  gap= 5s  HTTP=422  jobs=0  87ms  [ERROR]
+  gap= 2s  HTTP=422  jobs=0  81ms  [ERROR]
+  gap= 1s  HTTP=422  jobs=0  84ms  [ERROR]
+
+--- mayoclinic ---
+Calling: https://stat-job-watcher.jeffunglesbee.workers.dev/workday-probe?tenant=mayoclinic&host=mayoclinic.wd5.myworkdayjobs.com&slug=mayoclinic
+(takes ~60s — tests gaps 0,30,10,5,2,1s)
+anyThrottle: True
+lowestSafeGap: 30 s
+  gap= 0s  HTTP=422  jobs=0  408ms  [ERROR]
+  gap=30s  HTTP=422  jobs=0  295ms  [ERROR]
+  gap=10s  HTTP=422  jobs=0  70ms  [ERROR]
+  gap= 5s  HTTP=422  jobs=0  1057ms  [ERROR]
+  gap= 2s  HTTP=422  jobs=0  74ms  [ERROR]
+  gap= 1s  HTTP=422  jobs=0  71ms  [ERROR]
+
+--- kaiserpermanente ---
+Calling: https://stat-job-watcher.jeffunglesbee.workers.dev/workday-probe?tenant=kaiserpermanente&host=kp.wd5.myworkdayjobs.com&slug=KP_External_Career_Site
+(takes ~60s — tests gaps 0,30,10,5,2,1s)
+anyThrottle: True
+lowestSafeGap: 30 s
+  gap= 0s  HTTP=422  jobs=0  480ms  [ERROR]
+  gap=30s  HTTP=422  jobs=0  489ms  [ERROR]
+  gap=10s  HTTP=422  jobs=0  88ms  [ERROR]
+  gap= 5s  HTTP=422  jobs=0  92ms  [ERROR]
+  gap= 2s  HTTP=422  jobs=0  116ms  [ERROR]
+  gap= 1s  HTTP=422  jobs=0  84ms  [ERROR]
+
+=== SUMMARY ===
+KEY: floor=lowest gap where all 3 tenants return jobs>0
