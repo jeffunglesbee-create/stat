@@ -7,12 +7,11 @@ try:
     jobs = d.get('jobPostings', [])
     print(f'jobPostings count: {len(jobs)}')
     for j in jobs[:3]:
-        print(f'  title: {j.get("title","?")} | location: {j.get("locationsText","?")}')
+        print(f'  title: {j.get("title","?")}')
 except Exception as e:
     try:
         with open('/tmp/wd_resp.json') as f:
-            body = f.read(300)
-        print(f'parse error: {e}')
-        print(f'body: {body}')
+            body = f.read(400)
+        print(f'parse error: {e} | body: {body}')
     except:
         print(f'error: {e}')
