@@ -1,0 +1,179 @@
+HiringCafe Live Verification — 20260607T001641Z
+
+=== epic analyst remote ===
+URL: https://hiring.cafe/?q=epic+analyst&environment=remote
+HTTP: 200  bytes: 1189928
+__NEXT_DATA__: PRESENT
+pageProps keys: ['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+ssrHits type: list
+ssrTotalCount: 3475525
+ssrPageSize: 40
+ssrError: None
+ssrHits: list of 152 items
+First hit keys: ['id', 'board_token', 'source', 'apply_url', 'source_and_board_token', 'job_information', 'v5_processed_job_data', 'enriched_company_data', '_geoloc', 'original_source_id', 'requisition_id', 'collapse_key', 'is_expired', 'objectID']
+job_information present: True, keys: ['title', 'job_title_raw']
+v5_processed_job_data present: True
+title: School Readiness Therapist
+company: Action Behavior Centers
+source: paycor  board_token: 8a7883d0798f66af0179ce3d19a717e7
+apply_url: https://recruitingbypaycor.com/career/JobIntroduction.action?clientId=8a7883d0798f66af0179ce3d19a717e7&id=8a7885a89e6b0ba1019e9f5386e300e7&source=&lang=en
+description: present=False len=0
+v5 keys: ['core_job_title', 'requirements_summary', 'technical_tools', 'licenses_or_certifications', 'associates_degree_requirement', 'associates_degree_fields_of_study', 'bachelors_degree_requirement', 'bachelors_degree_fields_of_study', 'masters_degree_requirement', 'masters_degree_fields_of_study', 'doctorate_degree_requirement', 'doctorate_degree_fields_of_study', 'licenses_or_certifications_not_mentioned', 'min_industry_and_role_yoe', '401k_matching', 'is_min_industry_and_role_yoe_not_mentioned', 'min_management_and_leadership_yoe', 'is_min_management_and_leadership_yoe_not_mentioned', 'job_category', 'role_activities', 'commitment', 'role_type', 'seniority_level', 'workplace_countries', 'boundless_workplace_states', 'boundless_workplace_countries', 'boundless_workplace_continents', 'workplace_continents', 'workplace_states', 'workplace_cities']
+  v5.workplace_type: Onsite
+  v5.workplace_states: ['Texas, US']
+  v5.boundless_workplace_states: []
+  v5.is_workplace_worldwide_ok: False
+  v5.yearly_min_compensation: 32240
+  v5.yearly_max_compensation: 56160
+  v5.seniority_level: Entry Level
+  v5.requirements_summary: High school diploma/GED, age 18+, ability to lift 30 lbs, willingness to complet
+  v5.estimated_publish_date: 2026-06-06T23:54:18.978Z
+  v5.technical_tools: []
+  v5.licenses_or_certifications: ['rbt']
+  v5.visa_sponsorship: False
+  v5.is_compensation_transparent: True
+Sample hits:
+  [Onsite|paycor] School Readiness Therapist @ Action Behavior Centers
+  [Onsite|paycor] Clinic Admissions Associate @ Action Behavior Centers
+  [Hybrid|paycor] Real Estate Lease Admin @ Action Behavior Centers
+  [Hybrid|paycor] Real Estate Lease Admin @ Action Behavior Centers
+  [Onsite|oraclecloud] Banquet Bartender @ Invited
+  [Onsite|oraclecloud] Beverage Cart Attendant @ Invited
+  [Onsite|oraclecloud] Aquatics Attendant @ Invited
+  [Onsite|oraclecloud] Restaurant Supervisor @ Invited
+
+initialSearchState keys: ['locations']
+
+=== epic cadence remote ===
+URL: https://hiring.cafe/?q=epic+cadence&environment=remote
+HTTP: 200  bytes: 1189831
+__NEXT_DATA__: PRESENT
+pageProps keys: ['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+ssrHits type: list
+ssrTotalCount: 3475525
+ssrPageSize: 40
+ssrError: None
+ssrHits: list of 152 items
+First hit keys: ['id', 'board_token', 'source', 'apply_url', 'source_and_board_token', 'job_information', 'v5_processed_job_data', 'enriched_company_data', '_geoloc', 'original_source_id', 'requisition_id', 'collapse_key', 'is_expired', 'objectID']
+job_information present: True, keys: ['title', 'job_title_raw']
+v5_processed_job_data present: True
+title: School Readiness Therapist
+company: Action Behavior Centers
+source: paycor  board_token: 8a7883d0798f66af0179ce3d19a717e7
+apply_url: https://recruitingbypaycor.com/career/JobIntroduction.action?clientId=8a7883d0798f66af0179ce3d19a717e7&id=8a7885a89e6b0ba1019e9f5386e300e7&source=&lang=en
+description: present=False len=0
+v5 keys: ['core_job_title', 'requirements_summary', 'technical_tools', 'licenses_or_certifications', 'associates_degree_requirement', 'associates_degree_fields_of_study', 'bachelors_degree_requirement', 'bachelors_degree_fields_of_study', 'masters_degree_requirement', 'masters_degree_fields_of_study', 'doctorate_degree_requirement', 'doctorate_degree_fields_of_study', 'licenses_or_certifications_not_mentioned', 'min_industry_and_role_yoe', '401k_matching', 'is_min_industry_and_role_yoe_not_mentioned', 'min_management_and_leadership_yoe', 'is_min_management_and_leadership_yoe_not_mentioned', 'job_category', 'role_activities', 'commitment', 'role_type', 'seniority_level', 'workplace_countries', 'boundless_workplace_states', 'boundless_workplace_countries', 'boundless_workplace_continents', 'workplace_continents', 'workplace_states', 'workplace_cities']
+  v5.workplace_type: Onsite
+  v5.workplace_states: ['Texas, US']
+  v5.boundless_workplace_states: []
+  v5.is_workplace_worldwide_ok: False
+  v5.yearly_min_compensation: 32240
+  v5.yearly_max_compensation: 56160
+  v5.seniority_level: Entry Level
+  v5.requirements_summary: High school diploma/GED, age 18+, ability to lift 30 lbs, willingness to complet
+  v5.estimated_publish_date: 2026-06-06T23:54:18.978Z
+  v5.technical_tools: []
+  v5.licenses_or_certifications: ['rbt']
+  v5.visa_sponsorship: False
+  v5.is_compensation_transparent: True
+Sample hits:
+  [Onsite|paycor] School Readiness Therapist @ Action Behavior Centers
+  [Onsite|paycor] Clinic Admissions Associate @ Action Behavior Centers
+  [Hybrid|paycor] Real Estate Lease Admin @ Action Behavior Centers
+  [Hybrid|paycor] Real Estate Lease Admin @ Action Behavior Centers
+  [Onsite|oraclecloud] Banquet Bartender @ Invited
+  [Onsite|oraclecloud] Beverage Cart Attendant @ Invited
+  [Onsite|oraclecloud] Aquatics Attendant @ Invited
+  [Onsite|oraclecloud] Restaurant Supervisor @ Invited
+
+initialSearchState keys: ['locations']
+
+=== clinical informatics hybrid ===
+URL: https://hiring.cafe/?q=clinical+informatics+analyst&environment=hybrid
+HTTP: 200  bytes: 1190120
+__NEXT_DATA__: PRESENT
+pageProps keys: ['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+ssrHits type: list
+ssrTotalCount: 3475525
+ssrPageSize: 40
+ssrError: None
+ssrHits: list of 152 items
+First hit keys: ['id', 'board_token', 'source', 'apply_url', 'source_and_board_token', 'job_information', 'v5_processed_job_data', 'enriched_company_data', '_geoloc', 'original_source_id', 'requisition_id', 'collapse_key', 'is_expired', 'objectID']
+job_information present: True, keys: ['title', 'job_title_raw']
+v5_processed_job_data present: True
+title: School Readiness Therapist
+company: Action Behavior Centers
+source: paycor  board_token: 8a7883d0798f66af0179ce3d19a717e7
+apply_url: https://recruitingbypaycor.com/career/JobIntroduction.action?clientId=8a7883d0798f66af0179ce3d19a717e7&id=8a7885a89e6b0ba1019e9f5386e300e7&source=&lang=en
+description: present=False len=0
+v5 keys: ['core_job_title', 'requirements_summary', 'technical_tools', 'licenses_or_certifications', 'associates_degree_requirement', 'associates_degree_fields_of_study', 'bachelors_degree_requirement', 'bachelors_degree_fields_of_study', 'masters_degree_requirement', 'masters_degree_fields_of_study', 'doctorate_degree_requirement', 'doctorate_degree_fields_of_study', 'licenses_or_certifications_not_mentioned', 'min_industry_and_role_yoe', '401k_matching', 'is_min_industry_and_role_yoe_not_mentioned', 'min_management_and_leadership_yoe', 'is_min_management_and_leadership_yoe_not_mentioned', 'job_category', 'role_activities', 'commitment', 'role_type', 'seniority_level', 'workplace_countries', 'boundless_workplace_states', 'boundless_workplace_countries', 'boundless_workplace_continents', 'workplace_continents', 'workplace_states', 'workplace_cities']
+  v5.workplace_type: Onsite
+  v5.workplace_states: ['Texas, US']
+  v5.boundless_workplace_states: []
+  v5.is_workplace_worldwide_ok: False
+  v5.yearly_min_compensation: 32240
+  v5.yearly_max_compensation: 56160
+  v5.seniority_level: Entry Level
+  v5.requirements_summary: High school diploma/GED, age 18+, ability to lift 30 lbs, willingness to complet
+  v5.estimated_publish_date: 2026-06-06T23:54:18.978Z
+  v5.technical_tools: []
+  v5.licenses_or_certifications: ['rbt']
+  v5.visa_sponsorship: False
+  v5.is_compensation_transparent: True
+Sample hits:
+  [Onsite|paycor] School Readiness Therapist @ Action Behavior Centers
+  [Onsite|paycor] Clinic Admissions Associate @ Action Behavior Centers
+  [Hybrid|paycor] Real Estate Lease Admin @ Action Behavior Centers
+  [Hybrid|paycor] Real Estate Lease Admin @ Action Behavior Centers
+  [Onsite|oraclecloud] Banquet Bartender @ Invited
+  [Onsite|oraclecloud] Beverage Cart Attendant @ Invited
+  [Onsite|oraclecloud] Aquatics Attendant @ Invited
+  [Onsite|oraclecloud] Restaurant Supervisor @ Invited
+
+initialSearchState keys: ['locations']
+
+=== epic analyst no-env ===
+URL: https://hiring.cafe/?q=epic+analyst
+HTTP: 200  bytes: 1189491
+__NEXT_DATA__: PRESENT
+pageProps keys: ['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+ssrHits type: list
+ssrTotalCount: 3475525
+ssrPageSize: 40
+ssrError: None
+ssrHits: list of 152 items
+First hit keys: ['id', 'board_token', 'source', 'apply_url', 'source_and_board_token', 'job_information', 'v5_processed_job_data', 'enriched_company_data', '_geoloc', 'original_source_id', 'requisition_id', 'collapse_key', 'is_expired', 'objectID']
+job_information present: True, keys: ['title', 'job_title_raw']
+v5_processed_job_data present: True
+title: School Readiness Therapist
+company: Action Behavior Centers
+source: paycor  board_token: 8a7883d0798f66af0179ce3d19a717e7
+apply_url: https://recruitingbypaycor.com/career/JobIntroduction.action?clientId=8a7883d0798f66af0179ce3d19a717e7&id=8a7885a89e6b0ba1019e9f5386e300e7&source=&lang=en
+description: present=False len=0
+v5 keys: ['core_job_title', 'requirements_summary', 'technical_tools', 'licenses_or_certifications', 'associates_degree_requirement', 'associates_degree_fields_of_study', 'bachelors_degree_requirement', 'bachelors_degree_fields_of_study', 'masters_degree_requirement', 'masters_degree_fields_of_study', 'doctorate_degree_requirement', 'doctorate_degree_fields_of_study', 'licenses_or_certifications_not_mentioned', 'min_industry_and_role_yoe', '401k_matching', 'is_min_industry_and_role_yoe_not_mentioned', 'min_management_and_leadership_yoe', 'is_min_management_and_leadership_yoe_not_mentioned', 'job_category', 'role_activities', 'commitment', 'role_type', 'seniority_level', 'workplace_countries', 'boundless_workplace_states', 'boundless_workplace_countries', 'boundless_workplace_continents', 'workplace_continents', 'workplace_states', 'workplace_cities']
+  v5.workplace_type: Onsite
+  v5.workplace_states: ['Texas, US']
+  v5.boundless_workplace_states: []
+  v5.is_workplace_worldwide_ok: False
+  v5.yearly_min_compensation: 32240
+  v5.yearly_max_compensation: 56160
+  v5.seniority_level: Entry Level
+  v5.requirements_summary: High school diploma/GED, age 18+, ability to lift 30 lbs, willingness to complet
+  v5.estimated_publish_date: 2026-06-06T23:54:18.978Z
+  v5.technical_tools: []
+  v5.licenses_or_certifications: ['rbt']
+  v5.visa_sponsorship: False
+  v5.is_compensation_transparent: True
+Sample hits:
+  [Onsite|paycor] School Readiness Therapist @ Action Behavior Centers
+  [Onsite|paycor] Clinic Admissions Associate @ Action Behavior Centers
+  [Hybrid|paycor] Real Estate Lease Admin @ Action Behavior Centers
+  [Hybrid|paycor] Real Estate Lease Admin @ Action Behavior Centers
+  [Onsite|oraclecloud] Banquet Bartender @ Invited
+  [Onsite|oraclecloud] Beverage Cart Attendant @ Invited
+  [Onsite|oraclecloud] Aquatics Attendant @ Invited
+  [Onsite|oraclecloud] Restaurant Supervisor @ Invited
+
+initialSearchState keys: ['locations']
+
+DONE
