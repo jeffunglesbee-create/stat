@@ -14,12 +14,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Probe HC job pages
+      - name: Probe HiringCafe
         shell: bash
         run: |
           set +e
           TS=$(date -u +%Y%m%dT%H%M%SZ)
-          OUT="outbox/hc-job-page-${TS}.txt"
+          OUT="outbox/hc-verify-${TS}.txt"
           mkdir -p outbox
           UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
@@ -28,27 +28,28 @@ jobs:
             printf '\n=== %s ===\nURL: %s\n' "$LABEL" "$URL" >> "$OUT"
             local TF; TF=$(mktemp)
             local HC
-            HC=$(curl -s --max-time 20 -L -o "$TF" -w "HTTP:%{http_code} FINAL:%{url_effective}" \
+            HC=$(curl -s --max-time 25 -L -o "$TF" -w "%{http_code}" \
               -H "User-Agent: $UA" \
               -H "Accept: text/html,*/*" \
+              -H "Accept-Language: en-US,en;q=0.9" \
               "$URL" 2>/dev/null)
-            printf '%s\n' "$HC" >> "$OUT"
-            printf 'bytes: %d\n' "$(wc -c < "$TF")" >> "$OUT"
-            python3 scripts/analyze_hc.py "$TF" >> "$OUT" 2>&1
-            head -c 1500 "$TF" >> "$OUT"
-            printf '\n' >> "$OUT"
+            printf 'HTTP: %s  bytes: %d\n' "$HC" "$(wc -c < "$TF")" >> "$OUT"
+            if grep -q '__NEXT_DATA__' "$TF"; then
+              printf '__NEXT_DATA__: PRESENT\n' >> "$OUT"
+              python3 scripts/analyze_hc.py "$TF" >> "$OUT" 2>&1
+              python3 scripts/find_algolia.py "$TF" >> "$OUT" 2>&1
+            else
+              printf '__NEXT_DATA__: MISSING\n' >> "$OUT"
+              head -c 400 "$TF" >> "$OUT"
+            fi
             rm -f "$TF"
           }
 
-          printf 'HiringCafe Job Page Probe — %s\n' "$TS" > "$OUT"
-
-          # Known job from ssrHits: School Readiness Therapist
-          # requisition_id: gi0crktty5y4sbqj
-          # objectID: paycor___8a7883d0798f66af0179ce3d19a717e7___8a7885a89e6b0ba1019e9f5386e300e7
-          probe "HC /job/requisition_id" "https://hiring.cafe/job/gi0crktty5y4sbqj"
-          probe "HC /viewjob/requisition_id" "https://hiring.cafe/viewjob/gi0crktty5y4sbqj"
-          probe "HC /b/requisition_id" "https://hiring.cafe/b/gi0crktty5y4sbqj"
-
+          printf 'HiringCafe Live Verification — %s\n' "$TS" > "$OUT"
+          probe "epic analyst remote" "https://hiring.cafe/?q=epic+analyst&environment=remote"
+          probe "epic cadence remote" "https://hiring.cafe/?q=epic+cadence&environment=remote"
+          probe "clinical informatics hybrid" "https://hiring.cafe/?q=clinical+informatics+analyst&environment=hybrid"
+          probe "epic analyst no-env" "https://hiring.cafe/?q=epic+analyst"
           printf '\nDONE\n' >> "$OUT"
           echo "OUT=$OUT" >> "$GITHUB_ENV"
           cat "$OUT"
@@ -59,10 +60,12 @@ jobs:
           git config user.email "stat@stat" && git config user.name "STAT"
           git add "$OUT"
           git diff --cached --quiet && exit 0
-          git commit -m "hc-job-page results [skip ci]"
+          git commit -m "hc-verify results [skip ci]"
           for i in 1 2 3; do
             git pull --rebase --autostash origin main && git push origin main && break
             sleep $((i*5))
           done
         env:
           OUT: ${{ env.OUT }}
+
+# NOTE: workflow updated to also run find_algolia.py on first response
