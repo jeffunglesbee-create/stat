@@ -1,0 +1,220 @@
+STAT — HiringCafe Investigation & Current State
+Created: 2026-06-07
+Source: live CI probes from jeffunglesbee-create/stat GitHub Actions
+
+This document captures everything discovered about HiringCafe's
+architecture during the 2026-06-07 investigation session.
+Read before touching adapters.js fetchHiringCafe() or index.js
+runHiringCafeScrape().
+
+═══════════════════════════════════════════════════════════════
+WHAT HIRINGCAFE IS (FROM STAT'S PERSPECTIVE)
+═══════════════════════════════════════════════════════════════
+
+HiringCafe (hiring.cafe) is a job search aggregator that indexes
+~3.5M jobs from hundreds of ATS platforms. It is NOT a public API —
+it's a Next.js web app backed by a private Elasticsearch cluster.
+
+STAT uses it as a "wide-net" layer to catch Epic/healthcare IT jobs
+at employers not in the 181-company seed list. Jobs that match
+STAT's keyword groups in the HiringCafe feed get promoted to alerts
+and can trigger auto-discovery of new companies to add to the watchlist.
+
+═══════════════════════════════════════════════════════════════
+BACKEND ARCHITECTURE (VERIFIED 2026-06-07)
+═══════════════════════════════════════════════════════════════
+
+RUNTIME: Next.js (SSR with getServerSideProps)
+BACKEND: Internal Elasticsearch cluster (PRIVATE — not publicly routable)
+  Evidence: __NEXT_DATA__.props.pageProps.ssrTimings.esLatencyMs
+  Observed values: 391ms, 459ms, 564ms, 714ms, 967ms
+  The ssrTimings field proves ES is called server-side and timed.
+
+NOT ALGOLIA: No Algolia credentials in:
+  - __NEXT_DATA__ (checked: initialSearchState has only geo context)
+  - HTML meta tags or NEXT_PUBLIC_ env vars
+  - Any of 49 script chunk files (checked via JS bundle scan)
+  - robots.txt or sitemap.xml
+
+PUBLIC API: NONE.
+  All /api/* routes return 404 (verified: /api/search, /api/jobs,
+  /api/jobs/search, /api/v1/search, /api/v2/search, /api/widgets).
+
+═══════════════════════════════════════════════════════════════
+__NEXT_DATA__ STRUCTURE (VERIFIED 2026-06-07)
+═══════════════════════════════════════════════════════════════
+
+SEARCH PAGE (hiring.cafe/?q=...):
+  pageProps keys:
+    ssrHits          ← Array<job> (152 items observed)
+    ssrPage          ← current page number
+    ssrTotalCount    ← total index size (3,475,525 as of probe date)
+    ssrCompanyCount  ← companies in results
+    ssrPageSize      ← 40 (server setting; actual ssrHits count is 152)
+    ssrIsLastPage    ← boolean
+    ssrError         ← null on success
+    ssrCompanyTitle  ← string
+    initialSearchState ← {locations: [{...geo context...}]}
+    autoAppliedSearchSuggestion ← string
+    ssrTimings       ← {esLatencyMs: number}
+
+  CRITICAL: ssrHits is a GLOBAL popularity/recency feed.
+  The ?q= and ?environment= query params DO NOT filter the SSR payload.
+  All keyword searches return the SAME 152 jobs.
+  This was confirmed by running 4 different search terms and observing
+  identical first hits (School Readiness Therapist @ Action Behavior Centers).
+
+JOB DETAIL PAGE (hiring.cafe/job/{requisitionId}):
+  pageProps keys:
+    job    ← SINGLE job object (same schema as ssrHit items)
+
+  CRITICAL DIFFERENCE: job.job_information.description IS PRESENT
+  on the detail page with full HTML. It is ABSENT in ssrHits.
+
+═══════════════════════════════════════════════════════════════
+JOB OBJECT SCHEMA (verified on ssrHits + detail page)
+═══════════════════════════════════════════════════════════════
+
+Top-level fields:
+  id               Compound key: "{source}___{board_token}___{original_id}"
+  objectID         Same as id
+  board_token      ATS board slug (e.g. "seattlechildrens-wd5-external")
+  source           ATS platform string (e.g. "workday", "paycor", "oraclecloud")
+  apply_url        Direct ATS application URL
+  source_and_board_token  "{source}_{board_token}"
+  original_source_id  Raw ATS job ID
+  requisition_id   16-char HiringCafe-internal ID (THIS is the /job/ URL key)
+                   e.g. "87d1yy8wokpdomna"
+                   DIFFERENT from id/objectID (which is the compound key)
+  collapse_key     Dedup key string
+  is_expired       Boolean
+  _geoloc          {lat, lon}
+
+job_information:
+  title            Job title
+  job_title_raw    Unprocessed title
+  description      Full HTML description — PRESENT on detail page,
+                   ABSENT in ssrHits list feed.
+
+v5_processed_job_data (AI enrichment layer):
+  core_job_title, requirements_summary, technical_tools,
+  licenses_or_certifications, associates/bachelors/masters/doctorate_degree_*,
+  min_industry_and_role_yoe, 401k_matching, min_management_and_leadership_yoe,
+  job_category, role_activities, commitment, role_type, seniority_level,
+  workplace_countries, boundless_workplace_states, boundless_workplace_countries,
+  boundless_workplace_continents, workplace_continents, workplace_states,
+  workplace_cities, workplace_type, yearly_min/max_compensation,
+  is_compensation_transparent, visa_sponsorship, estimated_publish_date
+
+enriched_company_data:
+  name, homepage_uri, hq_country, nb_employees, year_founded, industries,
+  parent_company, subsidiaries, status, enriched_at
+
+═══════════════════════════════════════════════════════════════
+BUGS FOUND AND FIXED (2026-06-07)
+═══════════════════════════════════════════════════════════════
+
+BUG 1 — FIXED [commit d16162d]:
+  The adapter read pp.jobs, pp.jobListings, pp.results, pp.data.jobs.
+  None of these keys exist. The correct key is pp.ssrHits.
+  Result: fetchHiringCafe() returned [] on every cron cycle.
+  The wide-net scrape was completely silent for an unknown duration.
+
+BUG 2 — ADDRESSED [commit d46143b]:
+  62 fetchHiringCafe() calls per cron (31 terms x 2 envs) all returned
+  identical feeds — wasting ~43s of a 60s window on redundant HTTP.
+  Fix: collapsed to 2 calls (one per environment).
+  matchJob() already checks all WATCH_GROUPS keywords across results.
+
+BUG 3 — ADDRESSED [commits 33b0bc0, enrich.js]:
+  job_information.description absent from ssrHits list feed.
+  Previously assumed to be present (copied from pre-change API).
+  Fix: second-pass fetch via hiring.cafe/job/{requisitionId} on match.
+
+═══════════════════════════════════════════════════════════════
+DESCRIPTION FETCH PATH (current implementation)
+═══════════════════════════════════════════════════════════════
+
+WHEN: after matchJob() returns a hit on a HiringCafe job
+WHERE: enrich.js fetchPlainDescription(), called from enrichDescriptions()
+HOW:
+  1. URL override: fetchUrl = "https://hiring.cafe/job/" + job.hc.requisitionId
+     (NOT job.url, which is the ATS apply URL)
+  2. Plain GET with browser UA — page is fully server-rendered, no JS needed
+  3. Parse __NEXT_DATA__:
+     data.props.pageProps.job.job_information.description (full HTML)
+  4. Strip HTML tags → plain text → store as job.description
+  5. Fallback: og:description meta tag (truncated to ~155 chars but available)
+
+FIELD STORAGE:
+  adapters.js stores job.hc.requisitionId = j.requisition_id on every ssrHit
+  This is distinct from job.id which is the compound key.
+
+VERIFIED:
+  hiring.cafe/job/87d1yy8wokpdomna: HTTP 200, 68KB
+  Job: "Health Information Analyst" at Seattle Children's (Epic role)
+  Source: workday, board_token: seattlechildrens-wd5-external
+  description: full HTML present in job_information
+
+═══════════════════════════════════════════════════════════════
+ROBOTS.TXT (verified 2026-06-07)
+═══════════════════════════════════════════════════════════════
+
+Allow: / /about /work-here /careers /talent-network /terms-and-conditions
+Disallow: /job/ /viewjob/ /jobs/ /org/ /company/ /b/ /*?searchState=*
+          /account /inbox /invite/ /applicant/ /share/ /myhiringcafe/ /admin/
+
+The Disallow:/job/ tells bots to stay away but the pages load fine on
+direct fetch. /viewjob/ → HTTP 410 Gone (deprecated). /b/ → 404.
+
+═══════════════════════════════════════════════════════════════
+SITEMAP
+═══════════════════════════════════════════════════════════════
+
+Verified: hiring.cafe/sitemap.xml only lists static marketing pages
+(/, /about, /work-here, /talent-network).
+No job URLs in sitemap. Individual job pages are not indexed by HC.
+
+═══════════════════════════════════════════════════════════════
+CURRENT ADAPTER STATE (adapters.js)
+═══════════════════════════════════════════════════════════════
+
+fetchHiringCafe(keyword, environment):
+  URL: https://hiring.cafe/?q={keyword}&environment={environment}
+  NOTE: keyword param ignored by SSR — all queries return same 152 items
+  Parse: __NEXT_DATA__ -> pp.ssrHits -> Array<job>
+  Returns: Array<NormalizedJob> with job.hc enrichment block
+
+job.hc enrichment block:
+  workplaceStates, boundlessStates, isWorldwide, workplaceType,
+  requirementsSummary, seniorityLevel, salaryTransparent,
+  visaSponsorship, minYoe, certifications, technicalTools,
+  atsSource, boardToken,
+  requisitionId,    ← added 2026-06-07 for description fetch
+  companySize, companyFounded, companyIndustries
+
+runHiringCafeScrape() in index.js:
+  Calls fetchHiringCafe() ONCE per environment (2 calls total per cron).
+  Keyword passed is 'epic analyst' (arbitrary — SSR ignores it).
+  matchJob() handles all WATCH_GROUPS keyword filtering on results.
+
+═══════════════════════════════════════════════════════════════
+PATHS NOT TAKEN (documented for future reference)
+═══════════════════════════════════════════════════════════════
+
+OPTION: Browser Rendering to intercept filtered XHR
+  HiringCafe's client-side JS likely uses Algolia or calls their ES
+  via an internal API after page load, returning keyword-filtered results.
+  Intercepting the XHR via Cloudflare Browser Rendering (puppeteer) would
+  give true keyword-targeted results (<20 Epic jobs) vs the global feed (152).
+  Cost: ~$0.0005 per call. env.MYBROWSER binding already exists for Taleo.
+  Status: NOT built. The ssrHits + matchJob() approach works; BR is better signal.
+  Build trigger: if Epic HC matches remain too sparse after several weeks.
+
+OPTION: Algolia direct API call
+  If HiringCafe's client-side search uses Algolia, the app ID and API key
+  would be in the JS bundles. Scanning 49 chunk files found nothing.
+  The SSR layer definitively uses Elasticsearch (not Algolia).
+  The client-side interactive search may use Algolia but credentials
+  are never in the server-rendered HTML.
+  Status: NOT viable without BR-level bundle interception.

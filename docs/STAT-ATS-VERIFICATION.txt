@@ -1,0 +1,166 @@
+STAT — ATS Verification Findings
+Created: 2026-06-07
+
+Documents all ATS verification work performed via CI probes.
+This is the authoritative record of which health systems use which ATS
+and any corrections made to SEED_COMPANIES as a result.
+
+All probes run via GitHub Actions (jeffunglesbee-create/stat) because
+*.workers.dev and most external domains are blocked from the Claude sandbox.
+Probe pattern: commit workflow → dispatch → pull result from outbox/*.txt.
+
+═══════════════════════════════════════════════════════════════
+GENERAL METHODOLOGY
+═══════════════════════════════════════════════════════════════
+
+For each health system:
+  1. Fetch official careers page (HTML GET with browser UA)
+  2. Scan HTML for ATS fingerprints (Workday, Avature, Taleo, etc.)
+  3. Probe ATS-specific endpoints directly:
+     Workday: POST /wday/cxs/{tenant}/{slug}/jobs (JSON API)
+     BrassRing: GET sjobs.brassring.com/?partnerid={id}&siteid={sid}
+     Avature: GET avature.net/careers (HTML GET)
+     Phenom: GET cdn.phenompeople.com fingerprint in HTML
+  4. Record HTTP status, ATS signals, redirect final URLs
+  5. Update SEED_COMPANIES and document finding here
+
+Probe scripts: scripts/analyze_hc.py, scripts/analyze_job_page.py
+Probe workflows: .github/workflows/umiami-*.yml, workday-ucsf-verify.yml
+
+═══════════════════════════════════════════════════════════════
+UCSF HEALTH — VERIFIED 2026-06-06
+═══════════════════════════════════════════════════════════════
+
+FINDING: UCSF Health is on Avature (NOT Workday or BrassRing)
+EVIDENCE:
+  careers.ucsf.edu: HTTP 200
+    avature.portal.name: "UCSF Careers"   ← definitive signal
+    avature.portal.id: 9
+  sjobs.brassring.com partnerid=6495: HTTP 500 — dead portal
+  ucsf.wd5.myworkdayjobs.com: HTTP 406 (domain live, slugs wrong)
+    API POST with slug 'Search': HTTP 422 — invalid slug
+    API POST with slug 'UCSF_External': HTTP 422 — invalid slug
+
+ACTION TAKEN:
+  Removed UCSF from Workday SEED_COMPANIES (commit 773aab9).
+  UCSF is covered by HiringCafe wide-net scrape.
+
+AVATURE STATUS:
+  Avature adapter: NOT BUILT.
+  UCSF careers.ucsf.edu appears to load jobs client-side.
+  No public Avature job feed endpoint confirmed.
+  Build priority: Medium (UCSF is high-value Epic employer).
+
+═══════════════════════════════════════════════════════════════
+UNIVERSITY OF MIAMI HEALTH — VERIFIED 2026-06-07
+═══════════════════════════════════════════════════════════════
+
+FINDING: UMiami Health is on Phenom People (NOT Workday/Taleo/Avature/BrassRing)
+Official careers page: umiamihealth.org/en/careers
+  Redirects to: careers.miami.edu/us/en/health-care-careers
+  Platform: Phenom People
+  Tenant ID: UOMUOMUS
+  All assets from: cdn.phenompeople.com/CareerConnectResources/UOMUOMUS/
+  widgetApiEndpoint: careers.miami.edu/widgets
+
+EVIDENCE (multi-round CI probe):
+  careers.umiamihealth.org: HTTP 000 — subdomain doesn't exist
+  umiamihealth.wd1.myworkdayjobs.com: HTTP 406 — domain live, wrong slugs
+  API POST with 7 slug guesses (UMH_External, External, UHealth, etc.):
+    all HTTP 422 — wrong slug
+  Taleo um.taleo.net, umhealth.taleo.net: HTTP 000 — dead
+  Avature umiami.avature.net, umiamihealth.avature.net: HTTP 000 — dead
+  BrassRing partnerid=25965: HTTP 500 — dead portal
+  umiamihealth.org/en/careers body: href="careers.miami.edu/us/en/health-care-careers"
+  careers.miami.edu: Phenom People (UOMUOMUS) confirmed by all asset URLs
+
+STATUS:
+  UMiami Health is NOT in SEED_COMPANIES (was never added).
+  Covered by HiringCafe wide-net scrape (Phenom jobs appear in HC feed).
+  Phenom People adapter: NOT BUILT.
+  Phenom uses Algolia-backed search client-side, wraps underlying Workday.
+
+PHENOM PEOPLE ADAPTER STATUS:
+  Not built. Would need to probe careers.miami.edu/api/jobs or similar.
+  Underlying ATS: likely Workday (Phenom is a CRM layer on top).
+  Build priority: Low (HC covers it).
+
+═══════════════════════════════════════════════════════════════
+BRASSRING PORTALS — STATUS ACROSS ALL VERIFIED TARGETS
+═══════════════════════════════════════════════════════════════
+
+All known BrassRing portal IDs probed this session returned HTTP 500:
+  UCSF (partnerid=6495, siteid=5861): HTTP 500
+  UMiami academic (partnerid=25965): HTTP 500
+
+sjobs.brassring.com is still live as a platform (other tenants work),
+but health systems that were on BrassRing have migrated to Workday,
+Avature, or Phenom.
+
+RECOMMENDATION:
+  Before building a BrassRing adapter, verify that ANY current STAT
+  seed company uses a live BrassRing portal. If none do, adapter ROI = 0.
+
+═══════════════════════════════════════════════════════════════
+WORKDAY PATH SLUG FIX — VERIFIED 2026-06-06
+═══════════════════════════════════════════════════════════════
+
+BUG: fetchWorkday() used hardcoded slug 'External_Career_Site' for all tenants.
+  This is wrong — every Workday tenant has a unique slug.
+  All Workday API calls were returning 422 for the wrong slug.
+
+FIX (commit 86f17bc):
+  Slug is now derived from the last path segment of company.url.
+  Example: url = 'jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions'
+    tenant = 'jhhs'
+    slug   = 'JHH_External_Positions'
+    apiUrl = '.../wday/cxs/jhhs/JHH_External_Positions/jobs'
+
+VERIFICATION STATUS:
+  The fix is logically correct but requires that company.url in
+  SEED_COMPANIES has the correct path slug.
+  Not all 181 companies have been individually verified.
+  Recommended: TYPE D audit — probe each Workday URL via CI.
+  Expected failure rate: unknown. Some health systems use custom
+  career domains that don't follow the myworkdayjobs.com pattern.
+
+═══════════════════════════════════════════════════════════════
+ATS PLATFORM SUMMARY (CONFIRMED FINDINGS)
+═══════════════════════════════════════════════════════════════
+
+Health System               ATS                Notes
+─────────────────────────── ────────────────── ──────────────────────────────
+UCSF Health                 Avature            careers.ucsf.edu, portal ID 9
+University of Miami Health  Phenom People      careers.miami.edu, UOMUOMUS
+Johns Hopkins Health System Workday            jhhs.wd5.myworkdayjobs.com
+VHC Health                  iCIMS              careers-vhchealth.icims.com
+Johns Hopkins Medicine      SuccessFactors     career4.successfactors.com/SFHUP
+TUHS (Temple Health)        Taleo              tuhs.taleo.net
+
+BrassRing: No live health system portals found. Historical only.
+
+═══════════════════════════════════════════════════════════════
+PROBE INFRASTRUCTURE REFERENCE
+═══════════════════════════════════════════════════════════════
+
+GitHub Actions workflow dispatch pattern:
+  1. Commit workflow file to .github/workflows/
+  2. Wait 90s for GitHub trigger indexing (new files need this)
+  3. POST dispatch: api.github.com/repos/.../workflows/{id}/dispatches
+  4. Wait 60-90s for run completion
+  5. Pull outbox/*.txt via git pull
+
+YAML heredoc gotcha:
+  Python heredocs (<< 'PYEOF') inside YAML run: blocks cause GitHub
+  to invalidate the workflow_dispatch trigger without warning.
+  Fix: commit Python as separate files in scripts/, call from workflow.
+
+Workflow ID discovery:
+  GET api.github.com/repos/.../actions/workflows
+  Returns id, name, path, state for each workflow.
+  Use ID (integer) for dispatch when filename hasn't been indexed yet.
+
+Reusing indexed workflows:
+  The fastest approach is to repurpose an already-indexed workflow
+  by updating its content (the trigger stays registered).
+  290576888 (hc-verify.yml) is the primary reusable probe vehicle.

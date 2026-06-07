@@ -542,3 +542,75 @@ WORKER SECRETS MISSING:
     wrangler secret list   ← shows what's set (not values)
     wrangler secret put PUSHOVER_APP_TOKEN   ← prompts for value
   CF dashboard: Workers & Pages → stat-job-watcher → Settings → Variables
+
+
+═══════════════════════════════════════════════════════════════
+2026-06-07 ARCHITECTURE CHANGES
+═══════════════════════════════════════════════════════════════
+
+HIRINGCAFE CRON — COLLAPSED (runHiringCafeScrape)
+  Before: 31 search terms x 2 environments = 62 fetchHiringCafe() calls per cron
+          Each call: HTTP GET + HTML parse + JSON parse + 400ms delay
+          Total per cron: ~43s of identical, redundant requests
+  After:  2 calls per cron (one per environment)
+          Keyword param passed but ignored by HC's SSR layer.
+          matchJob() handles all WATCH_GROUPS keyword matching on results.
+
+  Root cause: HC SSR payload is a global popularity/recency feed (152 items)
+  regardless of ?q= param. All keyword queries return identical results.
+  Confirmed via live CI probes with 4 different keywords → same 152 jobs.
+
+HIRINGCAFE JOB OBJECT — KEY CORRECTION
+  Old (broken): pp.jobs, pp.jobListings, pp.results, pp.data.jobs (all missing)
+  New (correct): pp.ssrHits (list of 152 NormalizedJob-compatible objects)
+
+  New field: job.hc.requisitionId = j.requisition_id
+    16-char HiringCafe-internal ID. DIFFERENT from job.id (compound key).
+    Used to build: hiring.cafe/job/{requisitionId} for description fetch.
+
+ENRICH.JS — HIRINGCAFE DESCRIPTION PATH
+  Added 'hiringcafe' to NEEDS_PLAIN_FETCH.
+  URL override in fetchPlainDescription():
+    fetchUrl = "https://hiring.cafe/job/" + job.hc.requisitionId
+  (NOT job.url which is the ATS apply URL, not the HC page)
+  Parse: __NEXT_DATA__.props.pageProps.job.job_information.description
+  Fallback: og:description meta tag
+
+INDEX.JS — NEW /review ENDPOINT
+  POST /review: Claude-powered inline job review with SSE streaming.
+  Model: claude-haiku-4-5-20251001
+  Auth: ANTHROPIC_API_KEY secret (env.ANTHROPIC_API_KEY || env.ANTHROPIC_KEY)
+  Request: {title, company, description, location, environment, salary, requisitionId}
+  Loads stored candidate profile for context via loadProfile(env).
+  Streams SSE: data: {"token": "..."}
+
+ → data: [DONE]
+
+
+  See STAT-CLAUDE-REVIEW.txt for full spec.
+
+UI.HTML — MATCH CARD REVIEW PANEL
+  Added: ✦ Review button to every match card in Matches tab.
+  Added: review-panel div (hidden, opens inline on card).
+  Added: toggleReview(jobId) function with SSE streaming + reviewCache.
+  CSS: .review-btn, .review-panel, .review-panel-content, .review-loading.
+  See STAT-CLAUDE-REVIEW.txt for full spec.
+
+ADAPTERS.JS — WORKDAY SLUG FIX
+  Previously hardcoded 'External_Career_Site' as Workday API slug.
+  Now derives slug from last path segment of company.url.
+  Example: 'jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions' → 'JHH_External_Positions'
+
+ATS INVESTIGATION SUMMARY
+  UCSF Health: confirmed Avature (not Workday/BrassRing). Removed from Workday seed.
+  University of Miami Health: confirmed Phenom People (careers.miami.edu, UOMUOMUS).
+  BrassRing: all probed portals return HTTP 500. Health systems have migrated away.
+  See STAT-ATS-VERIFICATION.txt for full investigation details.
+
+HIRINGCAFE BACKEND CONFIRMED: ELASTICSEARCH (NOT ALGOLIA)
+  Evidence: ssrTimings.esLatencyMs in __NEXT_DATA__ (391-967ms observed).
+  No Algolia credentials anywhere in HTML, NEXT_DATA, or JS bundles.
+  All /api/* routes return 404. ES cluster is private/internal.
+  Client-side interactive search may use Algolia for autocomplete but
+  credentials are never in server-rendered HTML.
+  See STAT-HIRINGCAFE.txt for full investigation.

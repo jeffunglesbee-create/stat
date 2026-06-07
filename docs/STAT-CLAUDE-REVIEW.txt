@@ -1,0 +1,195 @@
+STAT — Claude Inline Job Review Feature
+Created: 2026-06-07
+Commit: 0ab1c92
+
+Specification for the Claude-powered inline job review that appears
+on every match card in the STAT dashboard Matches tab.
+
+═══════════════════════════════════════════════════════════════
+WHAT IT IS
+═══════════════════════════════════════════════════════════════
+
+A "✦ Review" button on each match card streams a Claude analysis
+directly onto the card — no tab switch, no separate tool, no page leave.
+
+The review answers four questions in under 200 words:
+  VERDICT: Is this worth applying to, and why?
+  TOP SIGNALS: 3 most relevant match/mismatch points.
+  DEALBREAKER: Any clear disqualifier, or "None identified".
+  QUICK TAKE: One sentence on how to approach the application.
+
+═══════════════════════════════════════════════════════════════
+WORKER ENDPOINT: POST /review
+═══════════════════════════════════════════════════════════════
+
+Location: src/index.js
+Auth: ANTHROPIC_API_KEY secret (env.ANTHROPIC_API_KEY or env.ANTHROPIC_KEY)
+  Returns 503 with {error: 'ANTHROPIC_API_KEY not configured'} if missing.
+
+Request body (JSON):
+  {
+    title:         string  — job title (required)
+    company:       string  — employer name
+    description:   string  — job description (may be empty)
+    requisitionId: string  — HC requisition ID (if HC-sourced)
+    location:      string
+    environment:   string  — 'remote' | 'hybrid' | 'onsite'
+    salary:        string  — formatted salary string
+  }
+
+Processing:
+  1. Load stored candidate profile via loadProfile(env) (optional context)
+  2. Build jobText from all provided fields
+  3. Call claude-haiku-4-5-20251001 with stream: true
+  4. Proxy SSE stream back to browser
+
+Model: claude-haiku-4-5-20251001
+  Chosen for speed (<2s to first token) and cost efficiency.
+  max_tokens: 400 (sufficient for the structured ~200-word format)
+  temperature: default (0)
+
+System prompt:
+  "You are a sharp healthcare IT career advisor reviewing a job posting
+  for an Epic EHR analyst. Be direct and specific. No filler.
+  Format your response with these exact sections:
+  **VERDICT** — One sentence: is this worth applying to and why?
+  **TOP SIGNALS** — 3 bullet points of the most relevant match points
+  **DEALBREAKER** — One sentence if there is a clear dealbreaker,
+    otherwise 'None identified'
+  **QUICK TAKE** — One sentence advice on how to approach this application
+  Keep the entire response under 200 words."
+
+Response format: SSE (text/event-stream)
+  data: {"token": "text fragment"}
+
+  (per token)
+  data: [DONE]
+
+                       (end of stream)
+  data: {"error": "message"}
+
+          (on error)
+
+CORS: Access-Control-Allow-Origin: * (dashboard is served from same origin)
+
+═══════════════════════════════════════════════════════════════
+UI IMPLEMENTATION
+═══════════════════════════════════════════════════════════════
+
+Location: src/ui.html
+
+HTML added to renderMatchCard():
+  <button class="review-btn" id="rbtn-{job.id}" onclick="toggleReview('{job.id}')">
+    ✦ Review
+  </button>
+  <div class="review-panel" id="rpanel-{job.id}">
+    <div class="review-panel-content" id="rcontent-{job.id}"></div>
+  </div>
+
+CSS classes:
+  .review-btn      — teal-outlined button, matches STAT design system
+  .review-btn.loading — grayed out during fetch
+  .review-btn.open    — teal-filled when panel is open
+  .review-panel       — hidden by default (display: none)
+  .review-panel.open  — visible (display: block)
+  .review-panel-content — 12px sans, 1.6 line height, wraps long text
+  .review-loading     — "✦ Claude is reviewing this role…" indicator
+
+JavaScript: toggleReview(jobId)
+  State machine:
+    CLOSED → OPEN: fetch job from matches[], POST /review, stream tokens
+    OPEN → CLOSED: hide panel, preserve cache
+    OPEN (cached) → CLOSED: hide panel (no fetch)
+
+  SSE streaming:
+    reader = res.body.getReader()
+    Decode chunks → split on '
+' → parse "data: {json}" lines
+    Accumulate text → render with markdown-lite:
+      **bold** → <strong>bold</strong>
+      
+ → <br>
+    Update content.innerHTML on each token for live streaming effect
+
+  reviewCache (module-level Map):
+    Key: jobId
+    Value: final rendered innerHTML
+    Second click: instant (no fetch, no stream)
+
+  Error states:
+    /review returns non-OK: display "⚠ {error.error}"
+    SSE contains {error: msg}: display "⚠ {msg}"
+    fetch() throws: display "⚠ {e.message}"
+
+Job data flow:
+  The job object is retrieved from the matches[] array in memory.
+  Fields passed: title, company, description, requisitionId (from hc),
+                 location, environment, salary.
+  If description is empty (not yet enriched by enrich.js second-pass),
+  the review works on title + company + metadata alone.
+
+═══════════════════════════════════════════════════════════════
+ACTIVATION
+═══════════════════════════════════════════════════════════════
+
+Required: wrangler secret put ANTHROPIC_API_KEY
+  Without this secret, clicking Review shows "⚠ ANTHROPIC_API_KEY not configured".
+  All other STAT functionality is unaffected.
+
+Optional (improves review quality): stored candidate profile
+  Without profile, Claude reviews based on job content alone.
+  With profile, Claude contextualizes against candidate background.
+  Set profile via: /ui → Resume tab → Analyze → Extract Profile.
+
+═══════════════════════════════════════════════════════════════
+DESIGN DECISIONS
+═══════════════════════════════════════════════════════════════
+
+Why Haiku (not Sonnet/Opus)?
+  Speed is the priority here. Haiku returns first token in <1s.
+  The structured 4-section prompt constrains output quality enough
+  that the smaller model produces useful results for job review.
+  Sonnet would be better for nuanced reasoning; Haiku is better for
+  fast, structured assessments on repetitive inputs.
+
+Why server-side (Worker endpoint) not browser-direct?
+  Keeps ANTHROPIC_API_KEY server-side — never exposed to the browser.
+  The STAT dashboard is served from the Worker origin — same-origin
+  fetch to /review is simpler and more secure than CORS to Anthropic.
+  Also allows future middleware (rate limiting, logging, caching).
+
+Why SSE streaming (not await full response)?
+  Streaming provides perceived responsiveness. The user sees Claude
+  thinking rather than a blank spinner. For a 200-word response,
+  streaming saves ~1.5s of perceived wait time.
+
+Why reviewCache?
+  The review is deterministic (same job + same profile = same result).
+  Caching avoids re-fetching on toggle. The cache is in-memory per
+  browser session — refreshing the page clears it.
+
+═══════════════════════════════════════════════════════════════
+FUTURE IMPROVEMENTS
+═══════════════════════════════════════════════════════════════
+
+1. Description pre-fetch in /review endpoint
+   If job.description is empty, /review could fetch hiring.cafe/job/{requisitionId}
+   server-side before calling Claude. This makes the review self-sufficient
+   regardless of whether enrich.js second-pass has run yet.
+   Location to add: top of /review handler, before building jobText.
+
+2. Feedback loop
+   Add "✓ Applied" and "✗ Skip" buttons after the review renders.
+   POST to /feedback: {jobId, action, fitScore}
+   Store in StateStoreDO. Feed back into Gemini scoring weights.
+   This is the difference between a scorer and a scorer that learns.
+
+3. Browse tab reviews
+   The Browse tab (env-filtered unmatched jobs) doesn't have Review buttons.
+   Adding toggleReview() to browseRenderCard() uses the same infrastructure.
+   Browse jobs may lack hc.requisitionId if they're not from HiringCafe.
+
+4. Review on alert email
+   Include a "Review with Claude" link in the Pushover/email alert.
+   Link opens /ui directly to the job card with the review panel open.
+   Requires job ID in the alert URL deep-link.

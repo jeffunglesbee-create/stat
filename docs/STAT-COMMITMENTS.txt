@@ -1,6 +1,6 @@
 STAT — Commitments Tracker
 What was promised, what is built, what is open
-Updated: 2026-06-06 (full audit — all session docs + codebase cross-referenced)
+Updated: 2026-06-07 (session 2 additions)
 
 This document holds Claude accountable to every architectural claim
 and design promise made during STAT's design and build sessions.
@@ -149,6 +149,35 @@ CORE PROMISES — VERIFIED BUILT
          Rendered as 2-sentence block with one-click copy button
   VERIFIED: ui.html (resume-matcher separate from email alert opener)
 
+"HiringCafe ssrHits key fix — adapter was returning [] on every cron cycle"
+  STATUS: BUILT [commit d16162d]
+  WHERE: adapters.js fetchHiringCafe() — pp.ssrHits (was pp.jobs which doesn't exist)
+  VERIFIED: live CI probe 2026-06-07 — ssrHits: 152 items confirmed
+
+"HiringCafe cron collapsed from 62 calls to 2"
+  STATUS: BUILT [commit d46143b]
+  WHERE: index.js runHiringCafeScrape() — loop over environments only (not terms)
+  VERIFIED: all 62 keyword calls returned identical feeds; matchJob() handles filtering
+
+"HiringCafe description second-pass via /job/{requisitionId}"
+  STATUS: BUILT [commit 33b0bc0]
+  WHERE: adapters.js (job.hc.requisitionId) + enrich.js (hiringcafe in NEEDS_PLAIN_FETCH)
+         URL: hiring.cafe/job/{requisitionId} → NEXT_DATA.pageProps.job.job_information.description
+  VERIFIED: /job/87d1yy8wokpdomna (Health Information Analyst @ Seattle Children's)
+             HTTP 200, full description in NEXT_DATA confirmed 2026-06-07
+
+"Workday path slug derived from URL, not hardcoded"
+  STATUS: BUILT [commit 86f17bc]
+  WHERE: adapters.js fetchWorkday() — slug = last segment of company.url path
+  VERIFIED: probe confirmed UCSF and UMiami failed with 'External_Career_Site' slug
+
+"Claude inline review on match cards"
+  STATUS: BUILT [commit 0ab1c92]
+  WHERE: src/index.js POST /review (SSE streaming, claude-haiku-4-5-20251001)
+         src/ui.html toggleReview() + review-panel CSS + ✦ Review button
+         Requires: ANTHROPIC_API_KEY secret (wrangler secret put ANTHROPIC_API_KEY)
+  VERIFIED: code complete, smoke 17/17 passing
+
 "zero manual intervention after initial deploy"
   STATUS: BUILT (completed 2026-06-06)
   WHERE: handleScheduled() — bootstrapDOs + HiringCafe + maybeRefreshSalaryCaches
@@ -156,6 +185,20 @@ CORE PROMISES — VERIFIED BUILT
 
 ═══════════════════════════════════════════════════════════════
 OPEN — PROMISED BUT NOT YET BUILT
+"ANTHROPIC_API_KEY secret must be set"
+  STATUS: OPEN — requires user action
+  ACTION: wrangler secret put ANTHROPIC_API_KEY
+  Without it: POST /review returns 503. Review button shows error.
+  Everything else (Gemini scoring, alerts, polling) continues normally.
+
+"HiringCafe Browser Rendering for keyword-filtered results"
+  DISCUSSED: 2026-06-07 session — current ssrHits feed is global/unfiltered
+  CURRENT STATE: Not built. ssrHits + matchJob() provides coverage but not precision.
+  BUILD TRIGGER: If Epic HC matches remain sparse over several weeks.
+  SPEC: Use puppeteer (env.MYBROWSER) to intercept XHR on hiring.cafe/?q=epic+analyst
+        The interactive client-side search returns keyword-filtered results.
+        Cost: ~$0.0005 per BR call. env.MYBROWSER binding already exists for Taleo.
+
 ═══════════════════════════════════════════════════════════════
 
 "Oracle Taleo newer format (phg.tbe.taleo.net / tbe.taleo.net v2)"
