@@ -1,0 +1,31 @@
+STAT - Auto-generated Snapshot
+Generated: 2026-06-07T17:09:40Z
+HEAD: efd5ed4
+Smoke: 21/21
+
+COMPANIES
+  SEED total: 180
+  Workday: 91 (searchText: 'epic ehr within')
+  Greenhouse: 59
+
+RECENT COMMITS
+  efd5ed4 ci: trigger doc-snapshot first run — add trailing comment to config.js
+
+POLLING LAYERS
+  1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
+  2. Platform DOs: 7 DOs, CHUNK_SIZE=15, cursor rotation
+     Workday sweep (91 cos): ~24min | GH sweep (59 cos): ~8min
+  3. BatchPollerDO: 57 cos, 25/cycle, 2min interval
+  4. Backfill: manual POST /backfill-browse
+
+KEY FACTS (do not re-verify)
+  HiringCafe: Elasticsearch backend (NOT Algolia), private VPC
+  ?q= param: server-side no-op, returns same 152 jobs always
+  DO alarm limit: 30s wall-clock (network I/O excluded)
+  Cache-Control: no-store on /ui (Safari cache busted)
+  PAT: STAT-TOKEN fine-grained, stat repo only, expires Jun 7 2027
+
+DRIVE DOCUMENT IDs
+  Current State:  1uncfMyzp0TG1FiydoEcZX2aiq8EPhGcF
+  Session 3 Doc:  1tRyd03iYCFaLn73IRCjQfOFjCHyGIFcMEKXCKuPDgIo
+  Build Backlog:  1ugUh6UmeDkLR-gEH8hJPwXK2NiIrXYQY8gp2jO2p2Hk
