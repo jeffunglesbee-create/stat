@@ -29,7 +29,7 @@ import { fetchHiringCafe, fetchHiringCafeBR, mapHiringCafeHit } from './adapters
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
-import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches, loadUnmatchedJobs, saveUnmatchedJobs, appendLog, readLog } from './store.js';
+import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches, loadUnmatchedJobs, saveUnmatchedJobs, appendLog, readLog, maybeAddOrPromoteCompany } from './store.js';
 export { StateStoreDO } from './store.js';
 import UI_HTML from './ui.html';
 
@@ -546,84 +546,6 @@ async function runHiringCafeScrape(env) {
 // This makes the watchlist self-building — high-signal employers graduate
 // from wide-net tracking to 30-second direct ATS polling automatically.
 // ─────────────────────────────────────────────────────────────────────────────
-async function maybeAddOrPromoteCompany(env, job) {
-  if (!job.url || !job.company) return;
-  const companies = await loadCompanyList(env) ?? [];
-  const registry  = await loadDoRegistry(env);
-  const counts    = await loadMatchCounts(env);
-
-  let ats = null, token = null;
-
-  // HiringCafe jobs carry structured ATS info in job.hc — use it first
-  if (job.hc?.atsSource && job.hc.atsSource !== 'hiringcafe' && job.hc?.boardToken) {
-    ats   = job.hc.atsSource;
-    token = job.hc.boardToken;
-  } else {
-    // Fall back to URL parsing for non-HiringCafe or missing hc data
-    try {
-      const u = new URL(job.url), h = u.hostname;
-      if (h.includes('greenhouse.io') || h.includes('boards.greenhouse')) {
-        ats = 'greenhouse'; token = u.pathname.split('/')[1] || h.split('.')[0];
-      } else if (h.includes('lever.co')) {
-        ats = 'lever'; token = u.pathname.split('/')[1];
-      } else if (h.includes('ashbyhq.com')) {
-        ats = 'ashby'; token = u.pathname.split('/')[1];
-      } else if (h.includes('myworkdayjobs.com')) {
-        ats = 'workday'; token = h.split('.')[0];
-      } else if (h.includes('icims.com')) {
-        ats = 'icims'; token = h.split('.')[0].replace('careers-', '').replace('careers', '');
-      }
-    } catch { return; }
-  }
-  if (!ats || !token) return;
-
-  const doKey = `${ats}:${token}`;
-  const now = Date.now();
-
-  // Track match count
-  if (!counts[doKey]) counts[doKey] = { count: 0, firstSeen: now, lastSeen: now, name: job.company };
-  counts[doKey].count++;
-  counts[doKey].lastSeen = now;
-  await saveMatchCounts(env, counts);
-
-  // Already have a DO — nothing more to do
-  if (registry[doKey]) return;
-
-  // Add to company list on first sighting
-  const exists = companies.some(c => c.ats === ats && c.token === token);
-  if (!exists) {
-    companies.push({ name: job.company, ats, token, url: job.url,
-      autoDiscovered: true, firstMatchAt: new Date().toISOString() });
-    await saveCompanyList(env, companies);
-    console.log(`[STAT] Tracking: ${job.company} (${ats}) — match #1`);
-  }
-
-  // Promote to DO if threshold reached
-  const recentCount = counts[doKey].count;
-  if (recentCount >= LEARNING.promote_after_matches) {
-    const company = companies.find(c => c.ats === ats && c.token === token);
-    if (!company) return;
-    // Route to the correct platform DO (not the deprecated CompanyWatcherDO)
-    const PLATFORM_MAP = {
-      greenhouse: 'GREENHOUSE_DO', lever: 'LEVER_DO', ashby: 'ASHBY_DO',
-      workday: 'WORKDAY_DO', icims: 'ICIMS_DO',
-      successfactors: 'SUCCESSFACTORS_DO', taleo: 'TALEO_DO',
-    };
-    const platformBinding = PLATFORM_MAP[ats];
-    if (!platformBinding || !env[platformBinding]) return; // unsupported ATS
-    // Platform DOs poll all companies of their type — no per-company init needed.
-    // Just record in registry so /learning shows it as promoted.
-    try {
-      registry[doKey] = { name: company.name, ats, autoDiscovered: true, promoted: true,
-        promotedAt: new Date().toISOString(), matchCount: recentCount };
-      await saveDoRegistry(env, registry);
-      console.log(`[STAT] Promoted: ${company.name} (${ats}) after ${recentCount} matches`);
-    } catch (e) {
-      console.error(`[STAT] Promotion failed for ${company.name}:`, e.message);
-    }
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // CRON HANDLER — runs every minute
 // 1. Bootstrap DOs if not already running

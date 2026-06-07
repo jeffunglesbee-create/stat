@@ -164,6 +164,11 @@ assert('store: readLog exported', read('store.js').includes('export async functi
 assert('index: readLog imported', read('index.js').includes('readLog'));
 assert('index: /logs endpoint present', read('index.js').includes("pathname === '/logs'"));
 assert('index: /detect-ats endpoint present', read('index.js').includes("pathname === '/detect-ats'"));
+assert('store: maybeAddOrPromoteCompany exported', read('store.js').includes('export async function maybeAddOrPromoteCompany'));
+assert('store: healthcare gate in maybeAddOrPromoteCompany', read('store.js').includes('_looksLikeEpicEmployer'));
+assert('platform-do: maybeAddOrPromoteCompany imported from store', read('platform-do.js').includes('maybeAddOrPromoteCompany'));
+assert('platform-do: maybeAddOrPromoteCompany called after match', read('platform-do.js').includes("maybeAddOrPromoteCompany(env, job"));
+assert('batch: maybeAddOrPromoteCompany called after match', read('batch.js').includes("maybeAddOrPromoteCompany(this.env, job"));
 assert('index: detectAts function defined', read('index.js').includes('function detectAts(rawUrl)'));
 assert('ui: detect-ats URL field present', read('ui.html').includes('f-url-detect'));
 assert('ui: btn-detect handler wired', read('ui.html').includes("'/detect-ats'"));

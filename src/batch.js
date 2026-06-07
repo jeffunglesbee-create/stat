@@ -25,7 +25,7 @@
  */
 
 import { fetchCompanyJobs } from './adapters.js';
-import { getStatStore, storeGet, storeSet, saveRecentMatches, saveUnmatchedJobs } from './store.js';
+import { getStatStore, storeGet, storeSet, saveRecentMatches, saveUnmatchedJobs, maybeAddOrPromoteCompany } from './store.js';
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
@@ -130,6 +130,7 @@ export class BatchPollerDO {
           job._company       = company;
 
           newMatches.push({ job, match: adjustedMatch });
+          maybeAddOrPromoteCompany(this.env, job, { gate: 'strict' }).catch(() => {});
         }
 
         // Polite delay between ATS fetches

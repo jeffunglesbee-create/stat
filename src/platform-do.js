@@ -35,7 +35,7 @@ import {
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
-import { getStatStore, storeGet, storeSet, saveRecentMatches, saveUnmatchedJobs, appendLog } from './store.js';
+import { getStatStore, storeGet, storeSet, saveRecentMatches, saveUnmatchedJobs, appendLog, maybeAddOrPromoteCompany } from './store.js';
 import { getPollingInterval, KV, GHOST } from './config.js';
 import { applyMarylandScore } from './maryland.js';
 import { enrichDescriptions } from './enrich.js';
@@ -201,6 +201,10 @@ class PlatformDO {
           job._company       = company; // carry company meta for batch MD scoring
 
           newMatches.push({ job, match: adjustedMatch });
+
+          // Auto-discovery: track health system matches, promote to DO polling
+          // gate:'strict' filters out non-healthcare companies (Lightspeed, IBM etc.)
+          maybeAddOrPromoteCompany(env, job, { gate: 'strict' }).catch(() => {});
         }
 
         // Polite inter-company delay

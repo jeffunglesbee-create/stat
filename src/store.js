@@ -237,3 +237,146 @@ export async function readLog(stub, limit = LOG_MAX) {
     return buf.slice(0, limit);
   } catch { return []; }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPANY LIST, DO REGISTRY, MATCH COUNTS
+// Moved from index.js so platform-do.js and batch.js can import them
+// without creating a circular dependency with index.js.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function loadCompanyList(env) {
+  try {
+    const raw = await storeGet(getStatStore(env), 'company_list');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+export async function saveCompanyList(env, list) {
+  await storeSet(getStatStore(env), 'company_list', JSON.stringify(list));
+}
+
+export async function loadDoRegistry(env) {
+  try {
+    const raw = await storeGet(getStatStore(env), 'do_registry');
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+export async function saveDoRegistry(env, registry) {
+  await storeSet(getStatStore(env), 'do_registry', JSON.stringify(registry));
+}
+
+export async function loadMatchCounts(env) {
+  try {
+    const raw = await storeGet(getStatStore(env), 'match_counts');
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+export async function saveMatchCounts(env, c) {
+  await storeSet(getStatStore(env), 'match_counts', JSON.stringify(c));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTO-DISCOVERY: maybeAddOrPromoteCompany
+//
+// Called from both the HiringCafe cron (index.js) AND platform DO alarm loops
+// (platform-do.js, batch.js) on every keyword match.
+//
+// HEALTHCARE GATE: Only promotes companies that look like health systems or
+// Epic consulting firms. Prevents "Lightspeed", "IBM", "Deel" etc. from
+// polluting the watchlist when they match "epic" in non-EHR context.
+//
+// gate: 'strict' (default) — require healthcare/consulting name signal
+//       'loose'            — any company (use when source is already filtered)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const _HC_HINTS = [
+  'health', 'hospital', 'medical center', 'medical centre', 'clinic',
+  'healthcare', 'medicine', 'physician', 'care center', 'care centre',
+  'health system', 'health network', 'health plan', 'health sciences',
+  'memorial', 'baptist', 'presbyterian', 'methodist', 'adventist',
+  'ascension', 'dignity', 'intermountain', 'providence', 'kaiser',
+  'ucsf', 'mayo', 'geisinger', 'sanford', 'vanderbilt', 'atrium',
+];
+const _CO_HINTS = [
+  'consulting', 'consultancy', 'advisors', 'advisory', 'solutions',
+  'partners', 'staffing', 'technology', 'technologies', 'services',
+  'implement', 'accenture', 'deloitte', 'cognizant', 'optum', 'leidos',
+  'nordic', 'guidehouse', 'huron', 'chartis', 'netsmart', 'tegria',
+  'divurgent', 'inovalon', 'evolent',
+];
+
+function _looksLikeEpicEmployer(name) {
+  if (!name) return false;
+  const n = name.toLowerCase();
+  return _HC_HINTS.some(h => n.includes(h)) || _CO_HINTS.some(h => n.includes(h));
+}
+
+const _PROMOTE_THRESHOLD = 2;
+const _PLATFORM_MAP = {
+  greenhouse: 'GREENHOUSE_DO', lever: 'LEVER_DO', ashby: 'ASHBY_DO',
+  workday: 'WORKDAY_DO', icims: 'ICIMS_DO',
+  successfactors: 'SUCCESSFACTORS_DO', taleo: 'TALEO_DO',
+};
+
+export async function maybeAddOrPromoteCompany(env, job, { gate = 'strict' } = {}) {
+  if (!job.url || !job.company) return;
+
+  // Healthcare gate
+  if (gate === 'strict' && !_looksLikeEpicEmployer(job.company)) return;
+
+  let ats = null, token = null;
+
+  // HiringCafe jobs carry structured ATS info in job.hc
+  if (job.hc?.atsSource && job.hc.atsSource !== 'hiringcafe' && job.hc?.boardToken) {
+    ats   = job.hc.atsSource;
+    token = job.hc.boardToken;
+  } else {
+    try {
+      const u = new URL(job.url), h = u.hostname;
+      if (h.includes('greenhouse.io'))      { ats = 'greenhouse'; token = u.pathname.split('/')[1]; }
+      else if (h.includes('lever.co'))      { ats = 'lever';      token = u.pathname.split('/')[1]; }
+      else if (h.includes('ashbyhq.com'))   { ats = 'ashby';      token = u.pathname.split('/')[1]; }
+      else if (h.includes('myworkdayjobs')) { ats = 'workday';    token = h.split('.')[0]; }
+      else if (h.includes('icims.com'))     { ats = 'icims';      token = h.split('.')[0]; }
+      else if (h.includes('taleo.net'))     { ats = 'taleo';      token = h.split('.')[0]; }
+    } catch { return; }
+  }
+  if (!ats || !token) return;
+
+  const doKey = `${ats}:${token}`;
+  const now   = Date.now();
+
+  // Track match count
+  const counts = await loadMatchCounts(env);
+  if (!counts[doKey]) counts[doKey] = { count: 0, firstSeen: now, lastSeen: now, name: job.company };
+  counts[doKey].count++;
+  counts[doKey].lastSeen = now;
+  await saveMatchCounts(env, counts);
+
+  // Already promoted — nothing more to do
+  const registry = await loadDoRegistry(env);
+  if (registry[doKey]) return;
+
+  // Add to company_list on first sighting
+  const companies = await loadCompanyList(env) ?? [];
+  const exists = companies.some(c => c.ats === ats && c.token === token);
+  if (!exists) {
+    companies.push({ name: job.company, ats, token, url: job.url,
+      autoDiscovered: true, firstMatchAt: new Date().toISOString() });
+    await saveCompanyList(env, companies);
+    console.log(`[STAT] Auto-discovered: ${job.company} (${ats}:${token})`);
+  }
+
+  // Promote once threshold reached
+  if (counts[doKey].count >= _PROMOTE_THRESHOLD) {
+    if (!_PLATFORM_MAP[ats] || !env[_PLATFORM_MAP[ats]]) return;
+    registry[doKey] = {
+      name: job.company, ats, autoDiscovered: true, promoted: true,
+      promotedAt: new Date().toISOString(), matchCount: counts[doKey].count,
+    };
+    await saveDoRegistry(env, registry);
+    console.log(`[STAT] Promoted: ${job.company} (${ats}) after ${counts[doKey].count} matches`);
+  }
+}
