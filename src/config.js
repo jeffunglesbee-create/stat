@@ -17,7 +17,7 @@ export const WATCH_GROUPS = [
     priority: 1,
     label: 'Epic · Health System',
     keywords: [
-      'epic analyst', 'epic ambulatory', 'epiccare', 'epic application analyst',
+      'epic', 'epic analyst', 'epic ambulatory', 'epiccare', 'epic application analyst',
       'epic build', 'epic implementation', 'ehr analyst', 'ehr application analyst',
       'clarity sql', 'clinical informatics analyst', 'healthcare it analyst',
       'health informatics analyst', 'epic inpatient', 'epic cadence',

@@ -10,7 +10,9 @@ import { effectivePriority } from './fit.js';
 // Returns { group, priority, label, matchedKw } or null
 // ─────────────────────────────────────────────────────────────────────────────
 export function matchJob(job) {
-  const haystack = `${job.title} ${job.company}`.toLowerCase();
+  // Include description in haystack so keywords buried in body text match.
+  // Many Epic roles are titled "Application Analyst" with Epic in description only.
+  const haystack = `${job.title} ${job.company} ${job.description || ''}`.toLowerCase();
   for (const group of WATCH_GROUPS) {
     for (const kw of group.keywords) {
       if (haystack.includes(kw.toLowerCase())) {

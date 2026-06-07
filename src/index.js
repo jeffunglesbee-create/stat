@@ -670,10 +670,13 @@ async function handleFetch(request, env) {
     const qLimit  = parseInt(url.searchParams.get('limit') || '200', 10);
 
     if (qAts)    filtered = filtered.filter(m => m.job?.atsSource === qAts);
-    if (qSearch) filtered = filtered.filter(m =>
-      (m.job?.title || '').toLowerCase().includes(qSearch) ||
-      (m.job?.company || '').toLowerCase().includes(qSearch)
-    );
+    if (qSearch) filtered = filtered.filter(m => {
+      const q = qSearch;
+      return (m.job?.title       || '').toLowerCase().includes(q) ||
+             (m.job?.company     || '').toLowerCase().includes(q) ||
+             (m.job?.description || '').toLowerCase().includes(q) ||
+             (m.job?.atsSource   || '').toLowerCase().includes(q);
+    });
 
     filtered = filtered.slice(0, Math.min(qLimit, 500));
 
