@@ -194,26 +194,39 @@ export async function fetchWorkday(company) {
     const pathParts = parsed.pathname.split('/').filter(Boolean);
     const pathSlug = pathParts[pathParts.length - 1] || 'External_Career_Site';
     const apiUrl = `${parsed.origin}/wday/cxs/${tenant}/${pathSlug}/jobs`;
-    const body = JSON.stringify({
-      appliedFacets: {},
-      limit: 20,
-      offset: 0,
-      searchText: '',
-    });
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': UA,
-      },
-      body,
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const jobs = data.jobPostings ?? [];
-      if (jobs.length > 0) {
-        return jobs.map(j => makeJob({
+    // Search for Epic/EHR roles directly — don't fetch all jobs and filter.
+    // Workday's searchText param is AND-combined with limit/offset.
+    // We run one search per keyword group and deduplicate by job ID.
+    const EPIC_TERMS = ['epic', 'ehr', 'clinical informatics', 'health information', 'clarity'];
+    const allJobs = new Map();
+    for (const term of EPIC_TERMS) {
+      const body = JSON.stringify({
+        appliedFacets: {},
+        limit: 20,
+        offset: 0,
+        searchText: term,
+      });
+      try {
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': UA,
+          },
+          body,
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        for (const j of data.jobPostings ?? []) {
+          const id = j.bulletFields?.[0] ?? j.title ?? Math.random().toString(36);
+          if (!allJobs.has(id)) allJobs.set(id, j);
+        }
+      } catch {}
+    }
+    const body = null; // sentinel — skip the single-fetch below
+    if (allJobs.size > 0) {
+      return [...allJobs.values()].map(j => makeJob({
           id:          j.bulletFields?.[0] ?? j.title ?? Math.random().toString(36),
           title:       j.title ?? '',
           company:     company.name,
@@ -229,7 +242,6 @@ export async function fetchWorkday(company) {
           postedAt:    j.postedOn ?? null,
           atsSource:   'workday',
         }));
-      }
     }
   } catch { /* fall through to SSR */ }
 
@@ -312,7 +324,8 @@ export async function fetchICIMS(company) {
     const base = company.url.replace(/\/jobs\/.*$/, '').replace(/\/$/, '');
 
     // STEP 1: fetch search page in_iframe=1 to get current job IDs
-    const searchUrl = base + '/jobs/search?ss=1&searchKeyword=&in_iframe=1';
+    // iCIMS supports searchKeyword param — search for Epic directly
+    const searchUrl = base + '/jobs/search?ss=1&searchKeyword=epic&in_iframe=1';
     const res = await fetch(searchUrl, {
       headers: {
         'User-Agent':      UA,
@@ -390,6 +403,8 @@ export async function fetchICIMS(company) {
 //   career4.successfactors.com/career?company={id}&career_job_req_id={reqId}&career_ns=job_listing&navBarLevel=JOB_SEARCH
 //
 // ─────────────────────────────────────────────────────────────────────────────
+// SuccessFactors: XML feed contains all jobs. matchJob() filters client-side.
+// SF feeds are typically small (<100 jobs) so full fetch is acceptable.
 export async function fetchSuccessFactors(company) {
   if (!company.url) return [];
   try {
