@@ -1,0 +1,31 @@
+HiringCafe Live Verification — 20260607T001400Z
+
+=== epic analyst remote ===
+URL: https://hiring.cafe/?q=epic+analyst&environment=remote
+HTTP: 200  bytes: 1187156
+__NEXT_DATA__: PRESENT
+pageProps keys: ['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+No jobs found in any key
+
+=== epic cadence remote ===
+URL: https://hiring.cafe/?q=epic+cadence&environment=remote
+HTTP: 200  bytes: 1187139
+__NEXT_DATA__: PRESENT
+pageProps keys: ['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+No jobs found in any key
+
+=== clinical informatics hybrid ===
+URL: https://hiring.cafe/?q=clinical+informatics+analyst&environment=hybrid
+HTTP: 200  bytes: 1187412
+__NEXT_DATA__: PRESENT
+pageProps keys: ['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+No jobs found in any key
+
+=== epic analyst no-env ===
+URL: https://hiring.cafe/?q=epic+analyst
+HTTP: 200  bytes: 1186847
+__NEXT_DATA__: PRESENT
+pageProps keys: ['ssrHits', 'ssrPage', 'ssrTotalCount', 'ssrCompanyCount', 'ssrPageSize', 'ssrIsLastPage', 'ssrError', 'ssrCompanyTitle', 'initialSearchState', 'autoAppliedSearchSuggestion', 'ssrTimings']
+No jobs found in any key
+
+DONE
