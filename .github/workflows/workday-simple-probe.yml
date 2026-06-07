@@ -6,25 +6,33 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: |
-          mkdir -p outbox
-          OUT="outbox/wd-simple-$(date -u +%Y%m%dT%H%M%SZ).txt"
+      - name: Probe Workday rate limits
+        shell: bash
+        run: |
           BODY='{"appliedFacets":{},"limit":5,"offset":0,"searchText":"epic"}'
-          for tenant_row in "jhhs|jhhs.wd5.myworkdayjobs.com|JHH_External_Positions" "mayoclinic|mayoclinic.wd5.myworkdayjobs.com|mayoclinic"; do
-            IFS='|' read -r t h s <<< "$tenant_row"
-            echo "--- $t ---" | tee -a "$OUT"
-            for gap in 30 10 5 2 1; do
-              sleep $gap
-              r=$(curl -sf -w '\n%{http_code}' -X POST "https://${h}/wday/cxs/${t}/${s}/jobs" \
-                -H 'Content-Type: application/json' -H 'Accept: application/json' \
-                -H 'User-Agent: Mozilla/5.0' -d "$BODY" --max-time 8 2>/dev/null)
-              code=$(echo "$r" | tail -1)
-              jobs=$(echo "$r" | head -1 | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('jobPostings',[])))" 2>/dev/null || echo ERR)
-              printf "  gap=%-3ss: %s jobs=%s\n" "$gap" "$code" "$jobs" | tee -a "$OUT"
-            done
+          call_wd() {
+            local url="$1"
+            local gap="$2"
+            [ "$gap" -gt 0 ] && sleep "$gap"
+            local r=$(curl -sf -w '\n%{http_code}' -X POST "$url" \
+              -H 'Content-Type: application/json' -H 'Accept: application/json' \
+              -H 'User-Agent: Mozilla/5.0' -d "$BODY" --max-time 8 2>/dev/null)
+            local code=$(echo "$r" | tail -1)
+            local jobs=$(echo "$r" | head -1 | python3 -c \
+              "import sys,json; d=json.load(sys.stdin); print(len(d.get('jobPostings',[])))" 2>/dev/null || echo ERR)
+            echo "  gap=${gap}s: HTTP=${code} jobs=${jobs}"
+          }
+          for row in \
+            "jhhs|jhhs.wd5.myworkdayjobs.com|JHH_External_Positions" \
+            "mayoclinic|mayoclinic.wd5.myworkdayjobs.com|mayoclinic" \
+            "kaiserpermanente|kp.wd5.myworkdayjobs.com|KP_External_Career_Site"; do
+            IFS='|' read -r tenant host slug <<< "$row"
+            URL="https://${host}/wday/cxs/${tenant}/${slug}/jobs"
+            echo "=== $tenant ==="
+            call_wd "$URL" 0   # baseline
+            call_wd "$URL" 30  # 30s gap
+            call_wd "$URL" 10  # 10s gap
+            call_wd "$URL" 5   # 5s gap
+            call_wd "$URL" 2   # 2s gap
+            call_wd "$URL" 1   # 1s gap
           done
-          git config user.email "x@x" && git config user.name "x"
-          git add "$OUT"
-          git diff --cached --quiet || git commit -m "wd probe results [skip ci]"
-          git pull --rebase --autostash origin main && git push origin main
