@@ -1,0 +1,83 @@
+=== STAT Worker Status 20260607T200850Z ===
+
+--- GET / (status) ---
+{
+    "name": "STAT Job Watcher",
+    "version": "2.0.0",
+    "activeDOs": 8,
+    "watchedCompanies": 188,
+    "batchWatchlist": 57,
+    "totalMonitored": 245,
+    "seenJobIds": 384,
+    "resumeProfile": "stored \u00b7 Epic Systems Analyst",
+    "fitScoring": "active",
+    "salary": {
+        "peers": 0,
+        "lcaRecords": 0,
+        "blsCacheAge": "never",
+        "lcaCacheAge": "never",
+        "status": "cold-start"
+    },
+    "endpoints": {
+        "GET /": "This status overview",
+        "POST /trigger": "Run HiringCafe scrape now",
+        "POST /bootstrap": "Spawn DOs for all companies",
+        "GET /companies": "List all watched companies",
+        "POST /companies": "Add a company (body: {name,ats,token,url?})",
+        "GET /platform/:ats/status": "Status of a platform DO (greenhouse/lever/etc.)",
+        "GET /salary-status": "Salary DO status",
+        "POST /salary-refresh": "Re-fetch salary caches",
+        "GET /profile": "Get stored resume profile",
+        "POST /profile": "Store resume profile (JSON from resume-matcher)",
+        "DELETE /profile": "Remove stored profile",
+        "GET /learning": "Auto-discovered companies + promotion status",
+        "GET /batch-status": "BatchPollerDO cycle status + cursor position",
+        "GET /br-test?url=&ats=": "Browser Rendering diagnostic \u2014 test against iCIMS/Taleo SPAs",
+        "POST /reset-seen": "Clear seen job IDs",
+        "POST /reset-all": "Nuclear reset"
+    }
+}
+
+--- GET /platform/workday/status ---
+{
+    "ats": "workday",
+    "lastRun": "2026-06-07T20:06:17.899Z",
+    "totalPolled": 6630,
+    "totalMatches": 0,
+    "seenCount": 814,
+    "nextAlarm": 1780863018152
+}
+
+--- GET /browse?limit=10 (sample unmatched jobs) ---
+Total: 10
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+
+--- GET /jobs?limit=10 (recent matches) ---
+Total: 10
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+  [?] ? @ ?  env=
+
+--- GET /logs?limit=50 (alarm cycle log buffer) ---
+parse error: Expecting value: line 1 column 1 (char 0)
+ERROR: /logs unreachable or empty
+
+--- GET /logs?ats=workday&limit=20 (Workday BR results) ---
+parse error: Expecting value: line 1 column 1 (char 0)
+ERROR: /logs?ats=workday unreachable
