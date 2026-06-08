@@ -240,3 +240,94 @@ Rule 13: Automation is architecture — full pipeline contract
 Rule 14: System contract is holistic — full pipeline diagram
 Rule 15: UI labels must reflect live state — no lying UI
 Rule 16: Never defend work that fails to produce results
+
+
+════════════════════════════════════════════════════════════════
+ARCHITECTURE UPDATES — S10/S11 (2026-06-08)
+════════════════════════════════════════════════════════════════
+
+SELECTMINDS CURSOR ARCHITECTURE
+  fetchSelectMinds now accepts an optional selectmindsCursor param (integer).
+  platform-do reads 'selectminds_cursor' from DO storage before alarm loop.
+  Passes cursor to _fetchJobs → fetchSelectMinds(company, this._selectmindsCursor).
+  Adapter returns jobs._nextCursor (endId + 1, wraps at SELECTMINDS_MAX_ID).
+  platform-do writes _nextCursor to storage after fetch if present.
+  This pattern is reusable for any future adapter requiring persistent cursor state.
+
+BROWSE CAPTURE — MODEL CHANGE (S11)
+  Before: Browse captured passesEnvFilter(job) && !matchJob(job).
+  After:  Browse captures passesEnvFilter(job) — ALL env-filtered jobs.
+
+  Rationale: "seen" should mean alert dedup only, not Browse suppression.
+    Matched jobs stay discoverable in Browse after recent_matches 200-cap closes.
+    Dedup gate unchanged — alerts still deduplicated via seen_ids Map.
+
+  Applied to: platform-do.js, batch.js, src/index.js (HC cron).
+  The `unmatchedJobs` variable name is now a misnomer — it contains all
+  env-filtered jobs. Name preserved to avoid churn; semantics documented here.
+
+BOOTSTRAPDOS MERGE KEY (S11)
+  Changed from: storedKeys = Set of `${ats}:${token}`
+  Changed to:   storedKeys = Set of `${ats}:${url ?? token}`
+
+  Reason: token is cursor state for SelectMinds (changes each cycle). Keying
+  by token caused duplicate UTMB entries when config token was updated from
+  '3180' to '1000'. URL is stable — use it as the identity key.
+
+  Impact: Any company whose url changes will be treated as a new entry (re-added).
+  For the 272 seed companies this is correct behavior — URL is canonical identity.
+
+SEEN_IDS FORMAT (S10)
+  Was: string[] (flat array of job ID strings)
+  Now: {id, seenAt, diedAt?, url?}[]
+
+  loadSeenIds() returns Map<id, entry>.
+  saveSeenIds() prunes dead entries >30 days and live entries >90 days.
+  Backward compat: raw string entries auto-converted on first read.
+
+  Key functions:
+    checkSeenStatus(seenMap, jobId) → null | 'seen' | 'dead'
+    addToSeen(seenMap, jobId, jobUrl) → adds {id, seenAt, url?}
+    markSeenDead(env, jobId, jobUrl) → sets entry.diedAt
+    maybeRunSeenSweep(env) → 20 dead entries/tick, HEAD check, resurrect if live
+
+STATUS CHECKING VIA RELAY (S11)
+  stat_status MCP tool on field-relay-nba (commit 8dad045).
+  Calls /stat/ and /stat/platform/{ats}/status via CF Worker IP.
+  ~2s vs ~80s worker-probe CI cycle. No commit required.
+
+  probe_relay_route allow-list now includes:
+    /stat/  /stat/platform/selectminds/status  /stat/platform/{ats}/status
+    (all major ATS platform status routes)
+
+════════════════════════════════════════════════════════════════
+ARCHITECTURAL DECISIONS — S10/S11
+════════════════════════════════════════════════════════════════
+
+DECISION: Cursor persistence for ID-walk adapters (S11)
+  PROBLEM: SelectMinds required per-cycle state (current scan position) that
+    the existing company config object couldn't cleanly hold (token is config,
+    not runtime state; changing it causes bootstrap merge bugs).
+  DECISION: Runtime cursor stored in DO storage, separate from config.
+    Adapter accepts cursor as optional param; returns _nextCursor on result.
+    platform-do owns the read/write cycle around the fetch call.
+  RATIONALE: Clean separation — config is identity, storage is state.
+  GENERALIZATION: Any future adapter needing per-cycle state should follow
+    this same pattern (cursor param in, _nextCursor out).
+
+DECISION: Browse shows all env-filtered jobs (S11)
+  PROBLEM: Matched jobs disappeared from Browse after recent_matches 200-cap.
+    Users couldn't find previously-alerted jobs without searching email.
+  DECISION: Remove !matchJob() gate from Browse capture.
+  RATIONALE: seen_ids is the dedup mechanism for alerts. Browse is a discovery
+    surface — it should show everything the system knows about, not just
+    what wasn't interesting enough to alert on.
+  TRADEOFF: Browse volume increases (every matched job also appears in Browse).
+    Acceptable — Browse is paginated and sorted by recency.
+
+DECISION: Bootstrap merge key = (ats, url) not (ats, token) (S11)
+  PROBLEM: SelectMinds cursor-walking changes token each cycle. Keying by token
+    caused duplicate UTMB entries (selectminds:3180 and selectminds:1000 coexist).
+  DECISION: Use url as identity key (url is stable; token is cursor state).
+  EDGE CASE: A company that genuinely changes its ATS URL will be treated as
+    a new addition. Acceptable — URL changes are rare and deliberate.
