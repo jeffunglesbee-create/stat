@@ -53,9 +53,98 @@ export function matchJob(job, customKeywords = null) {
 // ENVIRONMENT FILTER
 // Returns true if the job passes the environment filter
 // ─────────────────────────────────────────────────────────────────────────────
+// ── Non-US location signals ───────────────────────────────────────────────────
+// Country names and city patterns that confirm a non-US job.
+// Conservative list: only suppress on unambiguous international signals.
+// "Remote" with no location is always allowed (can't tell where from location alone).
+// US territory names (Puerto Rico, Guam) are NOT excluded — US employers.
+const NON_US_COUNTRIES = [
+  // Europe
+  'netherlands', 'amsterdam', 'united kingdom', 'england', 'scotland', 'wales',
+  'london', 'manchester', 'germany', 'berlin', 'munich', 'france', 'paris',
+  'spain', 'madrid', 'barcelona', 'italy', 'milan', 'rome', 'sweden', 'stockholm',
+  'norway', 'oslo', 'denmark', 'copenhagen', 'finland', 'helsinki', 'switzerland',
+  'zurich', 'geneva', 'austria', 'vienna', 'belgium', 'brussels', 'ireland', 'dublin',
+  'poland', 'warsaw', 'portugal', 'lisbon', 'czech republic', 'prague', 'romania',
+  'bucharest', 'hungary', 'budapest', 'slovakia', 'croatia', 'bulgaria', 'sofia',
+  // Canada — common false positive for "remote US" postings
+  'canada', 'ontario', 'toronto', 'british columbia', 'vancouver', 'alberta',
+  'calgary', 'edmonton', 'quebec', 'montreal', 'manitoba', 'winnipeg',
+  'nova scotia', 'new brunswick', 'saskatchewan',
+  // Asia-Pacific
+  'australia', 'sydney', 'melbourne', 'brisbane', 'perth', 'auckland',
+  'new zealand', 'india', 'bangalore', 'bengaluru', 'mumbai', 'delhi', 'hyderabad',
+  'pune', 'chennai', 'singapore', 'hong kong', 'japan', 'tokyo', 'osaka',
+  'china', 'beijing', 'shanghai', 'south korea', 'seoul', 'taiwan', 'taipei',
+  'philippines', 'manila', 'indonesia', 'jakarta', 'malaysia', 'kuala lumpur',
+  'thailand', 'bangkok', 'vietnam', 'ho chi minh',
+  // Latin America
+  'mexico', 'mexico city', 'brazil', 'são paulo', 'sao paulo', 'rio de janeiro',
+  'argentina', 'buenos aires', 'colombia', 'bogota', 'chile', 'santiago',
+  'peru', 'lima', 'venezuela', 'ecuador', 'quito',
+  // Middle East / Africa
+  'united arab emirates', 'dubai', 'abu dhabi', 'saudi arabia', 'riyadh',
+  'israel', 'tel aviv', 'turkey', 'istanbul', 'south africa', 'johannesburg',
+  'cape town', 'nigeria', 'lagos', 'kenya', 'nairobi', 'egypt', 'cairo',
+];
+
+// ISO country codes that unambiguously indicate non-US (two-letter, used in jobhive CSV)
+const NON_US_ISO = new Set([
+  'GB','DE','FR','NL','CA','AU','IN','SG','JP','CN','KR','BR','MX','AR','CO',
+  'CL','IE','SE','NO','DK','FI','CH','AT','BE','PL','PT','CZ','RO','HU','ES',
+  'IT','NZ','ZA','NG','KE','EG','AE','SA','IL','TR','PH','ID','MY','TH','VN',
+  'TW','HK',
+]);
+
+function isNonUsLocation(job) {
+  // HiringCafe jobs have structured country/state data — most reliable
+  if (job.hc) {
+    const { workplaceStates, boundlessStates, isWorldwide } = job.hc;
+    // Worldwide or no state list = could be US-eligible, don't reject
+    if (isWorldwide || workplaceStates.length === 0) return false;
+    // If ALL listed states are non-US country names (e.g. "United Kingdom, GB")
+    const usStatePattern = /\b(Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming|DC|District of Columbia|Remote)\b/i;
+    const hasUsState = workplaceStates.some(s => usStatePattern.test(s));
+    if (!hasUsState && workplaceStates.length > 0 && workplaceStates.length <= 5) {
+      return true; // Small explicit list with no US state = non-US
+    }
+    return false;
+  }
+
+  // countryIso field (from jobhive CSV or enriched jobs)
+  if (job.countryIso && job.countryIso !== 'US' && job.countryIso !== 'USA') {
+    if (NON_US_ISO.has(job.countryIso.toUpperCase())) return true;
+  }
+
+  // Location string analysis — last resort
+  const loc = (job.location ?? '').toLowerCase().trim();
+  if (!loc || loc === 'remote' || loc.includes('united states') || loc.includes('usa')) {
+    return false; // No location, pure remote, or explicit US = pass
+  }
+
+  // Check for non-US country names in the location string
+  if (NON_US_COUNTRIES.some(c => loc.includes(c))) return true;
+
+  // "Remote - XX" or "XX, YY" where YY is a non-US 2-letter country code
+  // e.g. "Amsterdam, NL" or "London, UK" or "Toronto, ON, CA"
+  const countryCodeMatch = loc.match(/,\s*([a-z]{2})\s*$/);
+  if (countryCodeMatch) {
+    const code = countryCodeMatch[1].toUpperCase();
+    if (NON_US_ISO.has(code)) return true;
+  }
+
+  return false;
+}
+
 export function passesEnvFilter(job) {
+  // Geo gate: reject unambiguously non-US locations
+  // Conservative — only suppresses on clear international signals.
+  // Unknown/ambiguous locations (bare "Remote", no location) always pass.
+  if (isNonUsLocation(job)) return false;
+
+  // Environment gate: remote or hybrid only
   if (!ENVIRONMENTS || ENVIRONMENTS.length === 0) return true;
-  if (!job.environment) return true; // unknown — let it through, don't suppress
+  if (!job.environment) return true; // unknown env — let through
   const envs = Array.isArray(ENVIRONMENTS) ? ENVIRONMENTS : [ENVIRONMENTS];
   return envs.some(e => job.environment.toLowerCase().includes(e.toLowerCase()));
 }

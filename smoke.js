@@ -181,6 +181,9 @@ assert('store: readLog exported', read('store.js').includes('export async functi
 assert('index: readLog imported', read('index.js').includes('readLog'));
 assert('index: /logs endpoint present', read('index.js').includes("pathname === '/logs'"));
 assert('index: /detect-ats endpoint present', read('index.js').includes("pathname === '/detect-ats'"));
+assert('notify: passesEnvFilter has geo gate', read('notify.js').includes('isNonUsLocation'));
+assert('notify: NON_US_COUNTRIES list defined', read('notify.js').includes('NON_US_COUNTRIES'));
+assert('notify: NON_US_ISO set defined', read('notify.js').includes('NON_US_ISO'));
 assert('store: maybeAddOrPromoteCompany exported', read('store.js').includes('export async function maybeAddOrPromoteCompany'));
 assert('store: healthcare gate in maybeAddOrPromoteCompany', read('store.js').includes('_looksLikeEpicEmployer'));
 assert('platform-do: maybeAddOrPromoteCompany imported from store', read('platform-do.js').includes('maybeAddOrPromoteCompany'));
