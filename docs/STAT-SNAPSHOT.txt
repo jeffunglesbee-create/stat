@@ -1,15 +1,15 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T15:42:23Z
-HEAD: 33973ab
+Generated: 2026-06-08T15:49:35Z
+HEAD: b9a5851
 Smoke: 66/66
 
 COMPANIES
-  SEED total: 206
+  SEED total: 204
   Workday: 90 (searchText: 'epic ehr within')
   Greenhouse: 59
 
 RECENT COMMITS
-  33973ab fix: Stanford Health Care → Workday wd115 (not SuccessFactors)
+  b9a5851 fix: remove Advocate Aurora + Atrium SF entries — same parent as aah Workday
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
