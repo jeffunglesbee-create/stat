@@ -24,9 +24,11 @@ export {
 } from './platform-do.js';
 
 import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, BATCH_POLLER, LEARNING } from './config.js';
-import { bootstrapSalaryDO } from './salary.js';
+import { bootstrapSalaryDO, enrichJobWithSalary } from './salary.js';
+import { applyMarylandScore } from './maryland.js';
+import { enrichDescriptions } from './enrich.js';
 import { fetchHiringCafe, fetchHiringCafeBR, mapHiringCafeHit, fetchHcDescription } from './adapters.js';
-import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
+import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
 import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches, loadUnmatchedJobs, saveUnmatchedJobs, appendLog, readLog, maybeAddOrPromoteCompany } from './store.js';
@@ -497,16 +499,15 @@ async function runHiringCafeScrape(env) {
 
       job.matchedKeyword = match.matchedKw;
 
-      // ── Description second-pass (2026-06-08) ─────────────────────────────
-      // hitsHaveDesc:false — full description only on /job/{requisition_id}.
-      // Fetch only for matched jobs (v5/keyword survivors), not all ssrHits.
-      // Enriches job.description for Gemini fit scoring + MD scoring.
-      if (!job.description && job.hc?.requisitionId) {
-        try {
-          const desc = await fetchHcDescription(job.hc.requisitionId);
-          if (desc) job.description = desc;
-        } catch { /* non-fatal — scoring works without description */ }
-      }
+      // ── Liveness check ────────────────────────────────────────────────────
+      // HEAD request to job.url (ATS apply_url) — confirms posting still live.
+      // 4xx → dead (skip). timeout/5xx → unknown (let through).
+      const liveness = await checkJobLiveness(job);
+      if (liveness === 'dead') continue;
+      job.liveness = liveness;
+
+      // ── Salary enrichment ─────────────────────────────────────────────────
+      await enrichJobWithSalary(job, match, env);
 
       const adjustedPriority = companyAwarePriority(job, match);
       const adjustedMatch = adjustedPriority !== match.priority
@@ -535,6 +536,21 @@ async function runHiringCafeScrape(env) {
   } catch {}
 
   if (newMatches.length > 0) {
+    // ── Description fetch + MD scoring (parity with platform-do) ─────────
+    // enrichDescriptions handles HC via fetchPlainDescription (hiring.cafe/job/{id})
+    // — same path as fetchHcDescription but batched with 3-concurrent + HTML strip.
+    await enrichDescriptions(newMatches, env);
+
+    // Maryland eligibility scoring — runs after description is populated
+    const mdFiltered = [];
+    for (const m of newMatches) {
+      const suppressed = applyMarylandScore(m.job, null);
+      if (!suppressed) mdFiltered.push(m);
+    }
+    newMatches.length = 0;
+    newMatches.push(...mdFiltered);
+
+    // Gemini fit scoring
     const profile = await loadProfile(env);
     if (profile && env.GEMINI_KEY) {
       await scoreBatch(newMatches, profile, env.GEMINI_KEY);
@@ -544,6 +560,8 @@ async function runHiringCafeScrape(env) {
       type: 'hc_poll', ats: 'hiringcafe', newMatches: newMatches.length,
     });
     await dispatchAlerts(env, newMatches);
+    // ── saveRecentMatches — makes HC matches visible in Matches tab ───────
+    await saveRecentMatches(getStatStore(env), newMatches);
   }
 
   return newMatches.length;
