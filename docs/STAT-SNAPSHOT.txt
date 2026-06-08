@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T14:41:45Z
-HEAD: 004074b
+Generated: 2026-06-08T14:59:21Z
+HEAD: 2a3f197
 Smoke: 66/66
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  004074b fix: email throttle — queue matches, send at most once per 4 hours
+  2a3f197 feat: Taleo plain fetch — drop BR for descriptions, parse initialHistory field
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
