@@ -1718,7 +1718,7 @@ function json(data, status = 200) {
 // WORKER EXPORTS
 // ─────────────────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
-// ATS URL DETECTOR
+// ATS URL DETECTOR  (jobhive-manifest probe: v2026-06-07)
 // Parses a career page URL and returns { ats, token, url } or null.
 // Supports: Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, SuccessFactors.
 // Custom domains (e.g. careers.medstarhealth.org) return null — can't detect
