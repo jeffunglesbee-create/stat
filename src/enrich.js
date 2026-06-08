@@ -57,16 +57,20 @@ async function fetchPlainDescription(job) {
     if (!rid) return '';
     fetchUrl = `https://hiring.cafe/job/${rid}`;
   }
-  // For iCIMS: append ?in_iframe=1 to the job detail URL
-  // This bypasses the branded wrapper redirect and returns the iCIMS portal HTML.
+  // For iCIMS: strip query params and append ?in_iframe=1
+  // Confirmed 2026-06-08 via CommonSpirit HTML: the branded wrapper loads the
+  // actual job content in #icims_content_iframe at the same URL + &in_iframe=1.
+  // The full path (including slug) must be preserved.
+  //
+  // BUG FIXED: prior regex .replace(/\/jobs\/(\d+)\/[^?]+/, '/jobs/$1/job')
+  // was dropping the slug and the /job path segment, producing:
+  //   /jobs/468417/job?in_iframe=1  (wrong — 404 on most tenants)
+  // instead of:
+  //   /jobs/468417/it-epic-ambulatory-application-analyst-sr/job?in_iframe=1
+  //
+  // Fix: simply strip query params, keep full path, append ?in_iframe=1.
   if (job.atsSource === 'icims') {
-    // Ensure /job path and add in_iframe=1
-    // URL format: {base}/jobs/{id}/{slug}
-    // Fetch format: {base}/jobs/{id}/job?in_iframe=1
-    const iframeUrl = fetchUrl
-      .replace(/\/jobs\/(\d+)\/[^?]+/, '/jobs/$1/job')
-      .split('?')[0] + '?in_iframe=1';
-    fetchUrl = iframeUrl;
+    fetchUrl = fetchUrl.split('?')[0] + '?in_iframe=1';
   }
 
   const controller = new AbortController();
