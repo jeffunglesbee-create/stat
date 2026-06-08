@@ -1,0 +1,60 @@
+=== SelectMinds DO Diagnosis 20260608T232340Z ===
+
+--- GET /platform/selectminds/status ---
+{
+    "ats": "selectminds",
+    "lastRun": "2026-06-08T23:07:18.938Z",
+    "totalPolled": 43,
+    "totalMatches": 0,
+    "seenCount": 130,
+    "nextAlarm": 1780961241106
+}
+
+--- GET / (activeDOs + watchedCompanies) ---
+{
+    "name": "STAT Job Watcher",
+    "version": "2.0.0",
+    "activeDOs": 112,
+    "watchedCompanies": 478,
+    "batchWatchlist": 57,
+    "totalMonitored": 535,
+    "seenJobIds": 752,
+    "resumeProfile": "stored \u00b7 Epic Systems Analyst",
+    "fitScoring": "active",
+    "salary": {
+        "peers": 500,
+        "lcaRecords": 0,
+        "blsCacheAge": "never",
+        "lcaCacheAge": "never",
+        "status": "cold-start"
+    },
+    "endpoints": {
+        "GET /": "This status overview",
+        "POST /trigger": "Run HiringCafe scrape now",
+        "POST /bootstrap": "Spawn DOs for all companies",
+        "GET /companies": "List all watched companies",
+        "POST /companies": "Add a company (body: {name,ats,token,url?})",
+        "GET /platform/:ats/status": "Status of a platform DO (greenhouse/lever/etc.)",
+        "GET /salary-status": "Salary DO status",
+        "POST /salary-refresh": "Re-fetch salary caches",
+        "GET /profile": "Get stored resume profile",
+        "POST /profile": "Store resume profile (JSON from resume-matcher)",
+        "DELETE /profile": "Remove stored profile",
+        "GET /learning": "Auto-discovered companies + promotion status",
+        "GET /batch-status": "BatchPollerDO cycle status + cursor position",
+        "GET /br-test?url=&ats=": "Browser Rendering diagnostic \u2014 test against iCIMS/Taleo SPAs",
+        "POST /reset-seen": "Clear seen job IDs",
+        "POST /reset-all": "Nuclear reset"
+    }
+}
+
+--- GET /companies (selectminds filter) ---
+no selectminds companies found or parse error
+
+--- POST /bootstrap ---
+{
+    "ok": true,
+    "spawned": 0,
+    "total": 478,
+    "resumeStatus": "skipped"
+}
