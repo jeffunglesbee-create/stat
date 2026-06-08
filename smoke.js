@@ -102,7 +102,8 @@ assert('index: maybeRunJobhiveScan called in cron', read('index.js').includes('a
 assert('index: /jobhive-scan endpoint present', read('index.js').includes("pathname === '/jobhive-scan'"));
 assert('index: JOBHIVE_EPIC_TERMS defined with module names', read('index.js').includes('JOBHIVE_EPIC_TERMS') && read('index.js').includes('epic ambulatory'));
 assert('index: matchesEpicTerms searches title and description', read('index.js').includes('matchesEpicTerms(haystack)'));
-assert('index: csvRows quote-aware generator defined', read('index.js').includes('function* csvRows'));
+assert('index: splitCSVRows quote-aware parser defined', read('index.js').includes('function splitCSVRows'));
+assert('index: carryInQuote threaded across chunks', read('index.js').includes('carryInQuote'));
 assert('index: parseCSVRow defined', read('index.js').includes('function parseCSVRow'));
 assert('index: cleanDesc defined', read('index.js').includes('function cleanDesc'));
 
