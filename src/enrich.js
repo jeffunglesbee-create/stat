@@ -9,6 +9,7 @@
  *   HiringCafe    → description in v5 payload (job_information.description)
  *   Workday       → JSON-LD schema.org/JobPosting (full desc, ~4k chars) → data-automation-id="jobPostingDescription" DOM → og:description fallback (boilerplate only)
  *   Oracle HCM    → class="job-details__description-content" div → og:description fallback
+ *   Infor HCM     → class="lm-richtext-content _op_PositionDescription..." div → full body text fallback
  *   iCIMS         → page is a SPA — Browser Rendering API required
  *   Taleo         → page is a SPA — Browser Rendering API required
  *   SuccessFactors → page is a SPA — no path without auth; use HiringCafe v5 coverage
@@ -31,7 +32,7 @@ import puppeteer from '@cloudflare/puppeteer';
 // ATS platforms needing plain HTML og:description fetch
 // iCIMS verified 2026-06-06: plain fetch() with ?in_iframe=1 works from CF Worker.
 // Moved from NEEDS_BROWSER_FETCH. See session doc Part 2 for full investigation.
-const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe', 'oracle_hcm']);
+const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe', 'oracle_hcm', 'infor_hcm']);
 
 // ATS platforms needing JavaScript execution via Browser Rendering.
 // Taleo only — iCIMS moved to NEEDS_PLAIN_FETCH (plain fetch + ?in_iframe=1).
@@ -223,6 +224,59 @@ async function fetchPlainDescription(job) {
       const ogFb = html.match(/<meta[^>]+(?:name|property)="og:description"[^>]+content="([^"]{20,})"/i)
                 || html.match(/<meta[^>]+content="([^"]{20,})"[^>]+(?:name|property)="og:description"/i);
       if (ogFb) return decodeHtmlEntities(ogFb[1]);
+      return '';
+    }
+
+    // Infor CloudSuite HCM: Angular SPA, description pre-rendered in Angular Landmark component.
+    // Confirmed 2026-06-08 via Lee Health: class="lm-richtext-content _op_PositionDescription..."
+    // Salary is hourly ("$N.NN - $N.NN / hour") — converted to annual (× 2080).
+    // No JSON-LD, no og:description, no meta tags.
+    if (job.atsSource === 'infor_hcm') {
+      // PATH 1: lm-richtext-content div with _op_PositionDescription class
+      const inforDesc = html.match(/class="[^"]*lm-richtext-content[^"]*_op_PositionDescription[^"]*"[^>]*>([\s\S]{100,15000}?)(?:<div[^>]*_ngcontent|<\/div>\s*<\/div>\s*<\/div>)/i);
+      if (inforDesc) {
+        const stripped = stripHtml(inforDesc[1]);
+        if (stripped.length > 100) {
+          // Extract hourly salary and inject annual equivalent
+          const hourlyMatch = stripped.match(/\$(\d+\.\d+)\s*[-–]\s*\$(\d+\.\d+)\s*\/\s*hour/i);
+          if (hourlyMatch && !job.salary) {
+            const lo = Math.round(parseFloat(hourlyMatch[1]) * 2080);
+            const hi = Math.round(parseFloat(hourlyMatch[2]) * 2080);
+            job.salary = `$${Math.round(lo/1000)}k–$${Math.round(hi/1000)}k`;
+            job.salaryRaw = { min: lo, max: hi };
+          }
+          return stripped;
+        }
+      }
+      // PATH 2: full body text — Angular pre-renders full content for SEO
+      const bodyText = html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+        .replace(/\s+/g, ' ').trim();
+      // Find description content (starts after salary/location header)
+      const descStart = bodyText.search(/(?:Summary|Description|Responsibilities|Job Description|About this role)/i);
+      if (descStart > 0) {
+        const endMarkers = ['Apply', 'Save', 'Sign In', 'Register', 'Loading...', 'Selected Report'];
+        let descEnd = bodyText.length;
+        for (const m of endMarkers) {
+          const idx = bodyText.indexOf(m, descStart + 100);
+          if (idx > descStart) descEnd = Math.min(descEnd, idx);
+        }
+        const extracted = bodyText.slice(descStart, descEnd).trim();
+        if (extracted.length > 100) {
+          // Extract hourly salary from surrounding context
+          const hourlyMatch = bodyText.match(/\$(\d+\.\d+)\s*[-–]\s*\$(\d+\.\d+)\s*\/\s*hour/i);
+          if (hourlyMatch && !job.salary) {
+            const lo = Math.round(parseFloat(hourlyMatch[1]) * 2080);
+            const hi = Math.round(parseFloat(hourlyMatch[2]) * 2080);
+            job.salary = `$${Math.round(lo/1000)}k–$${Math.round(hi/1000)}k`;
+            job.salaryRaw = { min: lo, max: hi };
+          }
+          return extracted;
+        }
+      }
       return '';
     }
 

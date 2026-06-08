@@ -58,6 +58,10 @@ name = "ORACLE_HCM_DO"
 class_name = "OracleHcmDO"
 
 [[durable_objects.bindings]]
+name = "INFOR_HCM_DO"
+class_name = "InforHcmDO"
+
+[[durable_objects.bindings]]
 name = "BATCH_POLLER"
 class_name = "BatchPollerDO"
 
@@ -101,6 +105,10 @@ binding = "MYBROWSER"
 [[migrations]]
   tag = "v5"
   new_sqlite_classes = ["OracleHcmDO"]
+
+[[migrations]]
+  tag = "v6"
+  new_sqlite_classes = ["InforHcmDO"]
 
 
 # ── Module rules — treat .html files as text imports ─────────────────────────

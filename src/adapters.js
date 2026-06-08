@@ -1079,6 +1079,102 @@ function _mapOracleJob(j, company) {
   });
 }
 
+// INFOR CLOUDSUITE HCM
+// Angular SPA — Infor Lawson successor, widely used in healthcare for HR/payroll.
+// Health systems hire Epic analysts through it.
+//
+// Confirmed 2026-06-08 via Lee Health HTML analysis:
+//   Framework: Angular with Infor Landmark (24 _ngcontent-ng-c* components)
+//   Description: pre-rendered in class="lm-richtext-content _op_PositionDescription..."
+//   Salary: hourly rate in body text ("$N.NN - $N.NN / hour") — needs × 2080 annual
+//   Job ID: in URL params (1000,{jobId},1)
+//   JSON-LD: ABSENT. Meta OG tags: ABSENT.
+//
+// URL structure:
+//   Tenant: css-{slug}-prd.inforcloudsuite.com
+//   Job search: /hcm/Jobs/form/JobPosting%5BJobPostingSet%5D.JobSearch?csk.JobBoard=EXTERNAL&csk.HROrganization=1000
+//   Job detail: /hcm/Jobs/form/JobPosting%5BJobPostingSet%5D%28{org},{jobId},1%29.JobPostingDisplay?...
+//
+// Confirmed tenants (2026-06-08):
+//   Lee Health: leememorial (Epic Cadence job confirmed)
+//   Catholic Health (NY): chsli
+//   Lifespan: lifespan
+//   Luminis Health: luminis
+//   Nuvance Health: nuvance
+//   WellSpan Health: wellspan
+//   Cone Health: conehealth
+//   Samaritan Health Services: samaritan
+// ─────────────────────────────────────────────────────────────────────────────
+export async function fetchInforHcm(company) {
+  if (!company.url) return [];
+  try {
+    const res = await fetch(company.url, {
+      headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Accept-Language': 'en-US,en;q=0.9' },
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+
+    // Infor CloudSuite HCM pre-renders job cards in HTML for SEO/crawlers.
+    // Extract job IDs, titles, and locations from pre-rendered Angular output.
+    //
+    // Primary path: parse pre-rendered job cards
+    // Each job card has a link with the job ID in the URL params:
+    //   /hcm/Jobs/form/JobPosting[JobPostingSet](1000,{jobId},1).JobPostingDisplay
+    const jobLinks = [...html.matchAll(/JobPosting%5BJobPostingSet%5D%28\d+,(\d+),\d+%29\.JobPostingDisplay/g)];
+    const seenIds = new Set();
+    const jobs = [];
+
+    const baseUrl = new URL(company.url).origin;
+
+    for (const [fullMatch, jobId] of jobLinks) {
+      if (seenIds.has(jobId)) continue;
+      seenIds.add(jobId);
+
+      // Find title near this link — look for the job title text
+      const linkIdx = html.indexOf(fullMatch);
+      const ctx = html.slice(Math.max(0, linkIdx - 500), linkIdx + 500);
+      const titleMatch = ctx.match(/class="[^"]*(?:job-title|title|heading)[^"]*"[^>]*>([^<]{5,120})</) ||
+                         ctx.match(/lm-JobPostingDisplay-toolbar-title[^>]*>([^<]{5,120})</) ||
+                         ctx.match(/>([A-Z][^<]{10,100}(?:Analyst|Coordinator|Specialist|Manager|Developer|Engineer|Consultant))<\//);
+
+      const title = titleMatch ? titleMatch[1].trim() : '';
+      if (!title) continue;
+
+      // Skip non-Epic roles early
+      const haystack = title.toLowerCase() + ' ' + ctx.toLowerCase();
+      const epicSignal = ['epic', 'ehr', 'electronic health', 'cadence', 'ambulatory',
+                          'inpatient', 'cogito', 'radiant', 'willow', 'optime', 'beacon',
+                          'him analyst', 'health informatics', 'clinical informatics',
+                          'application analyst', 'systems analyst'].some(k => haystack.includes(k));
+      if (!epicSignal) continue;
+
+      // Extract location from nearby context
+      const locMatch = ctx.match(/(?:Remote|Fort Myers|Florida|FL|NY|PA|NC|RI|CT|MD|OR)[^<]{0,60}/) ||
+                       ctx.match(/([A-Z]{2}).*?(?:Remote|Full Time|Part Time)/);
+      const location = locMatch ? locMatch[0].trim().slice(0, 60) : '';
+
+      // Build job detail URL
+      const detailUrl = `${baseUrl}/hcm/Jobs/form/JobPosting%5BJobPostingSet%5D%281000,${jobId},1%29.JobPostingDisplay?navigation=JobPosting%5BJobPostingSet%5D%281000,${jobId},1%29.JobPostingDisplayNav&csk.JobBoard=EXTERNAL&csk.HROrganization=1000`;
+
+      jobs.push(makeJob({
+        id:          `infor_${company.token}_${jobId}`,
+        title,
+        company:     company.name,
+        location,
+        environment: location.toLowerCase().includes('remote') ? 'remote'
+                   : location.toLowerCase().includes('hybrid') ? 'hybrid' : '',
+        salary:      null, // hourly salary extracted by enrichDescriptions
+        url:         detailUrl,
+        postedAt:    null,
+        atsSource:   'infor_hcm',
+        description: '', // enrichDescriptions fetches via job detail page
+      }));
+    }
+
+    return jobs;
+  } catch { return []; }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Dispatcher — routes to the right adapter by ATS type
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1092,6 +1188,7 @@ export async function fetchCompanyJobs(company, env) {
     case 'successfactors': return fetchSuccessFactors(company);
     case 'taleo':          return fetchTaleo(company, env);
     case 'oracle_hcm':     return fetchOracleHcm(company);
+    case 'infor_hcm':      return fetchInforHcm(company);
     default: return [];
   }
 }

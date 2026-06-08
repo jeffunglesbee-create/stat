@@ -20,7 +20,7 @@ export { SalaryInferenceDO } from './salary.js';
 export { BatchPollerDO } from './batch.js';
 export {
   GreenhouseDO, LeverDO, AshbyDO, WorkdayDO,
-  IcimsDO, SuccessFactorsDO, TaleoDO, OracleHcmDO,
+  IcimsDO, SuccessFactorsDO, TaleoDO, OracleHcmDO, InforHcmDO,
 } from './platform-do.js';
 
 import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, BATCH_POLLER, LEARNING } from './config.js';
@@ -304,6 +304,7 @@ async function bootstrapDOs(env) {
     { binding: 'SUCCESSFACTORS_DO', ats: 'successfactors' },
     { binding: 'TALEO_DO',          ats: 'taleo' },
     { binding: 'ORACLE_HCM_DO',     ats: 'oracle_hcm' },
+    { binding: 'INFOR_HCM_DO',      ats: 'infor_hcm' },
   ];
 
   const registry = await loadDoRegistry(env);
@@ -1360,6 +1361,7 @@ async function handleFetch(request, env) {
       workday: 'WORKDAY_DO', icims: 'ICIMS_DO',
       successfactors: 'SUCCESSFACTORS_DO', taleo: 'TALEO_DO',
       oracle_hcm: 'ORACLE_HCM_DO',
+      infor_hcm:  'INFOR_HCM_DO',
     };
     const binding = PLATFORM_MAP[ats];
     if (!binding || !env[binding]) return json({ error: `Unknown platform: ${ats}` }, 404);

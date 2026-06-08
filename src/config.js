@@ -218,6 +218,7 @@ export function getPollingInterval(ats) {
     successfactors: 8 * 60_000,
     taleo:          8 * 60_000,
     oracle_hcm:     8 * 60_000,
+    infor_hcm:      8 * 60_000,
   };
   return Math.max(windowMs, floors[ats] ?? 4 * 60_000);
 }
@@ -619,6 +620,48 @@ export const SEED_COMPANIES = [
   // Site ID needed — find a live job URL to extract siteId, then add:
   // { name: 'Tenet Healthcare', ats: 'oracle_hcm', token: 'tenet',
   //   url: 'https://eodr.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/{SITE_ID}/requisitions?keyword=epic' },
+
+  // ── Health systems — Infor CloudSuite HCM ────────────────────────────────
+  // Infor Lawson successor. Angular SPA. Description pre-rendered for SEO.
+  // Salary often posted as hourly rate — converted × 2080 to annual.
+  // Confirmed 2026-06-08: class="lm-richtext-content _op_PositionDescription" 
+  // URL pattern: css-{slug}-prd.inforcloudsuite.com
+  // Job search: /hcm/Jobs/form/JobPosting[JobPostingSet].JobSearch?csk.JobBoard=EXTERNAL&csk.HROrganization=1000
+  //
+  // NOTE: Tenant slugs for all entries except Lee Health are inferred from
+  // public career page URLs. Verify on first poll — if 0 jobs returned,
+  // the slug may differ (e.g. chsli vs catholichealth-li).
+  { name: 'Lee Health',                ats: 'infor_hcm', token: 'leememorial',
+    url: 'https://css-leememorial-prd.inforcloudsuite.com/hcm/Jobs/form/JobPosting%5BJobPostingSet%5D.JobSearch?csk.JobBoard=EXTERNAL&csk.HROrganization=1000' },
+  // Confirmed 2026-06-08 from HTML. Lee Memorial Health System, Fort Myers FL. Epic Cadence verified.
+
+  { name: 'Catholic Health (NY)',       ats: 'infor_hcm', token: 'chsli',
+    url: 'https://css-chsli-prd.inforcloudsuite.com/hcm/Jobs/form/JobPosting%5BJobPostingSet%5D.JobSearch?csk.JobBoard=EXTERNAL&csk.HROrganization=1000' },
+  // Catholic Health Services of Long Island. Infor HCM. ~16K employees.
+
+  { name: 'Lifespan',                   ats: 'infor_hcm', token: 'lifespan',
+    url: 'https://css-lifespan-prd.inforcloudsuite.com/hcm/Jobs/form/JobPosting%5BJobPostingSet%5D.JobSearch?csk.JobBoard=EXTERNAL&csk.HROrganization=1000' },
+  // Rhode Island health system (Brown University Health). Not in seed list.
+
+  { name: 'Luminis Health',             ats: 'infor_hcm', token: 'luminis',
+    url: 'https://css-luminis-prd.inforcloudsuite.com/hcm/Jobs/form/JobPosting%5BJobPostingSet%5D.JobSearch?csk.JobBoard=EXTERNAL&csk.HROrganization=1000' },
+  // Annapolis MD. Regional non-profit. Dark horse candidate — mid-size Epic shop.
+
+  { name: 'Nuvance Health',             ats: 'infor_hcm', token: 'nuvance',
+    url: 'https://css-nuvance-prd.inforcloudsuite.com/hcm/Jobs/form/JobPosting%5BJobPostingSet%5D.JobSearch?csk.JobBoard=EXTERNAL&csk.HROrganization=1000' },
+  // Hudson Valley NY/CT. ~8K employees. Epic shop.
+
+  { name: 'WellSpan Health',            ats: 'infor_hcm', token: 'wellspan',
+    url: 'https://css-wellspan-prd.inforcloudsuite.com/hcm/Jobs/form/JobPosting%5BJobPostingSet%5D.JobSearch?csk.JobBoard=EXTERNAL&csk.HROrganization=1000' },
+  // South-central PA / northern MD. ~23K employees. Epic full suite.
+
+  { name: 'Cone Health',                ats: 'infor_hcm', token: 'conehealth',
+    url: 'https://css-conehealth-prd.inforcloudsuite.com/hcm/Jobs/form/JobPosting%5BJobPostingSet%5D.JobSearch?csk.JobBoard=EXTERNAL&csk.HROrganization=1000' },
+  // Greensboro NC. ~13K employees. Epic Ambulatory roles observed on LinkedIn.
+
+  { name: 'Samaritan Health Services',  ats: 'infor_hcm', token: 'samaritan',
+    url: 'https://css-samaritan-prd.inforcloudsuite.com/hcm/Jobs/form/JobPosting%5BJobPostingSet%5D.JobSearch?csk.JobBoard=EXTERNAL&csk.HROrganization=1000' },
+  // Corvallis OR. ~5K employees. Community health system, Epic shop.
 
 ];
 
