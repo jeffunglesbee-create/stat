@@ -205,6 +205,8 @@ assert('index: SelectMindsDO exported', read('index.js').includes('SelectMindsDO
 assert('index: SELECTMINDS_DO in bootstrap', read('index.js').includes("'SELECTMINDS_DO'"));
 assert('config: selectminds polling interval defined', read('config.js').includes("selectminds:"));
 assert('enrich: selectminds in NEEDS_PLAIN_FETCH', read('enrich.js').includes("'selectminds'"));
+assert('index: bootstrapDOs merges SEED_COMPANIES into stored list', read('index.js').includes('newFromSeed'));
+assert('index: PLATFORM_MAP includes selectminds', read('index.js').includes("selectminds: 'SELECTMINDS_DO'"));
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;

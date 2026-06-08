@@ -287,12 +287,20 @@ function extractDocxText(arrayBuffer) {
 // Called on first deploy and when new companies are added.
 // ─────────────────────────────────────────────────────────────────────────────
 async function bootstrapDOs(env) {
-  // Load or initialize company watchlist
-  let companies = await loadCompanyList(env);
-  if (!companies) {
-    companies = SEED_COMPANIES;
-    await saveCompanyList(env, companies);
+  // Merge stored company watchlist with current SEED_COMPANIES.
+  // Ensures newly added seed entries (e.g. UTMB SelectMinds) are picked up
+  // without wiping manually-added companies from POST /companies.
+  // Merge: seed entries keyed by (ats+token); new seeds appended, manual entries preserved.
+  const stored = await loadCompanyList(env) ?? [];
+  const storedKeys = new Set(stored.map(c => `${c.ats}:${c.token}`));
+  const newFromSeed = SEED_COMPANIES.filter(c => !storedKeys.has(`${c.ats}:${c.token}`));
+  if (newFromSeed.length > 0 || stored.length === 0) {
+    const merged = stored.length > 0 ? [...stored, ...newFromSeed] : SEED_COMPANIES;
+    await saveCompanyList(env, merged);
   }
+  const companies = stored.length > 0
+    ? (newFromSeed.length > 0 ? [...stored, ...newFromSeed] : stored)
+    : SEED_COMPANIES;
 
   // Platform DO map: binding name → ATS key
   const PLATFORM_DOS = [
@@ -1363,6 +1371,7 @@ async function handleFetch(request, env) {
       successfactors: 'SUCCESSFACTORS_DO', taleo: 'TALEO_DO',
       oracle_hcm: 'ORACLE_HCM_DO',
       infor_hcm:  'INFOR_HCM_DO',
+      selectminds: 'SELECTMINDS_DO',
     };
     const binding = PLATFORM_MAP[ats];
     if (!binding || !env[binding]) return json({ error: `Unknown platform: ${ats}` }, 404);
