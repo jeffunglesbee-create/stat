@@ -868,6 +868,34 @@ async function handleFetch(request, env) {
     }
   }
 
+  // GET /jobhive-sample?ats=workday&bytes=8192 — first N bytes of a slice CSV
+  // Used to inspect CSV structure and column layout before building the full scan.
+  if (url.pathname === '/jobhive-sample' && request.method === 'GET') {
+    const ats   = url.searchParams.get('ats') || 'workday';
+    const bytes = Math.min(parseInt(url.searchParams.get('bytes') || '8192'), 65536);
+    const csvUrl = `https://storage.stapply.ai/jobhive/v1/${ats}/jobs.csv`;
+    try {
+      const res = await fetch(csvUrl, {
+        headers: {
+          'User-Agent': 'STAT-job-watcher/1.0',
+          'Range': `bytes=0-${bytes - 1}`,
+        },
+      });
+      if (!res.ok && res.status !== 206) return json({ error: `HTTP ${res.status}` }, 502);
+      const text = await res.text();
+      // Return first 5 complete lines for structure inspection
+      const lines = text.split('\n').slice(0, 6);
+      return json({
+        ats, bytes_requested: bytes, status: res.status,
+        content_range: res.headers.get('content-range'),
+        encoding: res.headers.get('content-encoding'),
+        lines,
+      });
+    } catch (e) {
+      return json({ error: e.message }, 500);
+    }
+  }
+
   // GET /jobhive-manifest — fetch jobhive manifest + slice details
   if (url.pathname === '/jobhive-manifest' && request.method === 'GET') {
     try {
