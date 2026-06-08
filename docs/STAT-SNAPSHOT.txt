@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T17:02:55Z
-HEAD: cee8c13
-Smoke: 66/66
+Generated: 2026-06-08T17:10:45Z
+HEAD: 8917942
+Smoke: 65/65
 
 COMPANIES
   SEED total: 204
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  cee8c13 feat: /html-probe endpoint — generic ATS reverse engineering from CF IP
+  8917942 feat: Workday plain HTML GET — retire BR, DataImpulse, XHR intercept
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
