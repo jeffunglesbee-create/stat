@@ -71,7 +71,12 @@ class PlatformDO {
       const totalMatches = await this.storage.get('total_matches') ?? 0;
       const seenCount    = await this.storage.get('seen_count')    ?? 0;
       const nextAlarm    = await this.storage.getAlarm();
-      return ok({ ats: this.ats, lastRun, totalPolled, totalMatches, seenCount, nextAlarm });
+      // Include selectminds cursor in status for diagnostics
+      const smCursor = this.ats === 'selectminds'
+        ? (await this.storage.get('selectminds_cursor') ?? null)
+        : undefined;
+      return ok({ ats: this.ats, lastRun, totalPolled, totalMatches, seenCount, nextAlarm,
+        ...(smCursor !== undefined ? { selectmindsCursor: smCursor } : {}) });
     }
 
     if (url.pathname === '/reset-seen' && request.method === 'POST') {

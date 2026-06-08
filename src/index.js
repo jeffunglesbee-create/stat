@@ -424,8 +424,10 @@ async function bootstrapDOs(env) {
   // without wiping manually-added companies from POST /companies.
   // Merge: seed entries keyed by (ats+token); new seeds appended, manual entries preserved.
   const stored = await loadCompanyList(env) ?? [];
-  const storedKeys = new Set(stored.map(c => `${c.ats}:${c.token}`));
-  const newFromSeed = SEED_COMPANIES.filter(c => !storedKeys.has(`${c.ats}:${c.token}`));
+  // Key by (ats, url) — url is stable. token changes for cursor-walking adapters (SelectMinds).
+  // Keying by token would cause duplicate entries when token is updated in config.
+  const storedKeys = new Set(stored.map(c => `${c.ats}:${c.url ?? c.token}`));
+  const newFromSeed = SEED_COMPANIES.filter(c => !storedKeys.has(`${c.ats}:${c.url ?? c.token}`));
   if (newFromSeed.length > 0 || stored.length === 0) {
     const merged = stored.length > 0 ? [...stored, ...newFromSeed] : SEED_COMPANIES;
     await saveCompanyList(env, merged);
