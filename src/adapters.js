@@ -1220,3 +1220,5 @@ export async function fetchCompanyJobs(company, env) {
   }
 }
 // browser rendering + SF fix deployed
+
+// SelectMinds v1 — deployed 2026-06-08
