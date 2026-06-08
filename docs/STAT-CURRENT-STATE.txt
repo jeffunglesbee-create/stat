@@ -1,6 +1,6 @@
 STAT — Job Intelligence System
 Current State & Master Reference
-Updated: 2026-06-07
+Updated: 2026-06-08
 
 This document is the primary reference for all things STAT.
 Read before every session. Plain text, ≤220KB per session rule.
@@ -17,12 +17,13 @@ STAT is completely separate from FIELD (sports intelligence PWA).
 No shared infrastructure. No shared design tokens. No shared logic.
 
 PURPOSE:
-Monitor 181 healthcare employers directly at the ATS source every
-30-120 seconds, apply keyword matching + AI-powered resume scoring,
+Monitor 271 healthcare employers directly at the ATS source every
+30-480 seconds, apply keyword matching + AI-powered resume scoring,
 infer missing salaries from government and peer sources, and alert
 the moment a matching Epic/EHR/Healthcare IT role appears.
-Also monitors via HiringCafe wide-net scrape (1-minute cron) to
-catch the long tail of employers not in the seed list.
+Also monitors via HiringCafe wide-net scrape (1-minute cron, now
+with server-side keyword filtering via searchState SSR) and Jobhive
+CSV cron scan (1-hour, discovers roles at entirely unknown companies).
 
 DESIGN PRINCIPLE: DO NOT ASSUME
 Every displayed salary traces to a verifiable source.
@@ -43,54 +44,100 @@ Worker Name: stat-job-watcher
 Worker URL: stat-job-watcher.<subdomain>.workers.dev
   NOTE: *.workers.dev BLOCKED from Claude sandbox. Use CI confirmation.
 
-PAT: ghp_REDACTED_SEE_FIELD_SESSION_DOCS (repo+workflow, expires May 2027)
+STAT-TOKEN (fine-grained PAT): github_pat_11CD3IUNQ0LlAM26yuHsd7_...
+  stat repo only, expires Jun 2027.
 
 ═══════════════════════════════════════════════════════════════
-FILE STRUCTURE (as of 2026-06-07)
+FILE STRUCTURE (as of 2026-06-08)
 ═══════════════════════════════════════════════════════════════
 
 stat-repo/
   .github/workflows/
-    deploy.yml              CI deploy gate
-    hc-verify.yml           HiringCafe live verification probe (reusable)
-    hc-api-probe.yml        HC API endpoint discovery probe
-    hc-job-page.yml         HC job detail page probe
-    umiami-ats-probe.yml    UMiami ATS verification (archive)
-    umiami-miami-careers.yml  UMiami Phenom discovery (archive)
-    umiami-slug-probe.yml   UMiami Workday slug discovery (archive)
-    umiami-verify.yml       UMiami general ATS probe (archive)
-    workday-ucsf-verify.yml UCSF ATS verification (archive)
+    deploy.yml              CI deploy gate (smoke gate + wrangler deploy)
+    doc-snapshot.yml        Auto-snapshot after every deploy → STAT-SNAPSHOT.txt
+    live-check.yml          Workday probe + STAT status check
+    log-check.yml           /logs endpoint read + outbox push
+    ping.yml                Heartbeat probe
+    wd-ssr-probe.yml        Workday SSR structure inspector
+    workday-simple-probe.yml  Workday plain-fetch probe
+    worker-probe.yml        Multi-endpoint Worker health check
+    wrangler-tail.yml       30s live Worker log capture via CI proxy
   src/
-    index.js          Worker entry (1263 lines): cron + HTTP + DO orchestration
-    platform-do.js    PlatformDO — one per ATS platform (297 lines)
-    batch.js          BatchPollerDO — long tail companies (203 lines)
-    salary.js         SalaryInferenceDO + enrichJobWithSalary() (1020 lines)
-    adapters.js       7 ATS adapters + HiringCafe scraper (740 lines)
-    enrich.js         Description second-pass fetch (373 lines)
-    notify.js         Matcher + liveness + Pushover + email (328 lines)
-    fit.js            Gemini fit scoring + cover letter opener (188 lines)
-    maryland.js       Maryland proximity scorer (279 lines)
-    store.js          StateStoreDO KV wrapper (203 lines)
-    config.js         ALL user config: keywords, companies, thresholds (669 lines)
-    ui.html           Full dashboard UI served at / (1781 lines)
+    index.js          Worker entry (2499 lines): cron + HTTP + DO orchestration
+    platform-do.js    PlatformDO — one per ATS platform
+    batch.js          BatchPollerDO — long tail companies
+    salary.js         SalaryInferenceDO + enrichJobWithSalary()
+    adapters.js       9 ATS adapters + HiringCafe + helper functions
+    enrich.js         Description second-pass fetch (all plain fetch as of 06-08)
+    notify.js         Matcher + passesEnvFilter + liveness + email queue + Pushover
+    fit.js            Gemini fit scoring + cover letter opener
+    maryland.js       Maryland proximity scorer
+    store.js          StateStoreDO KV wrapper
+    config.js         ALL user config: keywords, companies, thresholds (271 seed cos)
+    ui.html           Full dashboard UI served at /
   scripts/
     analyze_hc.py           HiringCafe ssrHits structure analyzer
     analyze_job_page.py     HC job detail page NEXT_DATA analyzer
-    find_algolia.py         Algolia credential scanner (investigation)
+    find_algolia.py         Algolia credential scanner (investigation, archived)
     find_hc_api.py          HC JS bundle API endpoint scanner
     probe_hc_api.sh         HC /api/* route prober
-  smoke.js            17-assertion smoke test
+    snapshot.sh / snapshot.py  Auto-snapshot generators
+  smoke.js            65-assertion smoke test (was 17 at S6; grows each session)
   wrangler.toml       CF config: KV + DO bindings
   docs/
     STAT-CURRENT-STATE.txt    This file
     STAT-ARCHITECTURE.txt     Deep architecture + all decisions
-    STAT-ADAPTERS.txt         ATS adapter specs (updated 2026-06-07)
-    STAT-HIRINGCAFE.txt       HiringCafe investigation + current state (new)
-    STAT-CLAUDE-REVIEW.txt    Claude inline review feature spec (new)
-    STAT-ATS-VERIFICATION.txt ATS verification findings (new)
+    STAT-ADAPTERS.txt         ATS adapter specs (updated 2026-06-08)
+    STAT-HIRINGCAFE.txt       HiringCafe investigation + current state
+    STAT-CLAUDE-REVIEW.txt    Claude inline review feature spec
+    STAT-ATS-VERIFICATION.txt ATS verification findings
     STAT-COMMITMENTS.txt      Promises tracker
     STAT-SALARY.txt           Salary inference system (full spec)
     STAT-SETUP.txt            Setup & operational guide
+    STAT-SNAPSHOT.txt         Auto-generated on every deploy (HEAD, smoke, config)
+
+═══════════════════════════════════════════════════════════════
+ATS ADAPTERS — CURRENT STATUS (2026-06-08)
+═══════════════════════════════════════════════════════════════
+
+Adapter         | Status   | Method          | Companies
+─────────────── | ──────── | ─────────────── | ──────────
+Greenhouse      | VERIFIED | JSON GET        | 81
+Lever           | VERIFIED | JSON GET        | 14
+Ashby           | VERIFIED | JSON GET        | 5
+Workday         | VERIFIED | Plain HTML GET  | 121
+iCIMS           | VERIFIED | Plain HTML GET  | 7
+SuccessFactors  | VERIFIED | XML GET         | 28
+Taleo           | VERIFIED | BR (search) +   | 5
+                |          | Plain GET (detail)
+Oracle HCM      | VERIFIED | Plain HTML GET  | 2
+Infor HCM       | VERIFIED | Plain HTML GET  | 8
+HiringCafe      | VERIFIED | searchState SSR | wide-net cron
+Jobhive         | VERIFIED | CSV stream GET  | auto-discovery cron
+
+TOTAL SEED: 271 companies across 9 ATS platforms.
+
+CRITICAL CHANGE — Workday (2026-06-08):
+  Retired: Browser Rendering + DataImpulse proxy + XHR intercept (~3-5s, BR quota)
+  New: Plain HTML GET + ?q=epic on listing URL triggers server-side rendering.
+  Job links pre-rendered as href="/en-US/{board}/job/{loc-slug}/{title-slug}_{ReqID}"
+  Pagination: ?q=epic&startIndex=20,40,... (20 per page, up to 200)
+  No BR required, no CSRF tokens, no proxy creds. Confirmed 2026-06-08.
+
+CRITICAL CHANGE — Taleo description (2026-06-08):
+  Retired: Browser Rendering for detail page description fetch.
+  New: Plain fetch() on detail page + parse <input id="initialHistory"> field.
+  initialHistory is URL-encoded, 154+ pipe-delimited (!|!) fields including:
+    field[12] = title, field[14] = location, field[28] = schedule,
+    field[39/40] = hourly salary (→ × 2080 for annual)
+    fields[34+] = description sections delimited by !*!
+  Taleo search page still requires BR (JavaScript SPA).
+
+CRITICAL CHANGE — enrich.js (2026-06-08):
+  NEEDS_BROWSER_FETCH: EMPTY. All ATS description paths now use plain fetch.
+  NEEDS_PLAIN_FETCH: workday, icims, hiringcafe, oracle_hcm, infor_hcm, taleo
+  Workday description: JSON-LD schema.org/JobPosting (first) → data-automation-id
+    DOM → og:description (fallback only, often boilerplate)
 
 ═══════════════════════════════════════════════════════════════
 DURABLE OBJECTS — THREE CLASSES
@@ -98,10 +145,11 @@ DURABLE OBJECTS — THREE CLASSES
 
 CLASS 1: PlatformDO (binding: PLATFORM_DO)
   One instance per ATS platform (Greenhouse, Lever, Ashby, Workday,
-  iCIMS, SuccessFactors, Taleo). Round-robin polls all companies
-  on that ATS. One alarm per platform.
+  iCIMS, SuccessFactors, Taleo, Oracle HCM, Infor HCM). Round-robin polls
+  all companies on that ATS. One alarm per platform.
   Alarm intervals: greenhouse/lever/ashby 120s, workday/icims 240s,
-                   successfactors/taleo 480s, Saturday 20min.
+                   successfactors/taleo 480s, oracle_hcm/infor_hcm 480s,
+                   Saturday 20min.
 
 CLASS 2: BatchPollerDO (binding: BATCH_POLLER_DO)
   ONE globally (named 'batch-poller'). Covers BATCH_WATCHLIST —
@@ -111,7 +159,10 @@ CLASS 2: BatchPollerDO (binding: BATCH_POLLER_DO)
 CLASS 3: StateStoreDO (binding: STATE_STORE)
   ONE globally (named 'stat-state'). Shared state store.
   Keys: recent_matches (200), seen_ids (5000 cap), company_list,
-        profile (candidate JSON), unmatched_jobs (500 cap, Browse tab).
+        profile (candidate JSON), unmatched_jobs (2000 cap, Browse tab),
+        jobhive_scan_last (last cron run timestamp),
+        email_queue (match queue + lastSentAt for throttle),
+        log_buffer (rolling alarm log entries).
 
 ═══════════════════════════════════════════════════════════════
 HTTP ENDPOINTS
@@ -123,6 +174,7 @@ GET  /jobs          Matched jobs (query: priority, q, limit)
 GET  /browse        Env-filtered unmatched jobs (Browse tab)
 GET  /companies     All watched companies with status
 POST /companies     Add company: {name, ats, token, url?}
+POST /detect-ats    URL→ATS auto-detection: {url} → {ats, token, url}
 POST /trigger       Immediate HiringCafe scan
 POST /bootstrap     Spawn/refresh all DOs
 POST /review        Claude inline job review (SSE streaming)
@@ -132,98 +184,181 @@ POST /review        Claude inline job review (SSE streaming)
 POST /score-job     Gemini fit score: {profile, jd}
 POST /extract-profile  Extract profile from resume text: {text}
 GET  /harvest       HiringCafe company discovery (new ATS employers)
+GET  /logs          Recent alarm-cycle log entries for diagnostic visibility
+                    Query: ?limit=N (default 50, max 200) ?ats=workday
+                    CI log-check workflow writes these to outbox/ for Claude to read
+GET  /salary-status Salary cache health (BLS/LCA age, peer pool count)
+POST /salary-refresh Immediate salary cache refresh
+GET  /platform/{ats} DO status for one platform
+GET  /batch-status  BatchPollerDO status
+GET  /learning      Auto-discovered companies + promotion status
+GET  /feedback/summary Claude review feedback summary
+POST /feedback      Applied/Skip feedback on a match card
 POST /reset-seen    Clear seen IDs
-POST /backfill-browse  Rebuild Browse tab from recent matches
+POST /reset-all     Full reset (DOs + state)
+POST /backfill-browse Rebuild Browse tab from recent matches
+
+PROBE ENDPOINTS (diagnostic, not production):
+GET  /workday-probe   Workday rate-limit floor test via Worker
+GET  /jobhive-scan    Manual trigger of jobhive CSV scan
+GET  /jobhive-sample  First N bytes of a jobhive ATS CSV slice
+GET  /jobhive-manifest Fetch jobhive manifest + slice details
+POST /html-probe      Fetch any URL from CF IP, return structured HTML analysis
+                      Body: {url, maxBytes?} → {visibleText, metaTags, jsonLd,
+                              frameworks, dataAutomationIds, hiddenInputs, htmlSnippet}
+                      Used for ATS reverse engineering. Previously relay-only; now also
+                      available on STAT worker directly.
+GET  /hc-probe        Fetch any HC URL from CF IP, return __NEXT_DATA__ analysis
+POST /plain-fetch-test Test plain fetch on any URL
+GET  /br-test         Test Browser Rendering connectivity
+
+═══════════════════════════════════════════════════════════════
+CRON PIPELINE — THREE LAYERS
+═══════════════════════════════════════════════════════════════
+
+LAYER 1: Platform DOs (DO alarm, per-platform)
+  Direct polling of 271 seed companies at their native ATS.
+  Fastest path: alerted within one alarm cycle of posting.
+  Alarm interval: 120s (GH/Lever/Ashby) to 480s (SF/Taleo/Oracle/Infor).
+
+LAYER 2: HiringCafe wide-net (1-minute cron)
+  Scrapes hiring.cafe via searchState SSR — server-side keyword filtering
+  confirmed 2026-06-08 (replaces the prior ?q= no-op global feed approach).
+  2 calls per cron tick (Remote + Hybrid environments).
+  Returns pre-filtered ssrHits with v5_processed_job_data (salary, states, etc.).
+  Description second-pass via /job/{requisitionId} after keyword match.
+
+LAYER 3: Jobhive CSV scan (1-hour cron)
+  Streams jobhive's ATS CSV slices from storage.stapply.ai to discover Epic
+  roles at companies entirely outside the seed list.
+  Slices: workday (50MB cap), taleo (10MB cap), icims (20MB cap).
+  On match: fires P3 alert (email only) immediately. Also calls
+  maybeAddOrPromoteCompany() with gate:'strict' — only health systems and
+  Epic consulting firms auto-promoted to direct DO polling (after 2 matches).
+  Status: quote-aware streaming CSV parser handles all edge cases.
+
+═══════════════════════════════════════════════════════════════
+KEY FEATURES (2026-06-07 → 2026-06-08)
+═══════════════════════════════════════════════════════════════
+
+GEO FILTER (2026-06-08 via passesEnvFilter)
+  isNonUsLocation() runs before env filter and keyword matching.
+  HC jobs: uses v5 workplaceStates structured data (most reliable).
+  Jobhive jobs: uses countryIso CSV field.
+  All others: location string analysis — conservative, only suppresses
+    on clear international signals. Unknown locations always pass.
+  NON_US_ISO set + NON_US_COUNTRIES list in notify.js.
+
+EMAIL THROTTLE (2026-06-08)
+  Queue-based. Matches accumulate in StateStoreDO 'email_queue'.
+  Sends at most once per 4 hours (EMAIL_COOLDOWN_MS = 14,400,000ms).
+  Max 6 emails/day — stays under Resend free tier (100/day).
+  Per-job Pushover (P1) fires immediately; email batches across cooldown window.
+
+URL→ATS AUTO-DETECTION (2026-06-07)
+  POST /detect-ats {url} → {ats, token, url} for company adds.
+  Also fires from match paths — when a jobhive/HC discovery identifies
+  a company, auto-detection promotes it to the correct DO poller.
+
+WORKER LOG BUFFER + /logs ENDPOINT (2026-06-07)
+  Rolling in-memory log of alarm-cycle results stored in StateStoreDO.
+  GET /logs?ats=workday — filter by ATS. Limit 200 max.
+  CI log-check workflow reads and writes to outbox/ for Claude inspection.
+
+CLAUDE INLINE REVIEW (2026-06-07)
+  Each match card has a "✦ Review" button → SSE streaming review inline.
+  POST /review (SSE), model: claude-haiku-4-5-20251001.
+  Format: VERDICT / TOP SIGNALS / DEALBREAKER / QUICK TAKE.
+  Requires ANTHROPIC_API_KEY secret (set 2026-06-07).
+
+FEEDBACK LOOP (2026-06-07)
+  Applied/Skip buttons on match cards.
+  POST /feedback feeds disposition into Claude review context over time.
+
+ONEDRIVE RESUME AUTO-FETCH (2026-06-07)
+  ONEDRIVE_RESUME_URL secret → auto-fetches resume on bootstrap.
+  Zero manual steps for profile setup.
+
+═══════════════════════════════════════════════════════════════
+HIRINGCAFE — CURRENT STATUS (2026-06-08)
+═══════════════════════════════════════════════════════════════
+
+CRITICAL CHANGE from prior docs:
+  Previous: ?q= and ?environment= were confirmed no-ops (global 3.4M feed).
+  New (2026-06-08): ?searchState= is server-side filtered — CONFIRMED.
+  Probe: searchState "Epic within", Remote → ssrTotalCount:52, v5:true.
+  ssrPageSize: 40. fetchHiringCafe() now fetches page 0 + page 1 if available.
+
+Cron: 1-minute, runHiringCafeScrape()
+Calls per tick: 2 (Remote + Hybrid environments via searchState)
+  Previously: 62 calls (31 terms × 2) returning identical global feed.
+  Now: 2 calls returning ~52 keyword-filtered results each.
+
+Feed key: __NEXT_DATA__.props.pageProps.ssrHits (confirmed 2026-06-07).
+  v5_processed_job_data present in ssrHits (confirmed).
+  Description NOT in ssrHits — second-pass via /job/{requisitionId}.
+  fetchHcDescription() calls /job/{requisitionId} for matched jobs.
+
+Backend: Internal Elasticsearch cluster (esLatencyMs confirmed).
+  Not Algolia. No public API. Credentials never exposed to client.
 
 ═══════════════════════════════════════════════════════════════
 SECRETS (set via wrangler secret put)
 ═══════════════════════════════════════════════════════════════
 
 PUSHOVER_APP_TOKEN    Pushover notifications
-PUSHOVER_USER_KEY     Pushover user key
-SENDGRID_API_KEY      Email alerts (Mail Send scope)
+PUSHOVER_USER_KEY     Pushover user key (app installed on device ✓)
+RESEND_API_KEY        Email alerts (Resend API — replaced SendGrid 2026-06-06)
 ALERT_EMAIL           Recipient email address
 GEMINI_KEY            Gemini API (fit scoring, profile extraction)
-ANTHROPIC_API_KEY     Claude API — POST /review streaming feature
-                      wrangler secret put ANTHROPIC_API_KEY
+ANTHROPIC_API_KEY     Claude API — POST /review streaming (set 2026-06-07 ✓)
+ONEDRIVE_RESUME_URL   OneDrive direct-download URL for resume auto-fetch
 
 ═══════════════════════════════════════════════════════════════
 ALERT ROUTING
 ═══════════════════════════════════════════════════════════════
 
 P1 (Epic / EHR / Healthcare IT):
-  Pushover HIGH priority — bypasses DND, siren sound. Per-job.
+  Pushover HIGH priority — bypasses DND, siren sound. Per-job immediate.
 
 P2 (Data / SQL / Analytics):
   Pushover normal priority — batched into one push.
 
-P3 (Product / Project / IT):
-  Email only — no push.
+P3 (Product / Project / IT / Jobhive Discovery):
+  Email only — no push. Includes jobhive-discovered roles.
 
-ALL: email digest with fit score, salary, cover letter opener.
-Fit scoring (Gemini) can downgrade P1 to email-only if score < threshold.
-Requires stored candidate profile (POST /extract-profile first).
-
-═══════════════════════════════════════════════════════════════
-HIRINGCAFE — CURRENT STATUS (2026-06-07)
-═══════════════════════════════════════════════════════════════
-
-Cron: 1-minute, runHiringCafeScrape()
-Calls per tick: 2 (one per env: remote, hybrid)
-  Previously 62 (31 terms x 2) — collapsed 2026-06-07.
-  All calls return same 152-item global feed regardless of keyword.
-  Keyword filtering happens in matchJob() downstream.
-
-Feed key: __NEXT_DATA__.props.pageProps.ssrHits
-  FIXED 2026-06-07: was pp.jobs (broken for unknown duration).
-
-Backend: Internal Elasticsearch cluster (confirmed via ssrTimings.esLatencyMs).
-  Not Algolia. No public API. Credentials never exposed to client.
-
-Description second-pass: enrich.js fetches hiring.cafe/job/{hc.requisitionId}
-  Returns NEXT_DATA.props.pageProps.job.job_information.description (full HTML).
-  Fires only after matchJob() hit — minimal HTTP cost.
-  See STAT-HIRINGCAFE.txt for full investigation.
-
-═══════════════════════════════════════════════════════════════
-CLAUDE INLINE REVIEW (2026-06-07)
-═══════════════════════════════════════════════════════════════
-
-Each match card in the Matches tab has a "✦ Review" button.
-On click: streams Claude analysis inline, no tab switch, no page leave.
-
-Worker: POST /review (SSE streaming)
-  Model: claude-haiku-4-5-20251001
-  Format: VERDICT / TOP SIGNALS / DEALBREAKER / QUICK TAKE
-  Context: job fields + stored candidate profile (optional)
-  Requires ANTHROPIC_API_KEY secret.
-
-UI: toggleReview(jobId) in ui.html
-  Token-by-token SSE render. reviewCache for instant repeat.
-  See STAT-CLAUDE-REVIEW.txt for full spec.
+ALL: email digest (throttled 4hr, queue-based) with fit score, salary,
+     cover letter opener. Fit scoring (Gemini) can downgrade P1 to
+     email-only if score < threshold. Requires stored candidate profile.
+     Liveness check (HEAD request) fires before every alert.
 
 ═══════════════════════════════════════════════════════════════
 PENDING WORK
 ═══════════════════════════════════════════════════════════════
 
-IMMEDIATE:
-  [BLOCKING] Set ANTHROPIC_API_KEY secret:
-    wrangler secret put ANTHROPIC_API_KEY
-    Without it, Review button returns 503. Everything else works.
-
-  [CRITICAL] Upload resume to activate fit scoring:
-    Open /ui → Resume tab → paste text → Analyze → Extract Profile.
-    Without stored profile, fit scoring disabled for all alerts.
+FROM S9 OPEN ITEMS (still open):
+  #7  Feedback loop end-to-end — Applied/Skip buttons built (2026-06-07);
+      verify feeding Claude review context correctly.
+  #8  seen_ids expiry — no TTL yet; cap at 5000 prevents runaway growth
+      but old stale IDs stay forever. Consider 30-day TTL.
+  #11 STAT_KV dead binding — old KV namespace binding still in wrangler.toml;
+      StateStoreDO handles all state. Remove binding to avoid confusion.
+  SelectMinds adapter — host allowlist not yet implemented.
 
 VERIFY BEFORE RELYING ON:
-  Workday path slugs in SEED_COMPANIES. The slug-derivation fix
-  (commit 86f17bc) reads from company.url. Only correct if the
-  stored URL has the right path segment. See STAT-ATS-VERIFICATION.txt.
+  Oracle HCM: Cedars-Sinai verified live. Tenet URL/site path not yet probed.
+  Infor HCM: Lee Health confirmed (Epic Cadence). Other 7 tenants not yet
+    individually verified — seeded by pattern match.
+  Workday plain HTML GET: confirmed for Advocate Health listing structure.
+    Still need broad verification across all 121 Workday seed companies.
+  Taleo initialHistory parse: confirmed for TUHS. UPMC (upmcjobs.taleo.net)
+    and tbe.taleo.net tenants (e.g. Mount Sinai phg.tbe.taleo.net) may have
+    different field layouts.
 
-OPEN FROM PREVIOUS SESSION:
-  Oracle Taleo newer format (phg.tbe.taleo.net v2) — not yet probed.
-  Workday custom domain verification — TYPE D audit recommended.
-  iCIMS description KV caching (7-day TTL, optional optimization).
+ADAPTERS NOT YET BUILT:
+  Avature       — UCSF Health (careers.ucsf.edu). Portal ID=9.
+  Phenom People — University of Miami Health (careers.miami.edu).
+  Tebe.taleo.net — Mount Sinai (phg.tbe.taleo.net). Different Taleo version.
 
 ═══════════════════════════════════════════════════════════════
 KEY DOCUMENT IDs (Google Drive)
@@ -237,5 +372,6 @@ STAT Setup Guide:                  1RETMiMa6CvvWoLIhsfsnGUrxCS-VztsD
 SESSION DOCS (2026-06-06, Drive):
   Part 1 — Architecture & ATS:    1iA9pxHwBXlTI-9yEywgUgNv04Rvad6L_
   Part 2 — iCIMS in_iframe:       1ha4HlEkW8PcICFqdm26ZNdgXSa7BrV6A
-  Part 3 — iCIMS Routing Fix:     1KQSsjubK4MWLZz00mZxpaN6x-S9Ze-74
-  Part 4 — UI + Browse:           1MNOUwqR-1RWpcVe5hvktVau7zZJtoNy-
+  Part 3 — iCIMS Routing Fix:     1KQSsjubK4MWLZz00mZxpaN6b-S9Ze-74
+  Part 4 — UI + Browse:           1MNOUwqR-1RWpcVe5hvbtVau7zZJtoNy-
+  Session Doc 2 (2026-06-07):     1tRyd03iYCFaLn73IRCjQfOFjCHyGIFcMEKXCKuPDgIo
