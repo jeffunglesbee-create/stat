@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T19:29:26Z
-HEAD: bfb7ce2
+Generated: 2026-06-08T19:41:19Z
+HEAD: ceb527a
 Smoke: 75/75
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  bfb7ce2 feat: SelectMinds adapter — UTMB Health, sequential ID walk, plain fetch detail pages
+  ceb527a deploy: force re-deploy to wire SELECTMINDS_DO binding (v7 migration)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
