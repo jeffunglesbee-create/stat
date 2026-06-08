@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T04:11:48Z
-HEAD: d5c1e6a
+Generated: 2026-06-08T04:33:05Z
+HEAD: 145ff6b
 Smoke: 66/66
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  d5c1e6a feat: /hc-probe — fetch any HC URL from CF IP, return __NEXT_DATA__ analysis
+  145ff6b feat: HC searchState SSR — replace ?q= no-op with server-side filtered search
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
