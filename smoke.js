@@ -197,6 +197,8 @@ assert('adapters: fetchWorkday tags result with log', adaptersSrc.includes('Work
 assert('adapters: fetchWorkday stops at empty pages', adaptersSrc.includes('links.length < 20'));
 assert('adapters: fetchSelectMinds exported', adaptersSrc.includes('export async function fetchSelectMinds'));
 assert('adapters: fetchSelectMinds uses sequential ID walk', adaptersSrc.includes('SELECTMINDS_SCAN_WINDOW'));
+assert('adapters: fetchSelectMinds skips closed jobs', adaptersSrc.includes('position has been closed'));
+assert('adapters: fetchSelectMinds wraps cursor at MAX_ID', adaptersSrc.includes('SELECTMINDS_MIN_ID'));
 assert('adapters: fetchSelectMinds in dispatcher', adaptersSrc.includes("case 'selectminds':"));
 assert('platform-do: fetchSelectMinds imported', read('platform-do.js').includes('fetchSelectMinds'));
 assert('platform-do: selectminds case in _fetchJobs', read('platform-do.js').includes("case 'selectminds':"));

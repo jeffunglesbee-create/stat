@@ -1116,13 +1116,20 @@ export async function fetchSelectMinds(company) {
   if (!company.url) return [];
   try {
     // company.url = 'https://aa083s01.upgrade.selectminds.com/utmb'
-    // company.token = numeric string of last confirmed high-water mark ID
+    // company.token = numeric string of the cursor ID to scan FROM this cycle.
+    // The cursor advances by SELECTMINDS_SCAN_WINDOW each alarm cycle.
+    // When it reaches the top (max known ID), it wraps back to SELECTMINDS_MIN_ID.
+    // This ensures the full active job population is covered over multiple cycles.
+    // At 60 IDs/cycle × 8min interval: full 1000-ID range takes ~2.2 hours.
     const base     = company.url.replace(/\/$/, '');
+    const MAX_ID   = 3300; // update periodically as new jobs are posted
     const startId  = Math.max(
-      parseInt(company.token ?? '3000', 10) - 10, // scan back 10 from cursor
+      parseInt(company.token ?? '1000', 10),
       SELECTMINDS_MIN_ID
     );
-    const endId    = startId + SELECTMINDS_SCAN_WINDOW;
+    // Wrap cursor: if we've reached the top, restart from the bottom
+    const effectiveStart = startId > MAX_ID ? SELECTMINDS_MIN_ID : startId;
+    const endId    = effectiveStart + SELECTMINDS_SCAN_WINDOW;
 
     const jobs = [];
 
@@ -1139,6 +1146,9 @@ export async function fetchSelectMinds(company) {
 
         // Confirm this is a real job detail page (not an error or listing page)
         if (!html.includes('name="Job.id"') && !html.includes('job_details.shtml')) continue;
+
+        // Skip closed/expired jobs — SelectMinds shows a 200 with closure notice
+        if (html.includes('this position has been closed') || html.includes('position has been closed')) continue;
 
         // Extract Job.id from hidden input (canonical ID, may differ from URL id if redirect)
         const jobIdMatch  = html.match(/name="Job\.id"\s+value="(\d+)"/);

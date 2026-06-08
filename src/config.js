@@ -560,7 +560,7 @@ export const SEED_COMPANIES = [
   // token = string of the starting SelectMinds job ID for the scan window.
   // Update token after each confirmed live high-water mark to slide the window.
   // Confirmed 2026-06-08: 700+ jobs live, Epic roles in IT category (~33 jobs).
-  { name: 'UTMB Health',               ats: 'selectminds', token: '3180',
+  { name: 'UTMB Health',               ats: 'selectminds', token: '1000',
     url: 'https://aa083s01.upgrade.selectminds.com/utmb' },
   // University of Texas Medical Branch. Galveston TX. ~13K employees.
   // Epic shop confirmed by job title: "Lead Clinical Application Systems Analyst - Epic (90% remote)".
