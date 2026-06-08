@@ -36,7 +36,8 @@ const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe', 'oracle_hcm
 
 // ATS platforms needing JavaScript execution via Browser Rendering.
 // Taleo only — iCIMS moved to NEEDS_PLAIN_FETCH (plain fetch + ?in_iframe=1).
-const NEEDS_BROWSER_FETCH = new Set([]); // taleo moved to NEEDS_PLAIN_FETCH (2026-06-08)
+// NEEDS_BROWSER_FETCH removed 2026-06-08 — all ATS description paths now use plain fetch.
+// Taleo search page still uses BR (adapters.js fetchTaleo) but detail pages do not.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Plain HTML fetch — server-rendered description (Workday + iCIMS)
@@ -349,130 +350,6 @@ async function fetchPlainDescription(job) {
     return '';
   } catch {
     clearTimeout(timeout);
-    return '';
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Browser Rendering fetch — iCIMS / Taleo
-//
-// VERIFIED 2026-06-06 via /br-test endpoint:
-//   Taleo (TUHS): ✅ WORKS — search SPA yields 20+ real job URLs,
-//     detail page renders with full description in DOM body text.
-//     og:description is boilerplate — use DOM text selectors instead.
-//   iCIMS (VHC, UCI): ❌ IP-BLOCKED — Cloudflare Browser Rendering IPs
-//     are blocked at WAF level. VHC returns wrapper site; UCI returns 403.
-//     Fallback: iCIMS jobs surface via HiringCafe with description in
-//     job_information.description (v5_processed_job_data). Direct iCIMS
-//     polling delivers title/location/url only — no description available.
-//
-// Both are JavaScript SPAs — og:description meta tags are NOT in the server
-// HTML. The browser must execute JS to populate the DOM. Browser Rendering
-// runs headless Chromium at the edge and returns fully-rendered HTML.
-//
-// Session reuse pattern: check for idle sessions before launching new browser.
-// Avoids launching a fresh browser instance for every fetch, reducing both
-// billing time and cold-start latency (~500ms reuse vs ~2s launch).
-//
-// waitUntil: 'networkidle0' — waits for JS to finish executing before
-// extracting content. Appropriate for SPAs that load data via XHR/fetch.
-//
-// Timeout: 15s — SPAs need more time than static HTML. Falls back gracefully.
-// ─────────────────────────────────────────────────────────────────────────────
-async function fetchBrowserDescription(job, env) {
-  if (!job.url || !env.MYBROWSER) return '';
-
-  let browser = null;
-  let reused  = false;
-
-  try {
-    // Try to reuse an existing idle browser session first
-    const sessions = await puppeteer.sessions(env.MYBROWSER);
-    const idle = sessions.filter(s => !s.connectionId);
-
-    if (idle.length > 0) {
-      try {
-        browser = await puppeteer.connect(env.MYBROWSER, idle[0].sessionId);
-        reused = true;
-      } catch {
-        // Session went away — fall through to launch
-      }
-    }
-
-    if (!browser) {
-      browser = await puppeteer.launch(env.MYBROWSER);
-    }
-
-    const page = await browser.newPage();
-
-    // Suppress images/fonts to speed up SPA load
-    await page.setRequestInterception(true);
-    page.on('request', req => {
-      const type = req.resourceType();
-      if (['image', 'font', 'media', 'stylesheet'].includes(type)) {
-        req.abort();
-      } else {
-        req.continue();
-      }
-    });
-
-    await page.goto(job.url, {
-      waitUntil: 'networkidle0',
-      timeout:   15_000,
-    });
-
-    // Extract description after JS executes.
-    // Taleo og:description is always boilerplate ("Click the link to see...").
-    // Real description is in the rendered body text — use DOM selectors.
-    const atsSource = job.atsSource;
-    const description = await page.evaluate((ats) => {
-      const og = document.querySelector(
-        'meta[property="og:description"], meta[name="og:description"]' +
-        ', meta[name="description"]'
-      );
-      const ogContent = og?.content ?? '';
-
-      // Taleo og:description is boilerplate — skip it
-      const ogUsable = ats !== 'taleo' && ogContent.length > 50 &&
-        !ogContent.toLowerCase().includes('click the link');
-
-      if (ogUsable) return ogContent;
-
-      // DOM text: job description containers, then body text
-      const selectors = [
-        '.job-description', '#job-description', '[class*="description"]',
-        '.job-content', '#job-content',
-        // Taleo-specific: main content section
-        '#mainContent', '.requisitionDescriptionInterface',
-        'main', 'article',
-      ];
-      for (const sel of selectors) {
-        const el = document.querySelector(sel);
-        const text = el?.innerText?.trim();
-        if (text && text.length > 100) return text.slice(0, 3000);
-      }
-
-      // Last resort: body text after navigation header
-      const body = document.body?.innerText?.trim() ?? '';
-      const mainIdx = body.indexOf('Beginning of the main content');
-      if (mainIdx > 0) return body.slice(mainIdx + 40, mainIdx + 3040);
-      return body.slice(0, 3000);
-    }, atsSource);
-
-    await page.close();
-
-    // Disconnect (not close) to keep session alive for reuse
-    await browser.disconnect();
-
-    console.log(`[STAT enrich] Browser fetch ${reused ? '(reused)' : '(new)'} ${job.atsSource}: ${description.length} chars`);
-    return description ? decodeHtmlEntities(description) : '';
-
-  } catch (e) {
-    console.warn(`[STAT enrich] Browser fetch failed for ${job.url}: ${e.message}`);
-    // Close (not disconnect) on error to avoid leaving broken session
-    if (browser) {
-      try { await browser.close(); } catch {}
-    }
     return '';
   }
 }

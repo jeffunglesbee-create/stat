@@ -152,21 +152,18 @@ try {
   assert('ui.html: script block has valid JS syntax — ' + e.message.split('\n').slice(0,2).join(' '), false);
 }
 
-// ─── Workday Browser Rendering wiring ────────────────────────────────────────
-// Verifies fetchWorkday accepts env param and uses MYBROWSER for XHR intercept.
-// Verifies both call sites (platform-do._fetchJobs + adapters.fetchCompanyJobs)
-// pass env through — missing env silently falls back to SSR, never catches.
+// ─── Workday plain HTML GET (2026-06-08 — BR retired) ────────────────────────
+// fetchWorkday now uses plain HTML GET with ?q=epic for server-side filtering.
+// BR + XHR intercept + DataImpulse proxy all retired after confirmed SSR path.
 const platformSrc = read('platform-do.js');
 assert('adapters: fetchWorkday signature accepts env param',
   adaptersSrc.includes('async function fetchWorkday(company, env)'));
-assert('adapters: fetchWorkday checks env.MYBROWSER',
-  adaptersSrc.includes('env?.MYBROWSER') && adaptersSrc.includes('wday/cxs'));
-assert('adapters: fetchWorkday XHR intercept uses page.on response',
-  adaptersSrc.includes("page.on('response'") && adaptersSrc.includes('wday/cxs'));
-assert('adapters: fetchWorkday injects searchText epic into request',
-  adaptersSrc.includes("searchText = 'epic'") && adaptersSrc.includes("body.limit = 20"));
-assert('adapters: fetchWorkday uses DataImpulse proxy when creds present',
-  adaptersSrc.includes('--proxy-server=gw.dataimpulse.com:823') && adaptersSrc.includes('page.authenticate'));
+assert('adapters: fetchWorkday uses ?q=epic server-side filter',
+  adaptersSrc.includes('?q=epic') && adaptersSrc.includes('JOBS FOUND'));
+assert('adapters: fetchWorkday paginates via startIndex',
+  adaptersSrc.includes('startIndex='));
+assert('adapters: fetchWorkday parses req IDs from job links',
+  adaptersSrc.includes('_(R[A-Z0-9]+)'));
 assert('adapters: fetchCompanyJobs passes env to fetchWorkday',
   adaptersSrc.includes('return fetchWorkday(company, env)'));
 assert('platform-do: _fetchJobs passes this.env to fetchWorkday',
@@ -196,8 +193,8 @@ assert('platform-do: appendLog imported', read('platform-do.js').includes('appen
 assert('platform-do: appendLog called in alarm loop', read('platform-do.js').includes('await appendLog('));
 assert('platform-do: brLog declared in alarm loop', read('platform-do.js').includes('const brLog'));
 assert('platform-do: brLog captures workday _source', read('platform-do.js').includes('jobs._source'));
-assert('adapters: fetchWorkday tags intercept result', read('adapters.js').includes("brJobs._source = 'intercept'"));
-assert('adapters: fetchWorkday tags ssr_next result', read('adapters.js').includes("r._source = 'ssr_next'"));
+assert('adapters: fetchWorkday tags result with log', adaptersSrc.includes('Workday-SSR plain fetch') || adaptersSrc.includes('[STAT Workday]'));
+assert('adapters: fetchWorkday stops at empty pages', adaptersSrc.includes('links.length < 20'));
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
