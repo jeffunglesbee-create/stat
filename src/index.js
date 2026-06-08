@@ -451,33 +451,31 @@ async function runHiringCafeScrape(env) {
   const unmatchedJobsHC = [];  // env-filtered HC jobs with no keyword match — Browse capture
   const seenThisRun = new Set();
 
-  // ── HIRINGCAFE SEARCH — BR first, SSR fallback ────────────────────────────
-  // BR (Browser Rendering): intercepts the client-side ES search XHR,
-  // returns real keyword-filtered results (~20-30 targeted jobs per call).
-  // SSR fallback: global feed (152 jobs), matchJob() filters downstream.
-  // Both paths feed the same matching pipeline below.
+  // ── HIRINGCAFE SEARCH — searchState SSR (confirmed 2026-06-08) ─────────────
+  // ?searchState= is processed server-side: returns keyword-filtered hits with
+  // v5_processed_job_data and enriched_company_data included in ssrHits.
+  // ssrPageSize=40; we fetch page 0 + page 1 when ssrIsLastPage=false.
+  // BR path retained as dead code — searchState SSR is simpler and sufficient.
   // ─────────────────────────────────────────────────────────────────────────
   for (const envType of HIRINGCAFE.environments) {
-    // Try BR first — intercepts the actual ES XHR for keyword-filtered results
     let jobs = null;
-    if (env.MYBROWSER) {
-      try {
-        const brHits = await fetchHiringCafeBR('epic ehr within', envType, env);
-        if (brHits && brHits.length > 0) {
-          // BR returned real ES-filtered results — map to job objects.
-          // BR hits are raw ES _source documents: same v5_processed_job_data +
-          // job_information structure as ssrHits. mapHiringCafeHit() handles both.
-          console.log(`[STAT HC-BR] ${brHits.length} targeted results for ${envType}`);
-          jobs = brHits.map(mapHiringCafeHit);
-        }
-      } catch (e) {
-        console.warn('[STAT HC-BR] Failed, falling back to SSR:', e.message);
+    // Rotate through Epic search terms — each term targets the HC index differently
+    // searchState.searchQuery is processed against title + description + v5 fields
+    const hcTerms = HIRINGCAFE.search_terms.filter(t =>
+      t.startsWith('epic') || t.includes('ehr') || t.includes('clarity') ||
+      t.includes('informatics') || t.includes('him analyst')
+    );
+    // Use one term per cron cycle, rotating via timestamp — avoids redundant fetches
+    const termIdx = Math.floor(Date.now() / (60_000)) % hcTerms.length;
+    const activeTerm = hcTerms[termIdx] ?? 'epic analyst';
+    try {
+      jobs = await fetchHiringCafe(activeTerm, envType);
+      if (jobs.length > 0) {
+        console.log(`[STAT HC] ${jobs.length} results for "${activeTerm}" ${envType}`);
       }
-    }
-
-    // SSR fallback (or if BR returned null/empty)
-    if (!jobs) {
-      jobs = await fetchHiringCafe('epic analyst', envType);
+    } catch (e) {
+      console.warn('[STAT HC] fetchHiringCafe failed:', e.message);
+      jobs = [];
     }
     for (const job of jobs) {
       if (seenThisRun.has(job.id) || seenIds.has(job.id)) {

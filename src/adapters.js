@@ -892,47 +892,72 @@ export async function fetchHiringCafeBR(keyword, environment, env) {
   }
 }
 
-export async function fetchHiringCafe(keyword, environment) {
-  const params = new URLSearchParams({ q: keyword, environment });
-  const url = `https://hiring.cafe/?${params}`;
-  try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*' },
-    });
-    if (!res.ok) return [];
-    const html = await res.text();
-    const match = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-    if (!match) return [];
-    const data = JSON.parse(match[1]);
-    const pp = data?.props?.pageProps ?? {};
+// ── buildHcSearchState — construct searchState for HC SSR filtered search ──
+// Confirmed 2026-06-08: ?searchState= is processed server-side at SSR time.
+// A targeted searchState returns pre-filtered ssrHits (not the global 3.4M feed).
+// ssrHits include v5_processed_job_data + enriched_company_data.
+// ssrTotalCount reflects filtered count. ssrPageSize=40; paginate via page field.
+//
+// Probe results: searchState "Epic within", Remote → ssrTotalCount:52, v5:true
+// ─────────────────────────────────────────────────────────────────────────────
+function buildHcSearchState(keyword, workplaceType, page = 0) {
+  return JSON.stringify({
+    searchQuery: keyword,
+    sortBy: 'date',
+    dateFetchedPastNDays: -1,
+    locations: [{
+      types: ['country'],
+      formatted_address: 'United States',
+      address_components: [{ long_name: 'United States', short_name: 'US', types: ['country'] }],
+      workplace_types: [workplaceType],
+      options: {},
+      id: `United States_country_${workplaceType}`,
+    }],
+    higherOrderPrefs: [],
+    page,
+  });
+}
 
-    // ── HiringCafe SSR structure (verified 2026-06-07) ──────────────────────
-    // pageProps keys: ssrHits, ssrPage, ssrTotalCount, ssrCompanyCount,
-    //                 ssrPageSize, ssrIsLastPage, ssrError, initialSearchState
-    //
-    // CRITICAL: ssrHits contains the full result set (152 items observed).
-    // The ?q= and ?environment= query params DO NOT filter the SSR payload —
-    // HiringCafe SSR feed is a global popularity/recency feed (152 jobs).
-    // The ?q= and ?environment= params DO NOT filter the SSR payload.
-    //
-    // CONFIRMED (session 2, 2026-06-07, live CI probes):
-    //   Backend: Elasticsearch — NOT Algolia.
-    //   Evidence: __NEXT_DATA__.ssrTimings.esLatencyMs (391-967ms observed).
-    //   Algolia credentials searched exhaustively across page + all 49 JS chunks
-    //   and all /api/* routes (all 404) — not present anywhere.
-    //   ES cluster is private VPC infrastructure — not publicly routable.
-    //
-    // Implication: fetchHiringCafe('epic analyst') and fetchHiringCafe('epic cadence')
-    // return the SAME 152 jobs. Keyword relevance is enforced by matchJob() downstream.
-    //
-    // UNBUILT path: Browser Rendering (env.MYBROWSER binding exists, used for Taleo).
-    //   Would intercept the client-side XHR that hits the actual ES search endpoint.
-    //   Returns real keyword-filtered results instead of the global SSR feed.
-    //   Build cost: ~4-6hrs. Current approach works; BR is an optimization.
-    // ─────────────────────────────────────────────────────────────────────────
-    const jobs = pp.ssrHits ?? [];
-    if (!Array.isArray(jobs)) return [];
-    return jobs.map(mapHiringCafeHit);
+// ── fetchHcPage — fetch one SSR page via searchState ─────────────────────────
+async function fetchHcPage(keyword, workplaceType, page = 0) {
+  const searchState = buildHcSearchState(keyword, workplaceType, page);
+  const url = `https://hiring.cafe/?searchState=${encodeURIComponent(searchState)}`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*' },
+  });
+  if (!res.ok) return null;
+  const html = await res.text();
+  const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  const data = JSON.parse(m[1]);
+  return data?.props?.pageProps ?? null;
+}
+
+export async function fetchHiringCafe(keyword, environment) {
+  // ── searchState SSR filtering (confirmed 2026-06-08) ────────────────────
+  // ?searchState= is server-side: returns real keyword-filtered hits with v5.
+  // hitsHaveDesc: false — descriptions only on /job/{requisitionId} detail page.
+  // Replaces: ?q= and ?environment= which were confirmed no-ops (global feed).
+  // ─────────────────────────────────────────────────────────────────────────
+  const workplaceType = environment === 'remote' ? 'Remote' : 'Hybrid';
+  try {
+    const allHits = [];
+
+    // Page 0
+    const pp0 = await fetchHcPage(keyword, workplaceType, 0);
+    if (!pp0) return [];
+    const hits0 = Array.isArray(pp0.ssrHits) ? pp0.ssrHits : [];
+    allHits.push(...hits0);
+
+    // Page 1 if more results exist (ssrPageSize=40, ssrIsLastPage flag)
+    if (pp0.ssrIsLastPage === false && hits0.length > 0) {
+      try {
+        const pp1 = await fetchHcPage(keyword, workplaceType, 1);
+        if (pp1 && Array.isArray(pp1.ssrHits)) allHits.push(...pp1.ssrHits);
+      } catch { /* page 1 failure is non-fatal */ }
+    }
+
+    return allHits.map(mapHiringCafeHit);
   } catch { return []; }
 }
 
