@@ -1,79 +1,61 @@
-# STAT HANDOFF — 2026-06-08 (Session 10 END)
+# STAT HANDOFF — 2026-06-08 (Session 11 END)
 
 ## State
-HEAD: 962e2fd
-Smoke: 89/89 ✅
-CI: green (run #128)
+HEAD (code): 86495b9
+HEAD (repo): f92499d (probe [skip ci])
+Smoke: 97/97 ✅
+CI: green (deploy run #130)
+Relay: 8dad045 (stat_status MCP tool deployed)
 
 ## This Session — Full Changelog
 
-### SelectMinds Adapter (UTMB Health) — closes S9 open item
-- `bfb7ce2` feat: SelectMinds adapter — sequential ID walk, plain fetch detail pages
-  - `fetchSelectMinds()` in adapters.js; `SelectMindsDO` class; wrangler v7 migration
-  - UTMB Health seeded (aa083s01.upgrade.selectminds.com/utmb, token '1000')
-  - enrich.js: selectminds in NEEDS_PLAIN_FETCH, body text after "Requisition #"
-- `a3ac5a4` fix: bootstrapDOs seed merge + selectminds in PLATFORM_MAP
-  - bootstrapDOs now merges SEED_COMPANIES into stored list (new seeds picked up automatically)
-  - PLATFORM_MAP in /platform/:ats/status route updated with selectminds
-- `3610de5` fix: SelectMinds full-range cursor walk (1000→3300), skip closed jobs
-  - Cursor wraps at MAX_ID; detects "position has been closed" HTML pattern
+### SelectMinds Cursor — 3 bugs fixed
+- `466e1cf` fix: cursor persistence + Browse model change
+  - BUG 1: SELECTMINDS_MIN_ID=2000 silently overrode config token 1000 via Math.max
+  - BUG 2: loop used `startId` not `effectiveStart` — wrap never applied
+  - BUG 3: cursor never persisted — every cycle restarted from static config token
+  - Fix: cursor stored in DO storage 'selectminds_cursor', returned as jobs._nextCursor
+  - Browse: ALL env-filtered jobs now captured (matched + unmatched), not just non-matching
+- `86495b9` fix: cursor visible in status endpoint; url-keyed bootstrap merge
+  - selectmindsCursor exposed in /platform/selectminds/status response
+  - bootstrapDOs merge key changed from (ats,token) to (ats,url) — prevents duplicate
+    UTMB entries when token changes (was causing polled:2 instead of polled:1)
 
-### seen_ids TTL + Ghost Resurrection + Cron Sweep — closes #8
-- `962e2fd` feat: seen_ids TTL + ghost resurrection + cron sweep
-  - Format change: `string[]` → `Map<id, {id, seenAt, diedAt?, url?}>`
-  - 30-day TTL prunes dead entries; 90-day hard cap on live entries
-  - Ghost resurrection: `diedAt` entries re-enter pipeline when liveness returns live
-  - Cron sweep: `maybeRunSeenSweep()` — 20 dead entries/tick via HEAD, cursor persists
-  - URL from match history first (recent_matches stores job.url); falls back to stored url field
-  - Backward compat: raw string entries parsed as `{id, seenAt: epoch0}`
-  - All paths updated: HC cron, platform-do alarm loop, jobhive, backfill-browse
+### stat_status MCP Tool (relay — 8dad045)
+- New tool: stat_status(platform?) on the FIELD relay MCP server
+  - Returns overview (activeDOs, watchedCompanies, seenJobIds, fitScoring, salary)
+  - + optional platform-specific status with selectmindsCursor, lastRun, totalMatches
+  - ~2s round-trip vs ~80s worker-probe CI cycle
+  - No CI overhead, no commit required — direct CF Worker IP call
+  - probe_relay_route allow-list extended: /stat/, all /stat/platform/{ats}/status routes
 
-### Documentation Pass (pre-session)
-- docs/STAT-CURRENT-STATE.txt — full rewrite for all S9/S10 changes
-- docs/STAT-ADAPTERS.txt — Oracle HCM, Infor HCM, Jobhive, Workday plain GET, HC searchState
-- docs/STAT-ARCHITECTURE.txt — full pipeline, all decisions, enrich.js routing
-- HANDOFF.md — S9/S10 boundary document
+## Current STAT Status (as of session end)
+selectmindsCursor: "1122" — advancing correctly from 1000
+totalMatches: 0 — Epic IT jobs (~IDs 2000-3000) not yet in scanned range
+watchedCompanies: 479, seenJobIds: 757, activeDOs: 112
+ETA to Epic IT job range: ~90 min from session end (~cycle 15-25 from cursor 1122)
 
-### CI Infrastructure
-- worker-probe: added workflow_dispatch + fixed YAML (inline Python was invalid)
-- Fixed [skip ci] blocking non-deploy workflow triggers (lesson: outbox trigger commits need no [skip ci])
-
-## SelectMinds Status (as of session end)
-DO: live, polling every 8 min
-lastRun: 2026-06-08T20:11:31Z
-seenCount: 130 (IDs 1000–1120 scanned so far)
-totalMatches: 0 — IT job IDs not yet reached; full 1000–3300 range takes ~5 hours
+## How to Check STAT Status Next Session
+Use probe_relay_route (no CI overhead):
+  /stat/                              → overview
+  /stat/platform/selectminds/status   → cursor + totalMatches
+  /stat/logs?ats=selectminds&limit=5  → recent alarm activity
+stat_status MCP tool available once relay tool cache refreshes.
 
 ## Open Items
 
-**Verify next session:**
-- SelectMinds first match — confirm totalMatches > 0 after full ID range sweep
-  If still 0 after one full cycle (~5 hrs), debug keyword match vs actual job format
-- seen_ids backward compat — confirm Worker started cleanly with mixed old/new format
-  (2057 existing string entries will be auto-migrated on first read)
+**Verify:**
+- SelectMinds first match — totalMatches > 0 once cursor reaches ~2000-3000 range
+- Browse now showing matched jobs (verify in UI after next match)
+- polled:1 per SelectMinds alarm cycle (url-keyed dedup fix)
 
-**Open from prior sessions:**
-- #7  Feedback loop — Applied/Skip buttons built; verify end-to-end Claude context update
-- #11 STAT_KV dead binding — remove from wrangler.toml (cleanup, no functional impact)
-- Tenet Healthcare Oracle HCM — site ID unknown; one html_probe closes it
-- Avature (UCSF) — one html_probe to find feed endpoint
-- Taleo tbe.taleo.net (Mount Sinai) — probe needed
-- Infor HCM: 7 of 8 tenants seeded but unverified
+**Carry-forward:**
+- #7  Feedback loop — Applied/Skip → Claude review context
+- #11 STAT_KV dead binding — wrangler.toml cleanup (3-line remove)
+- Tenet Oracle HCM — one html_probe for site ID
+- Avature UCSF — one html_probe for feed endpoint
+- Taleo tbe.taleo.net (Mount Sinai) — one html_probe
+- seen_ids epoch0 migration — entries seenAt epoch0 excluded from 90-day cap? Verify.
 
-**Longer term:**
-- Competitive intelligence features — 4 specs in Drive, none built
-  (Drive: 1E7JsGnXe78rNw2L6DZIKoVIbt1C8Hn-BNbW8iv3dSEU, 1tjnFl-..., 1kOOc_..., 1fAi38...)
-- seen_ids LIVE_MAX_MS (90-day): review after 3 months of operation
-- SelectMinds MAX_ID (3300): update when UTMB posts jobs above that ID
-
-## Recovery Escape Hatches
-- POST /bootstrap → Bootstrap watchers (cold recovery only)
-- POST /trigger → HiringCafe scan now
-- POST /backfill-browse → Rebuild Browse tab
-- POST /salary-refresh → Salary refresh (cron handles normally)
-- POST /reset-seen → Clear seen IDs (nuclear)
-
-## Seed Company Count
-271 seed + manually added = 471 total watched
-ATS breakdown: Workday 121, Greenhouse 81, SuccessFactors 28, Lever 14,
-Infor HCM 8, iCIMS 7, Taleo 5, Ashby 5, Oracle HCM 2, SelectMinds 1
+## Seed Count
+271 seed + manual = 479 total watched, 10 ATS platforms
