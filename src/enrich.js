@@ -32,7 +32,7 @@ import puppeteer from '@cloudflare/puppeteer';
 // ATS platforms needing plain HTML og:description fetch
 // iCIMS verified 2026-06-06: plain fetch() with ?in_iframe=1 works from CF Worker.
 // Moved from NEEDS_BROWSER_FETCH. See session doc Part 2 for full investigation.
-const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe', 'oracle_hcm', 'infor_hcm', 'taleo']);
+const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe', 'oracle_hcm', 'infor_hcm', 'taleo', 'selectminds']);
 
 // ATS platforms needing JavaScript execution via Browser Rendering.
 // Taleo only — iCIMS moved to NEEDS_PLAIN_FETCH (plain fetch + ?in_iframe=1).
@@ -342,6 +342,33 @@ async function fetchPlainDescription(job) {
       const mainIdx = bodyText.indexOf('Beginning of the main content');
       if (mainIdx > 0) {
         const extracted = bodyText.slice(mainIdx + 40, mainIdx + 4000).trim();
+        if (extracted.length > 100) return extracted;
+      }
+      return '';
+    }
+
+    // SelectMinds — detail page is fully SSR'd.
+    // Body text after the job title heading contains the full description.
+    // og:description is available but truncated (~200 chars). Use body text.
+    if (job.atsSource === 'selectminds') {
+      // Strip scripts/styles/nav, extract text after the requisition number line
+      const bodyText = html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+        .replace(/<header[\s\S]*?<\/header>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/\s+/g, ' ').trim();
+
+      // Find the description body: starts after "Requisition #" line
+      const reqIdx = bodyText.search(/Requisition\s*#/i);
+      if (reqIdx > 0) {
+        const afterReq = bodyText.slice(reqIdx + 20, reqIdx + 6000);
+        // Stop before "Apply for Job" / nav footers
+        const stopIdx = afterReq.search(/\b(Apply for Job|Sign Up for Job|Previous Job|My Profile)\b/i);
+        const extracted = (stopIdx > 100 ? afterReq.slice(0, stopIdx) : afterReq).trim();
         if (extracted.length > 100) return extracted;
       }
       return '';

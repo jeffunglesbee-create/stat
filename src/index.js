@@ -20,7 +20,7 @@ export { SalaryInferenceDO } from './salary.js';
 export { BatchPollerDO } from './batch.js';
 export {
   GreenhouseDO, LeverDO, AshbyDO, WorkdayDO,
-  IcimsDO, SuccessFactorsDO, TaleoDO, OracleHcmDO, InforHcmDO,
+  IcimsDO, SuccessFactorsDO, TaleoDO, OracleHcmDO, InforHcmDO, SelectMindsDO,
 } from './platform-do.js';
 
 import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, BATCH_POLLER, LEARNING } from './config.js';
@@ -305,6 +305,7 @@ async function bootstrapDOs(env) {
     { binding: 'TALEO_DO',          ats: 'taleo' },
     { binding: 'ORACLE_HCM_DO',     ats: 'oracle_hcm' },
     { binding: 'INFOR_HCM_DO',      ats: 'infor_hcm' },
+    { binding: 'SELECTMINDS_DO',    ats: 'selectminds' },
   ];
 
   const registry = await loadDoRegistry(env);

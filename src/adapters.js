@@ -1071,6 +1071,136 @@ export async function fetchInforHcm(company) {
   } catch { return []; }
 }
 
+// SELECTMINDS (Oracle Taleo Social Sourcing)
+// Confirmed 2026-06-08 via html_probe (aa083s01.upgrade.selectminds.com/utmb):
+//
+// Architecture: Ember SPA with full server-side rendering of job DETAIL pages.
+//   Listing pages: Ember renders job cards client-side — no job hrefs in SSR HTML.
+//   Detail pages:  fully SSR'd with title, location, description, hidden inputs.
+//
+// Discovery strategy: sequential ID walk.
+//   Job IDs are sequential integers (current range ~3000–3300).
+//   GET /jobs/{id} → 200 = active job (parse it), 404 = expired/invalid (skip).
+//   Fetch up to SELECTMINDS_SCAN_WINDOW IDs per alarm cycle, sliding forward from
+//   the last confirmed live ID stored in the company's cursor state.
+//
+// Detail page hidden inputs (confirmed 2026-06-08):
+//   Job.id                → SelectMinds integer job ID
+//   Job.taleo_job_number  → Taleo requisition ID (UTMB uses Taleo as backend)
+//   Job.apply_url         → direct apply URL (may be empty — use detail page URL)
+//
+// URL patterns confirmed:
+//   GET /jobs/{id}                          → detail page (numeric-only redirect)
+//   GET /jobs/{title-slug}-{id}             → canonical detail URL
+//   GET /jobs/{id}/other-jobs-matching/...  → SSR listing (all jobs, no links)
+//   GET /ajax/jobs/{sessionId}/add/category/{catId} → JSON filter API
+//     Returns: { "Status":"OK", "UserMessage":"{count}", "Result":"{newSessionId}" }
+//
+// Known category IDs (UTMB, confirmed by probe 2026-06-08):
+//   4  = Faculty (120)
+//   5  = Nursing & Care Management (110)
+//   19 = Research Academic & Clinical (93)
+//   67 = Allied Health
+//   8  = Clinical Laboratory (18)
+//   6  = Business, Managerial & Finance (39)
+//   IT = unknown ID (not in top-6; ~33 jobs based on S9 "33 Epic jobs" observation)
+//
+// No authentication required. Plain fetch() from CF Worker IP confirmed working.
+// Previous S9 "host not in allowlist" error: wrong URL path (/utmb/jobs vs /utmb).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SELECTMINDS_SCAN_WINDOW = 60;  // IDs to scan per alarm cycle
+const SELECTMINDS_MIN_ID      = 2000; // Safety floor — IDs below this are too old
+
+export async function fetchSelectMinds(company) {
+  if (!company.url) return [];
+  try {
+    // company.url = 'https://aa083s01.upgrade.selectminds.com/utmb'
+    // company.token = numeric string of last confirmed high-water mark ID
+    const base     = company.url.replace(/\/$/, '');
+    const startId  = Math.max(
+      parseInt(company.token ?? '3000', 10) - 10, // scan back 10 from cursor
+      SELECTMINDS_MIN_ID
+    );
+    const endId    = startId + SELECTMINDS_SCAN_WINDOW;
+
+    const jobs = [];
+
+    for (let id = startId; id <= endId; id++) {
+      try {
+        const res = await fetch(`${base.replace(/\/utmb$/, '')}/jobs/${id}`, {
+          headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*' },
+          redirect: 'follow',
+        });
+        if (res.status === 404) continue;
+        if (!res.ok) continue;
+
+        const html = await res.text();
+
+        // Confirm this is a real job detail page (not an error or listing page)
+        if (!html.includes('name="Job.id"') && !html.includes('job_details.shtml')) continue;
+
+        // Extract Job.id from hidden input (canonical ID, may differ from URL id if redirect)
+        const jobIdMatch  = html.match(/name="Job\.id"\s+value="(\d+)"/);
+        const taleoMatch  = html.match(/name="Job\.taleo_job_number"\s+value="(\d+)"/);
+        const applyMatch  = html.match(/name="Job\.apply_url"\s+value="([^"]*)"/);
+        const jobId       = jobIdMatch?.[1] ?? String(id);
+        const taleoNum    = taleoMatch?.[1] ?? '';
+
+        // Title: <title> tag, strip " - UTMB Health..." suffix
+        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        const rawTitle   = titleMatch?.[1]?.trim() ?? '';
+        const title      = rawTitle
+          .replace(/\s*-\s*UTMB Health Talent Acquisition Team Careers.*$/i, '')
+          .trim();
+        if (!title) continue;
+
+        // og:title contains "Title in City, State" — extract location from it
+        const ogTitle    = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i)?.[1] ?? '';
+        const location   = ogTitle.includes(' in ')
+          ? ogTitle.replace(/^.*? in /, '').replace(/,\s*United States$/, '').trim()
+          : '';
+
+        // Description: og:description (snippet only) — enrich.js fetches full body
+        const description = html.match(
+          /<meta[^>]+name="description"[^>]+content="([^"]+)"/i
+        )?.[1]?.trim() ?? '';
+
+        // Canonical URL: prefer /jobs/{slug}-{id} form from <link rel="canonical">
+        const canonMatch = html.match(/<link[^>]+rel="canonical"[^>]+href="([^"]+)"/i);
+        const applyUrl   = applyMatch?.[1] || canonMatch?.[1]
+          || `${base.replace(/\/utmb$/, '')}/jobs/${jobId}`;
+
+        const environment = location.toLowerCase().includes('remote') ? 'remote'
+                          : location.toLowerCase().includes('hybrid') ? 'hybrid' : '';
+
+        jobs.push(makeJob({
+          id:          `selectminds_${jobId}`,
+          title,
+          company:     company.name,
+          location,
+          environment,
+          salary:      null,                  // SelectMinds/Taleo does not disclose salary
+          url:         applyUrl,
+          postedAt:    null,                  // Not in page HTML
+          atsSource:   'selectminds',
+          description,                        // og:description snippet; enrich.js gets body
+          // Store Taleo number for potential cross-reference
+          ...(taleoNum ? { _taleoNum: taleoNum } : {}),
+        }));
+
+        await new Promise(r => setTimeout(r, 150)); // polite delay
+      } catch { continue; }
+    }
+
+    if (jobs.length > 0) {
+      console.log(`[STAT SelectMinds] ${company.name}: ${jobs.length} jobs from ID range ${startId}-${endId}`);
+    }
+    return jobs;
+
+  } catch { return []; }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Dispatcher — routes to the right adapter by ATS type
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1085,6 +1215,7 @@ export async function fetchCompanyJobs(company, env) {
     case 'taleo':          return fetchTaleo(company, env);
     case 'oracle_hcm':     return fetchOracleHcm(company);
     case 'infor_hcm':      return fetchInforHcm(company);
+    case 'selectminds':    return fetchSelectMinds(company);
     default: return [];
   }
 }

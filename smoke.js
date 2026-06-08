@@ -195,6 +195,16 @@ assert('platform-do: brLog declared in alarm loop', read('platform-do.js').inclu
 assert('platform-do: brLog captures workday _source', read('platform-do.js').includes('jobs._source'));
 assert('adapters: fetchWorkday tags result with log', adaptersSrc.includes('Workday-SSR plain fetch') || adaptersSrc.includes('[STAT Workday]'));
 assert('adapters: fetchWorkday stops at empty pages', adaptersSrc.includes('links.length < 20'));
+assert('adapters: fetchSelectMinds exported', adaptersSrc.includes('export async function fetchSelectMinds'));
+assert('adapters: fetchSelectMinds uses sequential ID walk', adaptersSrc.includes('SELECTMINDS_SCAN_WINDOW'));
+assert('adapters: fetchSelectMinds in dispatcher', adaptersSrc.includes("case 'selectminds':"));
+assert('platform-do: fetchSelectMinds imported', read('platform-do.js').includes('fetchSelectMinds'));
+assert('platform-do: selectminds case in _fetchJobs', read('platform-do.js').includes("case 'selectminds':"));
+assert('platform-do: SelectMindsDO exported', read('platform-do.js').includes('export class SelectMindsDO'));
+assert('index: SelectMindsDO exported', read('index.js').includes('SelectMindsDO'));
+assert('index: SELECTMINDS_DO in bootstrap', read('index.js').includes("'SELECTMINDS_DO'"));
+assert('config: selectminds polling interval defined', read('config.js').includes("selectminds:"));
+assert('enrich: selectminds in NEEDS_PLAIN_FETCH', read('enrich.js').includes("'selectminds'"));
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;

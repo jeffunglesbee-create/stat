@@ -31,6 +31,7 @@
 import {
   fetchGreenhouse, fetchLever, fetchAshby,
   fetchWorkday, fetchICIMS, fetchSuccessFactors, fetchTaleo, fetchOracleHcm, fetchInforHcm,
+  fetchSelectMinds,
 } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
@@ -311,6 +312,7 @@ class PlatformDO {
       case 'taleo':          return fetchTaleo(company, this.env);
       case 'oracle_hcm':     return fetchOracleHcm(company);
       case 'infor_hcm':      return fetchInforHcm(company);
+      case 'selectminds':    return fetchSelectMinds(company);
       default:               return [];
     }
   }
@@ -351,6 +353,9 @@ export class OracleHcmDO      extends PlatformDO {
 }
 export class InforHcmDO       extends PlatformDO {
   constructor(s, e) { super(s, e, 'infor_hcm'); }
+}
+export class SelectMindsDO    extends PlatformDO {
+  constructor(s, e) { super(s, e, 'selectminds'); }
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────

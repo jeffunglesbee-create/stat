@@ -219,6 +219,7 @@ export function getPollingInterval(ats) {
     taleo:          8 * 60_000,
     oracle_hcm:     8 * 60_000,
     infor_hcm:      8 * 60_000,
+    selectminds:    8 * 60_000,  // ID range walk — 60 IDs/cycle, polite 150ms delay
   };
   return Math.max(windowMs, floors[ats] ?? 4 * 60_000);
 }
@@ -553,7 +554,17 @@ export const SEED_COMPANIES = [
   { name: 'Fairview Health Services',  ats: 'taleo', token: 'fairview',
     url: 'https://fairview.taleo.net/careersection/2/jobsearch.ftl' },
 
-  // ── Remote customer service / BPO employers ───────────────────────────────
+  // ── Health systems — SelectMinds (Oracle Taleo Social Sourcing) ───────────
+  // SelectMinds is Taleo's social referral layer. Ember SPA with fully SSR'd
+  // detail pages. Discovery via sequential ID walk (plain fetch, no auth).
+  // token = string of the starting SelectMinds job ID for the scan window.
+  // Update token after each confirmed live high-water mark to slide the window.
+  // Confirmed 2026-06-08: 700+ jobs live, Epic roles in IT category (~33 jobs).
+  { name: 'UTMB Health',               ats: 'selectminds', token: '3180',
+    url: 'https://aa083s01.upgrade.selectminds.com/utmb' },
+  // University of Texas Medical Branch. Galveston TX. ~13K employees.
+  // Epic shop confirmed by job title: "Lead Clinical Application Systems Analyst - Epic (90% remote)".
+  // Backend: Taleo (Job.taleo_job_number exposed in hidden inputs).
   { name: 'Concentrix',                ats: 'workday', token: 'concentrix',
     url: 'https://concentrix.wd5.myworkdayjobs.com/en-US/External', mdApproved: true },
   { name: 'TTEC',                      ats: 'workday', token: 'ttec',

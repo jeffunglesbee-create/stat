@@ -62,6 +62,10 @@ name = "INFOR_HCM_DO"
 class_name = "InforHcmDO"
 
 [[durable_objects.bindings]]
+name = "SELECTMINDS_DO"
+class_name = "SelectMindsDO"
+
+[[durable_objects.bindings]]
 name = "BATCH_POLLER"
 class_name = "BatchPollerDO"
 
@@ -109,6 +113,10 @@ binding = "MYBROWSER"
 [[migrations]]
   tag = "v6"
   new_sqlite_classes = ["InforHcmDO"]
+
+[[migrations]]
+  tag = "v7"
+  new_sqlite_classes = ["SelectMindsDO"]
 
 
 # ── Module rules — treat .html files as text imports ─────────────────────────
