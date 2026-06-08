@@ -665,13 +665,23 @@ async function maybeRunJobhiveScan(env) {
         if (!title.includes('epic')) return;
         if (!isRemote && !/\b[A-Z]{2}\b/.test(location)) return;
 
+        // Extract description only on matching rows — bounded to match count, not all rows
+        // Description at col 15: may be HTML, strip tags for matchJob/fit scoring use
+        const descRaw = f[15] || '';
+        const description = descRaw
+          .replace(/\\r\\n/g, ' ').replace(/\\n/g, ' ').replace(/\\r/g, ' ')
+          .replace(/&#?[a-zA-Z0-9]+;/g, ' ')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ').trim();
+
         totalMatches++;
-        // Build a minimal job object for maybeAddOrPromoteCompany
+        // Build job object with description for matchJob/fit scoring
         await maybeAddOrPromoteCompany(env, {
-          url:     applyUrl,
+          url:         applyUrl,
           company,
-          title:   f[1] || '',
+          title:       f[1] || '',
           location,
+          description, // enables keyword matching against description text
         }, { gate: 'strict' }).catch(() => {});
       }
 
@@ -1070,18 +1080,27 @@ async function handleFetch(request, env) {
           ? (salMax ? `$${Math.round(salMin/1000)}k–$${Math.round(salMax/1000)}k` : `$${Math.round(salMin/1000)}k+`)
           : null;
 
+        // Extract description only on matching rows
+        const descRaw = f[15] || '';
+        const description = descRaw
+          .replace(/\\r\\n/g, ' ').replace(/\\n/g, ' ').replace(/\\r/g, ' ')
+          .replace(/&#?[a-zA-Z0-9]+;/g, ' ')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ').trim().slice(0, 1000); // cap at 1KB for probe response
+
         matches.push({
-          id:       `jobhive:${ats}:${atsId || f[17] || rowCount}`,
-          title:    f[1] || '',
+          id:          `jobhive:${ats}:${atsId || f[17] || rowCount}`,
+          title:       f[1] || '',
           company,
-          location: location.replace(/\{[^}]+\}/g, '').trim(),
+          location:    location.replace(/\{[^}]+\}/g, '').trim(),
           atsType,
           atsId,
           isRemote,
-          salary:   salStr,
+          salary:      salStr,
           postedAt,
-          url:      applyUrl,
-          source:   'jobhive-csv',
+          url:         applyUrl,
+          description: description || null,
+          source:      'jobhive-csv',
         });
       }
 
