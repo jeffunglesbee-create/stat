@@ -11,7 +11,7 @@
  *   Oracle HCM    → class="job-details__description-content" div → og:description fallback
  *   Infor HCM     → class="lm-richtext-content _op_PositionDescription..." div → full body text fallback
  *   iCIMS         → page is a SPA — Browser Rendering API required
- *   Taleo         → page is a SPA — Browser Rendering API required
+ *   Taleo         → initialHistory hidden field (URL-decoded, !|! delimited) → plain fetch
  *   SuccessFactors → page is a SPA — no path without auth; use HiringCafe v5 coverage
  *
  * Browser Rendering API:
@@ -32,11 +32,11 @@ import puppeteer from '@cloudflare/puppeteer';
 // ATS platforms needing plain HTML og:description fetch
 // iCIMS verified 2026-06-06: plain fetch() with ?in_iframe=1 works from CF Worker.
 // Moved from NEEDS_BROWSER_FETCH. See session doc Part 2 for full investigation.
-const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe', 'oracle_hcm', 'infor_hcm']);
+const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe', 'oracle_hcm', 'infor_hcm', 'taleo']);
 
 // ATS platforms needing JavaScript execution via Browser Rendering.
 // Taleo only — iCIMS moved to NEEDS_PLAIN_FETCH (plain fetch + ?in_iframe=1).
-const NEEDS_BROWSER_FETCH = new Set(['taleo']);
+const NEEDS_BROWSER_FETCH = new Set([]); // taleo moved to NEEDS_PLAIN_FETCH (2026-06-08)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Plain HTML fetch — server-rendered description (Workday + iCIMS)
@@ -276,6 +276,72 @@ async function fetchPlainDescription(job) {
           }
           return extracted;
         }
+      }
+      return '';
+    }
+
+    // Taleo (Oracle): description embedded in hidden <input id="initialHistory"> field.
+    // Confirmed 2026-06-08 via UPMC jobdetail.ftl HTML analysis:
+    //   Field is URL-encoded, 154+ pipe-delimited (!|!) values.
+    //   Description sections delimited by !*! within the pipe fields.
+    //   Salary: hourly rate in fields [39] (max) and [40] (min) — converted × 2080.
+    //   All job data present in plain HTML GET — BR not required for detail pages.
+    //
+    // Detail page URL: {tenant}.taleo.net/careersection/{n}/jobdetail.ftl?job={id}
+    // (NOT jobapply.ftl — that is the application form, wrong page)
+    if (job.atsSource === 'taleo') {
+      // Extract initialHistory hidden field
+      const histMatch = html.match(/id="initialHistory"\s+value="([^"]{200,})"/i)
+                     || html.match(/name="initialHistory"\s+[^>]*value="([^"]{200,})"/i);
+      if (histMatch) {
+        try {
+          const decoded = decodeURIComponent(histMatch[1]);
+          const fields = decoded.split('!|!');
+
+          // Description: fields containing !*! delimiter are description sections
+          const descSections = [];
+          for (const field of fields) {
+            if (field.includes('!*!')) {
+              const sections = field.split('!*!').filter(s => s.trim().length > 20);
+              descSections.push(...sections);
+            }
+          }
+          const description = descSections
+            .join(' ')
+            .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+            .replace(/&nbsp;/g, ' ').replace(/&#\d+;/g, ' ')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\:/g, ':').replace(/\\:/g, ':')
+            .replace(/\s+/g, ' ').trim();
+
+          if (description.length > 100) {
+            // Extract hourly salary from fields [39/40/41]
+            if (!job.salary && fields.length > 41) {
+              const minRaw = parseFloat(fields[40]);
+              const maxRaw = parseFloat(fields[39]);
+              if (!isNaN(minRaw) && !isNaN(maxRaw) && minRaw > 0 && maxRaw > 0) {
+                const lo = Math.round(minRaw * 2080);
+                const hi = Math.round(maxRaw * 2080);
+                job.salary = `$${Math.round(lo/1000)}k–$${Math.round(hi/1000)}k`;
+                job.salaryRaw = { min: lo, max: hi };
+              }
+            }
+            return description;
+          }
+        } catch {}
+      }
+
+      // Fallback: body text starting after "Beginning of the main content"
+      const bodyText = html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+        .replace(/\s+/g, ' ').trim();
+      const mainIdx = bodyText.indexOf('Beginning of the main content');
+      if (mainIdx > 0) {
+        const extracted = bodyText.slice(mainIdx + 40, mainIdx + 4000).trim();
+        if (extracted.length > 100) return extracted;
       }
       return '';
     }

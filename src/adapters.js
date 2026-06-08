@@ -583,17 +583,27 @@ export async function fetchSuccessFactors(company) {
 // HTML parse of the job search page
 // URL pattern: {company}.taleo.net/careersection/{n}/jobsearch.ftl
 //
-// ARCHITECTURE (verified Session Part 1, 2026-06-06):
-//   SEARCH page (/jobsearch.ftl): JavaScript SPA — job data loaded via XHR after
-//     JS executes. Plain fetch() returns the shell HTML with no job data.
-//     Browser Rendering renders the SPA and extracts job IDs from the DOM.
+// ARCHITECTURE (updated 2026-06-08):
+//   SEARCH page (/jobsearch.ftl): JavaScript SPA — job data loaded via XHR.
+//     Browser Rendering required to render SPA and extract job IDs.
 //     Confirmed: BR returns 20 real job detail URLs from TUHS in ~3.8s.
 //
-//   DETAIL page (/jobdetail.ftl?job={id}): SERVER-RENDERED HTML — full job
-//     description in DOM body text. Plain fetch() works, confirmed 200 + body.
-//     og:description is boilerplate ("Click the link...") — use body text.
+//   DETAIL page (/jobdetail.ftl?job={id}): SERVER-RENDERED HTML.
+//     Contains hidden <input id="initialHistory"> with ALL job data:
+//     URL-encoded, 154+ pipe-delimited (!|!) fields including:
+//       field[12] = title
+//       field[14] = location (USA-US--Work From Home)
+//       field[18] = work location display text
+//       field[24] = department
+//       field[28] = schedule (Full-Time)
+//       fields[34+] = description sections (delimited by !*!)
+//       field[39] = salary max (hourly), field[40] = salary min (hourly)
+//     og:description is always boilerplate ("Click the link...") — ignore.
+//     enrichDescriptions() handles via fetchPlainDescription() — NO BR needed.
 //
-// env.MYBROWSER must be passed in for Browser Rendering.
+// BR required: search page (job ID discovery) only.
+// BR NOT required: detail page (description + salary extraction).
+// env.MYBROWSER must be passed in for BR search page.
 // Falls back to [] if MYBROWSER is unavailable.
 // ─────────────────────────────────────────────────────────────────────────────
 import puppeteer from '@cloudflare/puppeteer';
@@ -643,19 +653,22 @@ export async function fetchTaleo(company, env) {
 
     if (jobLinks.length === 0) return [];
 
-    // Step 2: Plain fetch() each detail page — server-rendered HTML
-    // og:description is boilerplate; real description is in body text (enrich.js handles)
+    // Step 2: Build job objects from BR-extracted links.
+    // enrichDescriptions() handles detail page fetch via fetchPlainDescription():
+    //   - Decodes initialHistory hidden field (URL-encoded, !|! delimited)
+    //   - Extracts title, location, description sections, hourly salary
+    //   - Converts hourly × 2080 to annual range
+    //   - No BR required for detail pages (confirmed 2026-06-08)
     const jobs = [];
     for (const link of jobLinks) {
       try {
         const jobIdMatch = link.match(/[?&]job=(\d+)/);
         if (!jobIdMatch) continue;
         const jobId = jobIdMatch[1];
+        const detailUrl = link.startsWith('http') ? link : base + link;
 
-        // Build the detail URL with the same careersection path
-        const detailUrl = link.startsWith('http') ? link
-          : base + link;
-
+        // Fetch detail page once to extract title + metadata from initialHistory
+        // (enrichDescriptions() would fetch again — do it here to populate title)
         const res = await fetch(detailUrl, {
           headers: { 'User-Agent': UA, 'Accept': 'text/html' },
           redirect: 'follow',
@@ -663,35 +676,56 @@ export async function fetchTaleo(company, env) {
         if (!res.ok) continue;
         const html = await res.text();
 
-        // Extract title from <title> tag
-        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-        const rawTitle = titleMatch?.[1]?.trim() ?? '';
-        // Taleo titles: "Job Description - {Title} = {Campus}" or just the title
-        const title = rawTitle.replace(/^Job Description\s*[-–]\s*/i, '').replace(/=.*$/, '').trim();
+        // Parse initialHistory for title, location, salary
+        let title = '', location = '', salary = null, salaryRaw = null;
+        const histMatch = html.match(/id="initialHistory"\s+value="([^"]{200,})"/i);
+        if (histMatch) {
+          try {
+            const decoded = decodeURIComponent(histMatch[1]);
+            const fields = decoded.split('!|!');
+            title    = fields[12]?.replace(/<[^>]+>/g, '').trim() ?? '';
+            location = (fields[18]?.replace(/<[^>]+>/g, '').trim()
+                    || fields[14]?.replace('USA-US--', '').replace(/-/g, ', ').trim()) ?? '';
+            // Hourly salary in fields[40] (min) and fields[39] (max)
+            const minH = parseFloat(fields[40]);
+            const maxH = parseFloat(fields[39]);
+            if (!isNaN(minH) && !isNaN(maxH) && minH > 0) {
+              const lo = Math.round(minH * 2080);
+              const hi = Math.round(maxH * 2080);
+              salary    = `$${Math.round(lo/1000)}k\u2013$${Math.round(hi/1000)}k`;
+              salaryRaw = { min: lo, max: hi };
+            }
+          } catch {}
+        }
 
-        // Extract location from structured data or meta tags
-        const locMatch = html.match(/class="[^"]*location[^"]*"[^>]*>([^<]+)</i)
-                      || html.match(/<span[^>]*>([^<]*,\s*[A-Z]{2}[^<]*)<\/span>/);
-        const location = locMatch?.[1]?.trim() ?? '';
+        // Fallback title from <title> tag
+        if (!title) {
+          const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+          const rawTitle = titleMatch?.[1]?.trim() ?? '';
+          title = rawTitle.replace(/^Job Description\s*[-–]\s*/i, '').replace(/=.*$/, '').trim();
+        }
 
-        // Extract posted date if present
-        const dateMatch = html.match(/(?:posted|opening date)[^>]*>([^<]+)</i);
-        const postedAt = dateMatch?.[1]?.trim() ?? null;
+        if (!title) continue;
+
+        const environment = location.toLowerCase().includes('remote')
+                         || location.toLowerCase().includes('work from home') ? 'remote'
+                          : location.toLowerCase().includes('hybrid') ? 'hybrid' : '';
 
         jobs.push(makeJob({
           id:          'taleo:' + jobId,
           title,
           company:     company.name,
           location,
-          environment: '',   // populated by enrich.js description fetch
-          salary:      null,
+          environment,
+          salary,
+          salaryRaw,
           url:         detailUrl,
-          postedAt,
+          postedAt:    null,
           atsSource:   'taleo',
-          description: '',   // populated by enrich.js (BR handles Taleo detail pages)
+          description: '', // enrichDescriptions() parses initialHistory for description sections
         }));
 
-        await new Promise(r => setTimeout(r, 200)); // polite delay
+        await new Promise(r => setTimeout(r, 150)); // polite delay
       } catch (e) {
         console.warn('[STAT Taleo] detail fetch failed:', e.message);
       }
