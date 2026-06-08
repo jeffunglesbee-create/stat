@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T04:41:40Z
-HEAD: 17fba20
+Generated: 2026-06-08T04:43:47Z
+HEAD: 20a97c5
 Smoke: 66/66
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  17fba20 feat: HC enrichment parity — liveness, salary, MD scoring, saveRecentMatches
+  20a97c5 feat: jobhive first-alert — discovered jobs fire P3 dispatch immediately
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
