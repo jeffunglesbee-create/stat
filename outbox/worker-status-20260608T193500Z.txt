@@ -1,0 +1,164 @@
+=== STAT Worker Bootstrap + Status 20260608T193500Z ===
+
+--- POST /bootstrap ---
+{
+    "ok": true,
+    "spawned": 0,
+    "total": 429,
+    "resumeStatus": "skipped"
+}
+
+--- GET / (status) ---
+{
+    "name": "STAT Job Watcher",
+    "version": "2.0.0",
+    "activeDOs": 101,
+    "watchedCompanies": 429,
+    "batchWatchlist": 57,
+    "totalMonitored": 486,
+    "seenJobIds": 2057,
+    "resumeProfile": "stored \u00b7 Epic Systems Analyst",
+    "fitScoring": "active",
+    "salary": {
+        "peers": 500,
+        "lcaRecords": 0,
+        "blsCacheAge": "never",
+        "lcaCacheAge": "never",
+        "status": "cold-start"
+    },
+    "endpoints": {
+        "GET /": "This status overview",
+        "POST /trigger": "Run HiringCafe scrape now",
+        "POST /bootstrap": "Spawn DOs for all companies",
+        "GET /companies": "List all watched companies",
+        "POST /companies": "Add a company (body: {name,ats,token,url?})",
+        "GET /platform/:ats/status": "Status of a platform DO (greenhouse/lever/etc.)",
+        "GET /salary-status": "Salary DO status",
+        "POST /salary-refresh": "Re-fetch salary caches",
+        "GET /profile": "Get stored resume profile",
+        "POST /profile": "Store resume profile (JSON from resume-matcher)",
+        "DELETE /profile": "Remove stored profile",
+        "GET /learning": "Auto-discovered companies + promotion status",
+        "GET /batch-status": "BatchPollerDO cycle status + cursor position",
+        "GET /br-test?url=&ats=": "Browser Rendering diagnostic \u2014 test against iCIMS/Taleo SPAs",
+        "POST /reset-seen": "Clear seen job IDs",
+        "POST /reset-all": "Nuclear reset"
+    }
+}
+
+--- GET /platform/selectminds/status ---
+ERROR: /platform/selectminds/status unreachable
+
+--- GET /logs?limit=20 ---
+Raw bytes: 3271
+[
+  {
+    "ts": "2026-06-08T19:34:49.988Z",
+    "type": "alarm",
+    "ats": "successfactors",
+    "polled": 11,
+    "newMatches": 0,
+    "cursor": 2,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:33:40.766Z",
+    "type": "alarm",
+    "ats": "ashby",
+    "polled": 8,
+    "newMatches": 0,
+    "cursor": 3,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:31:38.910Z",
+    "type": "alarm",
+    "ats": "icims",
+    "polled": 15,
+    "newMatches": 0,
+    "cursor": 10,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:29:34.558Z",
+    "type": "alarm",
+    "ats": "ashby",
+    "polled": 8,
+    "newMatches": 0,
+    "cursor": 4,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:27:33.235Z",
+    "type": "alarm",
+    "ats": "greenhouse",
+    "polled": 15,
+    "newMatches": 0,
+    "cursor": 5,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:27:22.052Z",
+    "type": "alarm",
+    "ats": "icims",
+    "polled": 15,
+    "newMatches": 0,
+    "cursor": 12,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:26:28.023Z",
+    "type": "alarm",
+    "ats": "successfactors",
+    "polled": 11,
+    "newMatches": 0,
+    "cursor": 9,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:25:28.367Z",
+    "type": "alarm",
+    "ats": "ashby",
+    "polled": 8,
+    "newMatches": 0,
+    "cursor": 5,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:23:26.122Z",
+    "type": "alarm",
+    "ats": "greenhouse",
+    "polled": 15,
+    "newMatches": 0,
+    "cursor": 49,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:23:04.700Z",
+    "type": "alarm",
+    "ats": "icims",
+    "polled": 15,
+    "newMatches": 0,
+    "cursor": 14,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:21:21.042Z",
+    "type": "alarm",
+    "ats": "ashby",
+    "polled": 8,
+    "newMatches": 0,
+    "cursor": 6,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:18:47.390Z",
+    "type": "alarm",
+    "ats": "icims",
+    "polled": 15,
+    "newMatches": 0,
+    "cursor": 16,
+    "errors": []
+  },
+  {
+    "ts": "2026-06-08T19:18:06.34
