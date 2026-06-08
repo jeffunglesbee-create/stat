@@ -1110,30 +1110,35 @@ export async function fetchInforHcm(company) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SELECTMINDS_SCAN_WINDOW = 60;  // IDs to scan per alarm cycle
-const SELECTMINDS_MIN_ID      = 2000; // Safety floor — IDs below this are too old
+const SELECTMINDS_MIN_ID      = 1000; // Floor — UTMB has active jobs from ID ~1000+
+const SELECTMINDS_MAX_ID      = 3400; // Soft ceiling — update when new jobs post above this
 
-export async function fetchSelectMinds(company) {
+// fetchSelectMinds accepts an optional `selectmindsCursor` (integer) from the
+// calling DO. The cursor advances by SELECTMINDS_SCAN_WINDOW each alarm cycle
+// and wraps at SELECTMINDS_MAX_ID. Returns jobs array with _nextCursor attached
+// so the DO can persist it without needing a separate storage write per adapter call.
+//
+// BUG HISTORY (fixed 2026-06-09):
+//   - SELECTMINDS_MIN_ID was 2000, overriding config token of 1000 via Math.max
+//   - loop used `startId` not `effectiveStart`, so wrap never applied
+//   - cursor wasn't persisted — every cycle restarted from token (static config value)
+
+export async function fetchSelectMinds(company, selectmindsCursor = null) {
   if (!company.url) return [];
   try {
-    // company.url = 'https://aa083s01.upgrade.selectminds.com/utmb'
-    // company.token = numeric string of the cursor ID to scan FROM this cycle.
-    // The cursor advances by SELECTMINDS_SCAN_WINDOW each alarm cycle.
-    // When it reaches the top (max known ID), it wraps back to SELECTMINDS_MIN_ID.
-    // This ensures the full active job population is covered over multiple cycles.
-    // At 60 IDs/cycle × 8min interval: full 1000-ID range takes ~2.2 hours.
-    const base     = company.url.replace(/\/$/, '');
-    const MAX_ID   = 3300; // update periodically as new jobs are posted
-    const startId  = Math.max(
-      parseInt(company.token ?? '1000', 10),
-      SELECTMINDS_MIN_ID
-    );
-    // Wrap cursor: if we've reached the top, restart from the bottom
-    const effectiveStart = startId > MAX_ID ? SELECTMINDS_MIN_ID : startId;
-    const endId    = effectiveStart + SELECTMINDS_SCAN_WINDOW;
+    const base = company.url.replace(/\/$/, '');
+
+    // Use persisted cursor if provided; fall back to config token; floor at MIN_ID
+    const rawCursor = selectmindsCursor
+      ?? parseInt(company.token ?? String(SELECTMINDS_MIN_ID), 10);
+    const effectiveStart = rawCursor > SELECTMINDS_MAX_ID
+      ? SELECTMINDS_MIN_ID
+      : Math.max(rawCursor, SELECTMINDS_MIN_ID);
+    const endId = effectiveStart + SELECTMINDS_SCAN_WINDOW;
 
     const jobs = [];
 
-    for (let id = startId; id <= endId; id++) {
+    for (let id = effectiveStart; id <= endId; id++) {
       try {
         const res = await fetch(`${base.replace(/\/utmb$/, '')}/jobs/${id}`, {
           headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*' },
@@ -1203,9 +1208,12 @@ export async function fetchSelectMinds(company) {
       } catch { continue; }
     }
 
-    if (jobs.length > 0) {
-      console.log(`[STAT SelectMinds] ${company.name}: ${jobs.length} jobs from ID range ${startId}-${endId}`);
-    }
+    // Attach next cursor so the DO can persist it without a separate storage write.
+    // Advances by SCAN_WINDOW; wraps at MAX_ID back to MIN_ID.
+    const nextCursor = endId + 1 > SELECTMINDS_MAX_ID ? SELECTMINDS_MIN_ID : endId + 1;
+    jobs._nextCursor = nextCursor;
+
+    console.log(`[STAT SelectMinds] ${company.name}: ${jobs.length} active jobs, IDs ${effectiveStart}-${endId}, nextCursor=${nextCursor}`);
     return jobs;
 
   } catch { return []; }

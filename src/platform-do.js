@@ -151,6 +151,15 @@ class PlatformDO {
       cursor = (await this.storage.get('poll_cursor') ?? 0) % allCompanies.length;
     } catch {}
 
+    // SelectMinds ID-walk cursor — persisted separately from the company chunk cursor.
+    // Loaded once per alarm cycle, written back after fetchSelectMinds returns.
+    if (this.ats === 'selectminds') {
+      try {
+        this._selectmindsCursor = await this.storage.get('selectminds_cursor') ?? null;
+        if (this._selectmindsCursor !== null) this._selectmindsCursor = parseInt(this._selectmindsCursor, 10);
+      } catch { this._selectmindsCursor = null; }
+    }
+
     // Slice the chunk starting at cursor, wrapping around
     const chunk = [];
     for (let i = 0; i < CHUNK_SIZE && i < allCompanies.length; i++) {
@@ -166,6 +175,13 @@ class PlatformDO {
       try {
         const jobs = await this._fetchJobs(company);
         polledCount++;
+
+        // Persist SelectMinds ID-walk cursor returned by fetchSelectMinds
+        if (this.ats === 'selectminds' && jobs._nextCursor != null) {
+          this._selectmindsCursor = jobs._nextCursor;
+          try { await this.storage.put('selectminds_cursor', String(jobs._nextCursor)); } catch {}
+        }
+
         // Capture Workday BR path result for /logs diagnostic
         if (this.ats === 'workday') {
           brLog.push({ company: company.name, source: jobs._source || 'empty', jobs: jobs.length });
@@ -179,11 +195,11 @@ class PlatformDO {
           }
           if (job.ghostFlag === 'suppress') continue;
 
-          // Browse capture: env-filter BEFORE dedup so Browse populates on
-          // every poll cycle, not just the first. Seen-set dedup is for alert
-          // dedup only — Browse is a "jobs you might have missed" surface and
-          // intentionally ignores seen status.
-          if (passesEnvFilter(job) && !matchJob(job, customKeywords)) {
+          // Browse capture: ALL env-filtered jobs go to Browse, including matched ones.
+          // Seen-set dedup is for ALERT dedup only — not Browse visibility.
+          // Matched jobs stay discoverable in Browse after the recent_matches rolling
+          // window closes (200-entry cap). Browse is the full picture surface.
+          if (passesEnvFilter(job)) {
             unmatchedJobs.push(job);
           }
 
@@ -352,7 +368,7 @@ class PlatformDO {
       case 'taleo':          return fetchTaleo(company, this.env);
       case 'oracle_hcm':     return fetchOracleHcm(company);
       case 'infor_hcm':      return fetchInforHcm(company);
-      case 'selectminds':    return fetchSelectMinds(company);
+      case 'selectminds':    return fetchSelectMinds(company, this._selectmindsCursor ?? null);
       default:               return [];
     }
   }

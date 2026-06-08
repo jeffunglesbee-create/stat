@@ -25,7 +25,7 @@ const pdo = read('platform-do.js');
 // Browse capture must appear before dedup gate
 const unmatchedPushPos = pdo.indexOf('unmatchedJobs.push(job)');
 const dedupPos         = pdo.indexOf('globalSeen.has(job.id)');
-assert('platform-do: Browse capture before dedup gate',
+assert('platform-do: Browse captures all env-filtered jobs before dedup gate',
   unmatchedPushPos !== -1 && dedupPos !== -1 && unmatchedPushPos < dedupPos);
 
 assert('platform-do: saveUnmatchedJobs called in alarm loop',
@@ -39,7 +39,7 @@ const batch = read('batch.js');
 
 const batchUnmatchedPos = batch.indexOf('unmatchedJobs.push(job)');
 const batchDedupPos     = batch.indexOf('seenIds.has(job.id)');
-assert('batch: Browse capture before dedup gate',
+assert('batch: Browse captures all env-filtered jobs before dedup gate',
   batchUnmatchedPos !== -1 && batchDedupPos !== -1 && batchUnmatchedPos < batchDedupPos);
 
 assert('batch: saveUnmatchedJobs called after loop',
@@ -199,6 +199,14 @@ assert('adapters: fetchSelectMinds exported', adaptersSrc.includes('export async
 assert('adapters: fetchSelectMinds uses sequential ID walk', adaptersSrc.includes('SELECTMINDS_SCAN_WINDOW'));
 assert('adapters: fetchSelectMinds skips closed jobs', adaptersSrc.includes('position has been closed'));
 assert('adapters: fetchSelectMinds wraps cursor at MAX_ID', adaptersSrc.includes('SELECTMINDS_MIN_ID'));
+assert('adapters: fetchSelectMinds uses effectiveStart in loop', adaptersSrc.includes('for (let id = effectiveStart'));
+assert('adapters: fetchSelectMinds attaches _nextCursor', adaptersSrc.includes('_nextCursor'));
+assert('adapters: fetchSelectMinds accepts cursor param', adaptersSrc.includes('selectmindsCursor = null'));
+assert('platform-do: selectminds cursor loaded from storage', read('platform-do.js').includes('selectminds_cursor'));
+assert('platform-do: selectminds cursor persisted after fetch', read('platform-do.js').includes('_nextCursor != null'));
+assert('platform-do: Browse captures matched jobs too', !read('platform-do.js').includes('passesEnvFilter(job) && !matchJob'));
+assert('batch: Browse captures matched jobs too', !read('batch.js').includes('passesEnvFilter(job) && !matchJob'));
+assert('index: HC Browse captures matched jobs too', !read('index.js').includes('passesEnvFilter(job) && !matchJob'));
 assert('adapters: fetchSelectMinds in dispatcher', adaptersSrc.includes("case 'selectminds':"));
 assert('platform-do: fetchSelectMinds imported', read('platform-do.js').includes('fetchSelectMinds'));
 assert('platform-do: selectminds case in _fetchJobs', read('platform-do.js').includes("case 'selectminds':"));

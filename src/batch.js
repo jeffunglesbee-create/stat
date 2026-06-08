@@ -102,8 +102,8 @@ export class BatchPollerDO {
             if (job.daysAgo > GHOST.warn_after_days) job.ghostFlag = 'warn';
           }
           if (job.ghostFlag === 'suppress') continue;
-          // Browse capture: env-filter BEFORE dedup (same fix as platform-do.js)
-          if (passesEnvFilter(job) && !matchJob(job, customKeywords)) {
+          // Browse capture: all env-filtered jobs, including matched ones
+          if (passesEnvFilter(job)) {
             unmatchedJobs.push(job);
           }
 

@@ -642,8 +642,8 @@ async function runHiringCafeScrape(env) {
       addToSeen(seenIds, job.id, job.url);
 
       if (job.ghostFlag === 'suppress') continue;
-      // Browse capture for HiringCafe path (Rule 8 — all paths capture unmatched)
-      if (passesEnvFilter(job) && !matchJob(job)) {
+      // Browse capture — all env-filtered jobs, including matched ones (Rule 8)
+      if (passesEnvFilter(job)) {
         unmatchedJobsHC.push(job);
       }
       if (!passesEnvFilter(job)) continue;
