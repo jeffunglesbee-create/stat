@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T13:47:05Z
-HEAD: 692ca32
+Generated: 2026-06-08T13:57:03Z
+HEAD: 7b3483a
 Smoke: 66/66
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  692ca32 fix: iCIMS URL construction — preserve slug, drop regex
+  7b3483a feat: Oracle HCM adapter — Cedars-Sinai live, closes open item #10
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
