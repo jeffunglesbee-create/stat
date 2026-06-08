@@ -868,6 +868,131 @@ async function handleFetch(request, env) {
     }
   }
 
+  // GET /jobhive-scan?ats=workday&maxBytes=52428800&limit=500
+  // Streams a jobhive CSV slice via HTTP range request, finds Epic-matching jobs.
+  // O(1) memory: processes one line at a time via ReadableStream + TextDecoder.
+  // Returns matched jobs for auto-discovery and alerting.
+  //
+  // CSV column layout (schema v2.0, verified 2026-06-07):
+  //   0:url  1:title  2:company  3:ats_type  4:ats_id  5:location
+  //   6:is_remote  7:salary_min  8:salary_max  9:salary_currency
+  //   10:salary_period  11:salary_summary  12:employment_type
+  //   13:department  14:team  15:description  16:posted_at
+  //   17:requisition_id  18:apply_url  19:commitment  20:raw  21:country_iso
+  if (url.pathname === '/jobhive-scan' && request.method === 'GET') {
+    const ats      = url.searchParams.get('ats') || 'workday';
+    const maxBytes = Math.min(parseInt(url.searchParams.get('maxBytes') || String(50 * 1024 * 1024)), 100 * 1024 * 1024);
+    const limit    = Math.min(parseInt(url.searchParams.get('limit') || '500'), 2000);
+    const csvUrl   = `https://storage.stapply.ai/jobhive/v1/${ats}/jobs.csv`;
+
+    try {
+      const res = await fetch(csvUrl, {
+        headers: {
+          'User-Agent': 'STAT-job-watcher/1.0',
+          'Range': `bytes=0-${maxBytes - 1}`,
+        },
+      });
+      if (!res.ok && res.status !== 206) return json({ error: `HTTP ${res.status}` }, 502);
+      if (!res.body) return json({ error: 'no response body' }, 502);
+
+      // Stream CSV line by line — O(1) memory
+      const decoder  = new TextDecoder();
+      const reader   = res.body.getReader();
+      const matches  = [];
+      let   header   = null;
+      let   buf      = '';
+      let   rowCount = 0;
+      let   done     = false;
+
+      // Simple CSV field parser — handles quoted fields with embedded commas
+      function parseCSVLine(line) {
+        const fields = [];
+        let cur = '', inQ = false;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (c === '"') {
+            if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+            else inQ = !inQ;
+          } else if (c === ',' && !inQ) {
+            fields.push(cur); cur = '';
+          } else {
+            cur += c;
+          }
+        }
+        fields.push(cur);
+        return fields;
+      }
+
+      function processLine(line) {
+        if (!line.trim()) return;
+        if (!header) { header = parseCSVLine(line); return; }
+        rowCount++;
+        const f = parseCSVLine(line);
+        const title      = (f[1]  || '').toLowerCase();
+        const company    = f[2]   || '';
+        const atsType    = f[3]   || '';
+        const atsId      = f[4]   || '';
+        const location   = f[5]   || '';
+        const isRemote   = f[6]   === 'true' || f[6] === '1' || f[6] === 'True';
+        const salMin     = parseFloat(f[7]) || null;
+        const salMax     = parseFloat(f[8]) || null;
+        const salCur     = f[9]   || '';
+        const postedAt   = f[16]  || '';
+        const applyUrl   = f[18]  || f[0] || '';
+        const countryIso = (f[21] || '').toUpperCase();
+
+        // Skip non-US jobs
+        if (countryIso && countryIso !== 'US' && countryIso !== 'USA') return;
+
+        // Epic keyword match in title
+        if (!title.includes('epic')) return;
+
+        // Environment filter: remote or US location
+        const locLower = location.toLowerCase();
+        const usState  = /\b[A-Z]{2}\b/.test(location) || locLower.includes('remote') || isRemote;
+        if (!usState && !isRemote) return;
+
+        const salStr = salMin && salCur === 'USD'
+          ? (salMax ? `$${Math.round(salMin/1000)}k–$${Math.round(salMax/1000)}k` : `$${Math.round(salMin/1000)}k+`)
+          : null;
+
+        matches.push({
+          id:       `jobhive:${ats}:${atsId || f[17] || rowCount}`,
+          title:    f[1] || '',
+          company,
+          location: location.replace(/\{[^}]+\}/g, '').trim(),
+          atsType,
+          atsId,
+          isRemote,
+          salary:   salStr,
+          postedAt,
+          url:      applyUrl,
+          source:   'jobhive-csv',
+        });
+      }
+
+      while (!done && matches.length < limit) {
+        const chunk = await reader.read();
+        if (chunk.done) { done = true; break; }
+        buf += decoder.decode(chunk.value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop(); // keep incomplete last line
+        for (const line of lines) processLine(line);
+      }
+      // Process remaining buffer
+      if (buf.trim()) processLine(buf);
+      await reader.cancel();
+
+      return json({
+        ats, rowsScanned: rowCount, matchCount: matches.length,
+        bytesRequested: maxBytes, truncated: !done,
+        matches: matches.slice(0, limit),
+      });
+    } catch (e) {
+      return json({ error: e.message }, 500);
+    }
+  }
+
   // GET /jobhive-sample?ats=workday&bytes=8192 — first N bytes of a slice CSV
   // Used to inspect CSV structure and column layout before building the full scan.
   if (url.pathname === '/jobhive-sample' && request.method === 'GET') {
