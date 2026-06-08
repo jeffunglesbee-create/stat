@@ -1,15 +1,15 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T14:59:21Z
-HEAD: 2a3f197
+Generated: 2026-06-08T15:16:24Z
+HEAD: cbbe89f
 Smoke: 66/66
 
 COMPANIES
-  SEED total: 180
+  SEED total: 206
   Workday: 89 (searchText: 'epic ehr within')
   Greenhouse: 59
 
 RECENT COMMITS
-  2a3f197 feat: Taleo plain fetch — drop BR for descriptions, parse initialHistory field
+  cbbe89f feat: seed 26 additional SAP SuccessFactors health systems
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
