@@ -356,8 +356,8 @@ export const SEED_COMPANIES = [
     url: 'https://commonspirit.wd5.myworkdayjobs.com/en-US/CommonSpiritHealthExternal' },
   { name: 'Intermountain Health',      ats: 'workday', token: 'imh',
     url: 'https://imh.wd108.myworkdayjobs.com/IntermountainCareers' },
-  { name: 'Atrium Health',             ats: 'workday', token: 'atriumhealth',
-    url: 'https://atriumhealth.wd5.myworkdayjobs.com/en-US/Atrium_Health' },
+  { name: 'Advocate Health (Atrium)',   ats: 'workday', token: 'aah',
+    url: 'https://aah.wd5.myworkdayjobs.com/External' },
   { name: 'Geisinger',                 ats: 'workday', token: 'geisinger',
     url: 'https://geisinger.wd5.myworkdayjobs.com/en-US/MyGeisingerCareers' },
   { name: 'Sanford Health',            ats: 'workday', token: 'sanfordhealth',
@@ -390,8 +390,10 @@ export const SEED_COMPANIES = [
     url: 'https://brownhealth.wd12.myworkdayjobs.com/External_Careers' },
   { name: 'WellStar Health',           ats: 'workday', token: 'wellstar',
     url: 'https://wellstar.wd5.myworkdayjobs.com/en-US/WellStarCareers' },
-  { name: 'Northwell Health',          ats: 'workday', token: 'northwell',
-    url: 'https://northwell.wd5.myworkdayjobs.com/en-US/careers' },
+  { name: 'Northwell Health',          ats: 'icims', token: 'northwell',
+    url: 'https://northwell.icims.com/jobs/search?in_iframe=1' },
+  // NOTE: verify northwell.icims.com — job posted at jobs.northwell.edu (iCIMS custom domain)
+  // If search returns 0 jobs, try: careers-northwell.icims.com
   { name: 'NYU Langone Health',        ats: 'workday', token: 'nyulangone',
     url: 'https://nyulangone.wd5.myworkdayjobs.com/en-US/Careers' },
   { name: 'UPMC',                      ats: 'taleo',   token: 'upmc',
