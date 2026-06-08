@@ -119,12 +119,21 @@ class PlatformDO {
       }
     } catch { /* custom keywords optional — static list is fallback */ }
 
-    // Also load global KV seen-set for cross-platform dedup
+    // Also load global seen-map for cross-platform dedup
+    // Format: Map<id, {id, seenAt, diedAt?, url?}> — structured for TTL + ghost resurrection
     let globalSeen;
     try {
       const raw = await storeGet(getStatStore(this.env), 'seen_ids');
-      globalSeen = raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch (e) { console.warn(`[STAT ${this.ats}] globalSeen load failed (cross-platform dedup may be incomplete):`, e.message); globalSeen = new Set(); }
+      if (raw) {
+        const arr = JSON.parse(raw);
+        globalSeen = new Map(arr.map(e => {
+          const entry = typeof e === 'string' ? { id: e, seenAt: new Date(0).toISOString() } : e;
+          return [entry.id, entry];
+        }));
+      } else {
+        globalSeen = new Map();
+      }
+    } catch (e) { console.warn(`[STAT ${this.ats}] globalSeen load failed (cross-platform dedup may be incomplete):`, e.message); globalSeen = new Map(); }
 
     const newMatches    = [];
     const unmatchedJobs = [];   // env-filtered, not keyword-matched
@@ -178,17 +187,42 @@ class PlatformDO {
             unmatchedJobs.push(job);
           }
 
-          // Dedup: check both local and global seen-set (alert path only)
-          if (seenIds.has(job.id) || globalSeen.has(job.id)) continue;
+          // Dedup: check both local per-DO seen-set (Set) and global seen-map (Map)
+          const globalStatus = globalSeen.has(job.id)
+            ? (globalSeen.get(job.id)?.diedAt ? 'dead' : 'seen')
+            : null;
+
+          if (seenIds.has(job.id) || globalStatus === 'seen') continue;
+
+          if (globalStatus === 'dead') {
+            // Ghost resurrection: re-check liveness — if live, clear diedAt and re-alert
+            const liveness = await checkJobLiveness(job);
+            if (liveness !== 'live') { seenIds.add(job.id); continue; }
+            const entry = globalSeen.get(job.id);
+            if (entry) delete entry.diedAt;
+            console.log(`[STAT ${this.ats}] Ghost resurrected: ${job.id} ${job.title}`);
+            // Fall through to match pipeline
+          }
+
           seenIds.add(job.id);
-          globalSeen.add(job.id);
+          // Add to global seen-map with URL for future liveness sweeps
+          globalSeen.set(job.id, {
+            id:     job.id,
+            seenAt: new Date().toISOString(),
+            ...(job.url ? { url: job.url } : {}),
+          });
 
           if (!passesEnvFilter(job)) continue;
           const match = matchJob(job, customKeywords);
           if (!match) continue; // already captured above
 
           const liveness = await checkJobLiveness(job);
-          if (liveness === 'dead') continue;
+          if (liveness === 'dead') {
+            // Mark dead in global seen-map for future sweep resurrection
+            const entry = globalSeen.get(job.id);
+            if (entry) { entry.diedAt = new Date().toISOString(); }
+            continue;
+          }
           job.liveness = liveness;
 
           await enrichJobWithSalary(job, match, this.env);
@@ -243,9 +277,15 @@ class PlatformDO {
     await this.storage.put('seen_count', seenArr.length);
     await this.storage.put('last_run',   new Date().toISOString());
 
-    // Persist global seen-set back to KV
+    // Persist global seen-map back to StateStoreDO
+    // Prune dead entries older than 30 days; hard-cap at max_seen
     try {
-      let gArr = Array.from(globalSeen);
+      const now = Date.now();
+      const SEEN_TTL = 30 * 24 * 60 * 60 * 1000;
+      let gArr = Array.from(globalSeen.values()).filter(e => {
+        if (e.diedAt && (now - new Date(e.diedAt).getTime()) > SEEN_TTL) return false;
+        return true;
+      });
       if (gArr.length > KV.max_seen) gArr = gArr.slice(-KV.max_seen);
       await storeSet(getStatStore(this.env), 'seen_ids', JSON.stringify(gArr));
     } catch (e) {

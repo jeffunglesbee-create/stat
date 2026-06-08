@@ -24,7 +24,7 @@ const pdo = read('platform-do.js');
 
 // Browse capture must appear before dedup gate
 const unmatchedPushPos = pdo.indexOf('unmatchedJobs.push(job)');
-const dedupPos         = pdo.indexOf('seenIds.has(job.id) || globalSeen.has(job.id)');
+const dedupPos         = pdo.indexOf('globalSeen.has(job.id)');
 assert('platform-do: Browse capture before dedup gate',
   unmatchedPushPos !== -1 && dedupPos !== -1 && unmatchedPushPos < dedupPos);
 
@@ -209,6 +209,16 @@ assert('config: selectminds polling interval defined', read('config.js').include
 assert('enrich: selectminds in NEEDS_PLAIN_FETCH', read('enrich.js').includes("'selectminds'"));
 assert('index: bootstrapDOs merges SEED_COMPANIES into stored list', read('index.js').includes('newFromSeed'));
 assert('index: PLATFORM_MAP includes selectminds', read('index.js').includes("selectminds: 'SELECTMINDS_DO'"));
+assert('index: loadSeenIds returns Map', read('index.js').includes('return new Map()'));
+assert('index: addToSeen defined', read('index.js').includes('function addToSeen('));
+assert('index: checkSeenStatus defined', read('index.js').includes('function checkSeenStatus('));
+assert('index: maybeRunSeenSweep defined', read('index.js').includes('async function maybeRunSeenSweep('));
+assert('index: maybeRunSeenSweep called in cron', read('index.js').includes('await maybeRunSeenSweep(env)'));
+assert('index: SEEN_TTL_MS defined', read('index.js').includes('SEEN_TTL_MS'));
+assert('index: dead entries marked with diedAt', read('index.js').includes('diedAt'));
+assert('index: ghost resurrection in HC path', read('index.js').includes('Ghost resurrected'));
+assert('platform-do: ghost resurrection in alarm loop', read('platform-do.js').includes('Ghost resurrected'));
+assert('platform-do: globalSeen uses Map format', read('platform-do.js').includes('globalSeen = new Map()'));
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;

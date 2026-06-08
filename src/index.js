@@ -40,17 +40,149 @@ import UI_HTML from './ui.html';
 // All five previously-KV keys now live in StateStoreDO SQLite storage.
 // Helpers accept env and derive the stub internally for a clean call site.
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// SEEN-IDS — structured format with TTL + ghost resurrection
+//
+// Entry format: { id, seenAt, diedAt?, url? }
+//   id:      job ID string
+//   seenAt:  ISO timestamp of first alert
+//   diedAt:  ISO timestamp of confirmed liveness failure (4xx). Cleared on resurrection.
+//   url:     apply URL for liveness re-check. Sourced from match history first.
+//
+// TTL: entries with diedAt set AND diedAt > SEEN_TTL_MS ago are pruned.
+//      Live entries never expire (a job re-posting gets a new ID on most ATS).
+//      Exception: entries older than SEEN_LIVE_MAX_MS are pruned regardless,
+//      as a safety net against seen-set growth from platforms with stable IDs.
+//
+// Ghost resurrection: if diedAt is set AND liveness check returns 'live',
+//      the entry is treated as new — diedAt cleared, alert fires again.
+//
+// Storage: global seen-set in StateStoreDO 'seen_ids' (JSON array of entry objects).
+//          Per-platform seen-set in DO storage also updated (see platform-do.js).
+//
+// Backward compat: raw strings in stored array are treated as { id, seenAt: epoch0 }.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SEEN_TTL_MS      = 30 * 24 * 60 * 60 * 1000; // 30 days — prune dead entries
+const SEEN_LIVE_MAX_MS = 90 * 24 * 60 * 60 * 1000; // 90 days — hard cap on all entries
+const SEEN_SWEEP_BATCH = 20;                         // entries checked per cron tick
+
+function _parseSeenEntry(raw) {
+  if (typeof raw === 'string') return { id: raw, seenAt: new Date(0).toISOString() };
+  return raw;
+}
+
 async function loadSeenIds(env) {
   try {
     const raw = await storeGet(getStatStore(env), 'seen_ids');
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch { return new Set(); }
+    if (!raw) return new Map();
+    const arr = JSON.parse(raw);
+    const map = new Map();
+    for (const item of arr) {
+      const entry = _parseSeenEntry(item);
+      map.set(entry.id, entry);
+    }
+    return map;
+  } catch { return new Map(); }
 }
 
-async function saveSeenIds(env, seenSet) {
-  let arr = Array.from(seenSet);
+async function saveSeenIds(env, seenMap) {
+  let arr = Array.from(seenMap.values());
+  // Prune: dead entries older than TTL, live entries older than hard cap
+  const now = Date.now();
+  arr = arr.filter(e => {
+    if (e.diedAt && (now - new Date(e.diedAt).getTime()) > SEEN_TTL_MS) return false;
+    if (!e.diedAt && (now - new Date(e.seenAt).getTime()) > SEEN_LIVE_MAX_MS) return false;
+    return true;
+  });
   if (arr.length > KV.max_seen) arr = arr.slice(-KV.max_seen);
   await storeSet(getStatStore(env), 'seen_ids', JSON.stringify(arr));
+}
+
+// Mark a seen entry as dead (liveness check failed). URL stored for future re-check.
+async function markSeenDead(env, jobId, jobUrl) {
+  try {
+    const seenMap = await loadSeenIds(env);
+    const entry = seenMap.get(jobId);
+    if (!entry) return;
+    entry.diedAt = new Date().toISOString();
+    if (jobUrl && !entry.url) entry.url = jobUrl;
+    await saveSeenIds(env, seenMap);
+  } catch {}
+}
+
+// Check if a job is seen: returns null (not seen), 'seen' (live), or 'dead' (diedAt set).
+function checkSeenStatus(seenMap, jobId) {
+  const entry = seenMap.get(jobId);
+  if (!entry) return null;
+  if (entry.diedAt) return 'dead';
+  return 'seen';
+}
+
+// Add a new job to the seen-set with optional URL.
+function addToSeen(seenMap, jobId, jobUrl) {
+  seenMap.set(jobId, {
+    id:     jobId,
+    seenAt: new Date().toISOString(),
+    ...(jobUrl ? { url: jobUrl } : {}),
+  });
+}
+
+// ── Cron sweep: re-check a batch of dead seen entries for ghost resurrection ──
+// 20 entries per cron tick. HEAD request on each. If live → clear diedAt (resurrect).
+// Resurrection path: job re-enters the match pipeline on next DO alarm cycle
+// (it's no longer in the dead-marked set, so it won't be deduped).
+async function maybeRunSeenSweep(env) {
+  try {
+    const seenMap = await loadSeenIds(env);
+    // Collect dead entries that have a URL (can be re-checked)
+    const deadWithUrl = Array.from(seenMap.values())
+      .filter(e => e.diedAt && e.url)
+      .sort((a, b) => new Date(a.diedAt).getTime() - new Date(b.diedAt).getTime()); // oldest first
+
+    if (deadWithUrl.length === 0) return;
+
+    // Use sweep cursor stored separately to avoid re-checking the same entries every tick
+    const cursorRaw = await storeGet(getStatStore(env), 'seen_sweep_cursor');
+    const cursor    = cursorRaw ? parseInt(cursorRaw, 10) : 0;
+    const batch     = deadWithUrl.slice(cursor, cursor + SEEN_SWEEP_BATCH);
+
+    if (batch.length === 0) {
+      // Cursor past end — reset
+      await storeSet(getStatStore(env), 'seen_sweep_cursor', '0');
+      return;
+    }
+
+    let resurrected = 0;
+    for (const entry of batch) {
+      try {
+        const res = await fetch(entry.url, {
+          method: 'HEAD',
+          redirect: 'follow',
+          signal: AbortSignal.timeout(4000),
+        });
+        if (res.ok || res.status === 301 || res.status === 302) {
+          // Job is live again — clear diedAt so next DO alarm cycle re-evaluates it
+          delete entry.diedAt;
+          resurrected++;
+          console.log(`[STAT sweep] Resurrected: ${entry.id} (${entry.url})`);
+        }
+        // 4xx = still dead, leave as-is. 5xx/timeout = unknown, leave as-is.
+      } catch { /* timeout or network error — leave as-is */ }
+    }
+
+    // Save updated map and advance cursor
+    if (resurrected > 0) await saveSeenIds(env, seenMap);
+    const nextCursor = cursor + SEEN_SWEEP_BATCH;
+    await storeSet(getStatStore(env), 'seen_sweep_cursor',
+      nextCursor >= deadWithUrl.length ? '0' : String(nextCursor));
+
+    if (resurrected > 0) {
+      console.log(`[STAT sweep] ${resurrected} resurrected from ${batch.length} checked`);
+    }
+  } catch (e) {
+    console.warn('[STAT sweep] seen sweep failed:', e.message);
+  }
 }
 
 async function loadCompanyList(env) {
@@ -491,13 +623,23 @@ async function runHiringCafeScrape(env) {
       jobs = [];
     }
     for (const job of jobs) {
-      if (seenThisRun.has(job.id) || seenIds.has(job.id)) {
-        seenIds.add(job.id);
+      const seenStatus = seenThisRun.has(job.id) ? 'seen' : checkSeenStatus(seenIds, job.id);
+      if (seenStatus === 'seen') {
         seenThisRun.add(job.id);
         continue;
       }
+      if (seenStatus === 'dead') {
+        // Ghost resurrection check: re-run liveness — if live, treat as new
+        const liveness = await checkJobLiveness(job);
+        if (liveness !== 'live') { seenThisRun.add(job.id); continue; }
+        // Job resurrected — clear diedAt in map so it re-enters the pipeline
+        const entry = seenIds.get(job.id);
+        if (entry) delete entry.diedAt;
+        console.log(`[STAT HC] Ghost resurrected: ${job.id} ${job.title}`);
+        // Fall through to full match pipeline below
+      }
       seenThisRun.add(job.id);
-      seenIds.add(job.id);
+      addToSeen(seenIds, job.id, job.url);
 
       if (job.ghostFlag === 'suppress') continue;
       // Browse capture for HiringCafe path (Rule 8 — all paths capture unmatched)
@@ -512,9 +654,12 @@ async function runHiringCafeScrape(env) {
 
       // ── Liveness check ────────────────────────────────────────────────────
       // HEAD request to job.url (ATS apply_url) — confirms posting still live.
-      // 4xx → dead (skip). timeout/5xx → unknown (let through).
+      // 4xx → dead (mark in seen-set, skip). timeout/5xx → unknown (let through).
       const liveness = await checkJobLiveness(job);
-      if (liveness === 'dead') continue;
+      if (liveness === 'dead') {
+        markSeenDead(env, job.id, job.url).catch(() => {});
+        continue;
+      }
       job.liveness = liveness;
 
       // ── Salary enrichment ─────────────────────────────────────────────────
@@ -623,6 +768,10 @@ async function handleScheduled(env) {
   // Streams jobhive's ATS slices to find Epic roles at companies outside the seed list.
   // Discovered companies auto-promoted via maybeAddOrPromoteCompany() (healthcare gate).
   await maybeRunJobhiveScan(env);
+
+  // Seen-set sweep — re-check dead entries for ghost resurrection.
+  // 20 entries per cron tick. Cycles through all dead entries over time.
+  await maybeRunSeenSweep(env);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -798,7 +947,9 @@ async function maybeRunJobhiveScan(env) {
           const jobId = applyUrl || `jobhive:${ats}:${company}:${title}`.slice(0, 80);
           try {
             const seenIds = await loadSeenIds(env);
-            if (!seenIds.has(jobId)) {
+            const jobSeenStatus = checkSeenStatus(seenIds, jobId);
+            if (jobSeenStatus === null || jobSeenStatus === 'dead') {
+              // dead → ghost resurrection opportunity; null → new job
               const job = {
                 id:           jobId,
                 title,
@@ -828,7 +979,7 @@ async function maybeRunJobhiveScan(env) {
                 await enrichJobWithSalary(job, match, env);
                 applyMarylandScore(job, null);
 
-                seenIds.add(jobId);
+                addToSeen(seenIds, jobId, applyUrl);
                 await saveSeenIds(env, seenIds);
 
                 const adjustedPriority = companyAwarePriority(job, match);
@@ -1532,9 +1683,8 @@ async function handleFetch(request, env) {
     // NOTE: migrated from STAT_KV to StateStoreDO (store.js migration 2026-06-06)
     let globalSeen;
     try {
-      const raw = await storeGet(getStatStore(env), 'seen_ids');
-      globalSeen = raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch (e) { console.warn('[STAT backfill] globalSeen load failed (dedup may be incomplete):', e.message); globalSeen = new Set(); }
+      globalSeen = await loadSeenIds(env); // Map<id, entry>
+    } catch (e) { console.warn('[STAT backfill] globalSeen load failed (dedup may be incomplete):', e.message); globalSeen = new Map(); }
 
     for (const company of companies) {
       try {
@@ -1548,7 +1698,7 @@ async function handleFetch(request, env) {
           const match = matchJob(job);
           if (!match) {
             // Only add if NOT already a matched job (don't mix stores)
-            if (!globalSeen.has(job.id)) {
+            if (!checkSeenStatus(globalSeen, job.id)) {
               unmatchedJobs.push(job);
             }
           }
