@@ -1,20 +1,20 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T01:02:20Z
-HEAD: 460e213
+Generated: 2026-06-08T01:23:51Z
+HEAD: dbcbc30
 Smoke: 66/66
 
 COMPANIES
   SEED total: 180
-  Workday: 90 (searchText: 'epic ehr within')
+  Workday: 89 (searchText: 'epic ehr within')
   Greenhouse: 59
 
 RECENT COMMITS
-  460e213 feat: geo filter in passesEnvFilter — suppress non-US jobs before matchJob
+  dbcbc30 fix: Atrium → aah tenant (post-merger), Northwell workday → iCIMS
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
   2. Platform DOs: 7 DOs, CHUNK_SIZE=15, cursor rotation
-     Workday sweep (90 cos): ~24min | GH sweep (59 cos): ~8min
+     Workday sweep (89 cos): ~24min | GH sweep (59 cos): ~8min
   3. BatchPollerDO: 57 cos, 25/cycle, 2min interval
   4. Backfill: manual POST /backfill-browse
 
