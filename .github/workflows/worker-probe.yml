@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.STAT_PAT }}
-      - name: Call Worker probe endpoints
+      - name: Bootstrap + probe Worker endpoints
         shell: bash
         run: |
           WORKER="https://stat-job-watcher.jeffunglesbee.workers.dev"
@@ -17,7 +17,12 @@ jobs:
           TS=$(date -u +%Y%m%dT%H%M%SZ)
           OUT="outbox/worker-status-${TS}.txt"
 
-          echo "=== STAT Worker Status $TS ===" | tee "$OUT"
+          echo "=== STAT Worker Bootstrap + Status $TS ===" | tee "$OUT"
+          echo "" | tee -a "$OUT"
+
+          echo "--- POST /bootstrap ---" | tee -a "$OUT"
+          curl -sf --max-time 30 -X POST "$WORKER/bootstrap" | python3 -m json.tool 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR: /bootstrap failed" | tee -a "$OUT"
           echo "" | tee -a "$OUT"
 
           echo "--- GET / (status) ---" | tee -a "$OUT"
@@ -25,34 +30,20 @@ jobs:
             || echo "ERROR: Worker / unreachable" | tee -a "$OUT"
           echo "" | tee -a "$OUT"
 
-          echo "--- GET /platform/workday/status ---" | tee -a "$OUT"
-          curl -sf --max-time 15 "$WORKER/platform/workday/status" | python3 -m json.tool 2>/dev/null | tee -a "$OUT" \
-            || echo "ERROR: /platform/workday/status unreachable" | tee -a "$OUT"
+          echo "--- GET /platform/selectminds/status ---" | tee -a "$OUT"
+          curl -sf --max-time 15 "$WORKER/platform/selectminds/status" | python3 -m json.tool 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR: /platform/selectminds/status unreachable" | tee -a "$OUT"
           echo "" | tee -a "$OUT"
 
-          echo "--- GET /browse?limit=10 (sample unmatched jobs) ---" | tee -a "$OUT"
-          curl -sf --max-time 15 "$WORKER/browse?limit=10" | python3 scripts/parse_browse.py 2>/dev/null | tee -a "$OUT" \
-            || echo "ERROR: /browse unreachable" | tee -a "$OUT"
-          echo "" | tee -a "$OUT"
-
-          echo "--- GET /jobs?limit=10 (recent matches) ---" | tee -a "$OUT"
-          curl -sf --max-time 15 "$WORKER/jobs?limit=10" | python3 scripts/parse_browse.py 2>/dev/null | tee -a "$OUT" \
-            || echo "ERROR: /jobs unreachable" | tee -a "$OUT"
-          echo "" | tee -a "$OUT"
-
-          echo "--- GET /logs?limit=50 (alarm cycle log buffer) ---" | tee -a "$OUT"
-          LOG_RAW=$(curl -sf --max-time 15 "$WORKER/logs?limit=50" 2>/dev/null)
+          echo "--- GET /logs?limit=20 (recent alarm activity) ---" | tee -a "$OUT"
+          LOG_RAW=$(curl -sf --max-time 15 "$WORKER/logs?limit=20" 2>/dev/null)
           echo "Raw bytes: ${#LOG_RAW}" | tee -a "$OUT"
           if [ -n "$LOG_RAW" ]; then
-            echo "$LOG_RAW" | python3 scripts/parse_logs.py 2>/dev/null | tee -a "$OUT"
+            echo "$LOG_RAW" | python3 scripts/parse_logs.py 2>/dev/null | tee -a "$OUT" \
+              || echo "$LOG_RAW" | tee -a "$OUT"
           else
             echo "Empty response from /logs" | tee -a "$OUT"
           fi
-          echo "" | tee -a "$OUT"
-
-          echo "--- GET /logs?ats=workday&limit=20 (Workday BR results) ---" | tee -a "$OUT"
-          curl -sf --max-time 15 "$WORKER/logs?ats=workday&limit=20" | python3 scripts/parse_logs.py 2>/dev/null | tee -a "$OUT" \
-            || echo "ERROR: /logs?ats=workday unreachable" | tee -a "$OUT"
 
       - name: Commit results
         if: always()
