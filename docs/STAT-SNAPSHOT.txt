@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T00:44:13Z
-HEAD: 7a8f3cc
-Smoke: 63/63
+Generated: 2026-06-08T01:02:20Z
+HEAD: 460e213
+Smoke: 66/66
 
 COMPANIES
   SEED total: 180
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  7a8f3cc fix: remove duplicate 'text' declaration in jobhive cron stream loop
+  460e213 feat: geo filter in passesEnvFilter — suppress non-US jobs before matchJob
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
