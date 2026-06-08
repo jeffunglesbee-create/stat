@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T19:54:11Z
-HEAD: a3ac5a4
-Smoke: 77/77
+Generated: 2026-06-08T20:06:00Z
+HEAD: 3610de5
+Smoke: 79/79
 
 COMPANIES
   SEED total: 204
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  a3ac5a4 fix: bootstrapDOs — merge SEED_COMPANIES into stored list; add selectminds to PLATFORM_MAP
+  3610de5 fix: SelectMinds adapter — full-range cursor walk from ID 1000, skip closed jobs
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
