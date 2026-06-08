@@ -650,8 +650,11 @@ const JOBHIVE_EPIC_TERMS = [
   'epic ehr', 'epic emr', 'epic system', 'epic systems analyst',
 ];
 
-function matchesEpicTerms(text) {
+function matchesEpicTerms(text, returnTerm = false) {
   const lower = text.toLowerCase();
+  if (returnTerm) {
+    return JOBHIVE_EPIC_TERMS.find(t => lower.includes(t)) ?? null;
+  }
   return JOBHIVE_EPIC_TERMS.some(t => lower.includes(t));
 }
 
@@ -775,6 +778,62 @@ async function maybeRunJobhiveScan(env) {
           if (!matchesEpicTerms(haystack)) continue;
 
           totalMatches++;
+
+          // ── First-alert (open item #6) ──────────────────────────────────
+          // Previously: discovery only via maybeAddOrPromoteCompany.
+          // Now: build job object, run full match pipeline, fire P3 alert.
+          // P3 = email only (no Pushover noise for discovery-sourced jobs).
+          // seen_ids check prevents re-alerting if DO picks up same job later.
+          const jobId = applyUrl || `jobhive:${ats}:${company}:${title}`.slice(0, 80);
+          try {
+            const seenIds = await loadSeenIds(env);
+            if (!seenIds.has(jobId)) {
+              const job = {
+                id:           jobId,
+                title,
+                company,
+                location,
+                environment:  isRemote ? 'remote' : location.toLowerCase().includes('hybrid') ? 'hybrid' : '',
+                salary:       null,
+                salaryRaw:    null,
+                url:          applyUrl,
+                postedAt:     null,
+                daysAgo:      null,
+                ghostFlag:    null,
+                matchedKeyword: null,
+                atsSource:    ats,   // 'workday' | 'taleo' | 'icims'
+                description,
+              };
+
+              if (passesEnvFilter(job)) {
+                const match = matchJob(job) ?? {
+                  group: WATCH_GROUPS[2],
+                  priority: 3,
+                  label: 'Jobhive Discovery',
+                  matchedKw: matchesEpicTerms(haystack, true),
+                };
+                job.matchedKeyword = match.matchedKw;
+
+                await enrichJobWithSalary(job, match, env);
+                applyMarylandScore(job, null);
+
+                seenIds.add(jobId);
+                await saveSeenIds(env, seenIds);
+
+                const adjustedPriority = companyAwarePriority(job, match);
+                const adjustedMatch = adjustedPriority !== match.priority
+                  ? { ...match, priority: adjustedPriority } : match;
+                job._matchGroup = adjustedMatch.label;
+
+                await dispatchAlerts(env, [{ job, match: adjustedMatch }]);
+                await saveRecentMatches(getStatStore(env), [{ job, match: adjustedMatch }]);
+                console.log(`[STAT jobhive] first-alert: ${title} @ ${company}`);
+              }
+            }
+          } catch (e) {
+            console.warn(`[STAT jobhive] first-alert error:`, e.message);
+          }
+
           await maybeAddOrPromoteCompany(env, {
             url: applyUrl, company, title, location, description,
           }, { gate: 'strict' }).catch(() => {});
