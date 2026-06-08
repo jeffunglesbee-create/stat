@@ -718,9 +718,7 @@ async function maybeRunJobhiveScan(env) {
       while (!done) {
         const chunk = await reader.read();
         if (chunk.done) { done = true; }
-        const text = chunk.done ? carry : decoder.decode(chunk.value, { stream: true });
-
-        // csvRows() is a generator — yields complete rows, returns new carry
+        // csvRows() — replaced with splitCSVRows (quote-aware, carries inQ state)
         const text = chunk.done ? '' : decoder.decode(chunk.value, { stream: true });
         const { rows, carry: newCarry, carryInQuote: newInQ } = splitCSVRows(text, carry, carryInQuote);
         carry = newCarry; carryInQuote = newInQ;
