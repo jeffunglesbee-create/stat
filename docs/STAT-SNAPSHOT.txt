@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T00:32:27Z
-HEAD: b88a198
-Smoke: 62/62
+Generated: 2026-06-08T00:38:51Z
+HEAD: fe8bfcd
+Smoke: 63/63
 
 COMPANIES
   SEED total: 180
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  b88a198 fix: jobhive scan — quote-aware CSV parser + description keyword search
+  fe8bfcd fix: jobhive CSV parser — thread carryInQuote across stream chunks
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
