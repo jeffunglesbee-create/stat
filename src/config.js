@@ -522,9 +522,6 @@ export const SEED_COMPANIES = [
     url: 'https://career4.successfactors.com/career?company=baptisthealth&career_ns=job_listing_summary&resultType=XML' },
   { name: 'Ochsner Health',             ats: 'successfactors', token: 'ochsner',
     url: 'https://career4.successfactors.com/career?company=ochsner&career_ns=job_listing_summary&resultType=XML' },
-  // VERIFY: Advocate Aurora may use workday token 'aah' (already seeded)
-  { name: 'Advocate Aurora Health (SF)', ats: 'successfactors', token: 'advocateaurorahealth',
-    url: 'https://career4.successfactors.com/career?company=advocateaurorahealth&career_ns=job_listing_summary&resultType=XML' },
   { name: 'Inova Health System',        ats: 'successfactors', token: 'inova',
     url: 'https://career4.successfactors.com/career?company=inova&career_ns=job_listing_summary&resultType=XML' },
   { name: 'Piedmont Healthcare',        ats: 'successfactors', token: 'piedmont',
@@ -533,9 +530,6 @@ export const SEED_COMPANIES = [
     url: 'https://career4.successfactors.com/career?company=balladhealth&career_ns=job_listing_summary&resultType=XML' },
   { name: 'Children\'s Hospital Colorado', ats: 'successfactors', token: 'chco',
     url: 'https://career4.successfactors.com/career?company=chco&career_ns=job_listing_summary&resultType=XML' },
-  // VERIFY: Atrium Wake Forest may overlap with workday 'aah' tenant
-  { name: 'Atrium Health Wake Forest',  ats: 'successfactors', token: 'atriumwakeforest',
-    url: 'https://career4.successfactors.com/career?company=atriumwakeforest&career_ns=job_listing_summary&resultType=XML' },
   { name: 'Essentia Health',            ats: 'successfactors', token: 'essentia',
     url: 'https://career4.successfactors.com/career?company=essentia&career_ns=job_listing_summary&resultType=XML' },
   { name: 'UnityPoint Health',          ats: 'successfactors', token: 'unitypoint',
