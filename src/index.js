@@ -868,31 +868,61 @@ async function handleFetch(request, env) {
     }
   }
 
-  // GET /jobhive-manifest — fetch jobhive manifest + Workday slice stats
-  // Used to verify storage.stapply.ai accessibility and current data freshness.
+  // GET /jobhive-manifest — fetch jobhive manifest + slice details
   if (url.pathname === '/jobhive-manifest' && request.method === 'GET') {
     try {
       const manifestRes = await fetch('https://storage.stapply.ai/jobhive/v1/manifest.json',
         { headers: { 'User-Agent': 'STAT-job-watcher/1.0' } });
       if (!manifestRes.ok) return json({ error: `manifest ${manifestRes.status}` }, 502);
       const manifest = await manifestRes.json();
-      // Extract key fields — full manifest may be large
-      const { generated_at, stats, by_ats } = manifest;
-      const wdEntry  = by_ats?.workday  ?? null;
-      const talEntry = by_ats?.taleo    ?? null;
-      const icEntry  = by_ats?.icims    ?? null;
-      const sfEntry  = by_ats?.successfactors ?? null;
-      const ghEntry  = by_ats?.greenhouse ?? null;
+      const { generated_at, stats, by_ats, by_date } = manifest;
+
+      const sliceInfo = (key) => {
+        const e = by_ats?.[key];
+        if (!e) return null;
+        return {
+          rows:     e.rows,
+          size_mb:  +(e.size_bytes/1e6).toFixed(1),
+          csv:      e.csv    ?? null,
+          parquet:  e.parquet ?? null,
+          sha256:   e.sha256 ?? null,
+        };
+      };
+
+      // by_date: check last 3 dates for delta slices
+      const dateKeys = Object.keys(by_date ?? {}).sort().slice(-3);
+      const recentDeltas = dateKeys.map(d => ({
+        date: d,
+        rows: by_date[d].rows,
+        size_mb: +(by_date[d].size_bytes/1e6).toFixed(2),
+        csv: by_date[d].csv ?? null,
+        parquet: by_date[d].parquet ?? null,
+      }));
+
+      // Range request probe on Workday CSV
+      let rangeSupported = false;
+      try {
+        const rangeRes = await fetch(by_ats?.workday?.csv ?? '', {
+          method: 'HEAD',
+          headers: { 'User-Agent': 'STAT-job-watcher/1.0' },
+        });
+        rangeSupported = rangeRes.headers.get('accept-ranges') === 'bytes';
+      } catch {}
+
       return json({
         generated_at,
         stats,
+        range_supported: rangeSupported,
         slices: {
-          workday:        wdEntry  ? { rows: wdEntry.rows,  size_mb: +(wdEntry.size_bytes/1e6).toFixed(1),  csv: wdEntry.csv  } : null,
-          taleo:          talEntry ? { rows: talEntry.rows, size_mb: +(talEntry.size_bytes/1e6).toFixed(1), csv: talEntry.csv } : null,
-          icims:          icEntry  ? { rows: icEntry.rows,  size_mb: +(icEntry.size_bytes/1e6).toFixed(1),  csv: icEntry.csv  } : null,
-          successfactors: sfEntry  ? { rows: sfEntry.rows,  size_mb: +(sfEntry.size_bytes/1e6).toFixed(1),  csv: sfEntry.csv  } : null,
-          greenhouse:     ghEntry  ? { rows: ghEntry.rows,  size_mb: +(ghEntry.size_bytes/1e6).toFixed(1),  csv: ghEntry.csv  } : null,
+          workday:        sliceInfo('workday'),
+          taleo:          sliceInfo('taleo'),
+          icims:          sliceInfo('icims'),
+          successfactors: sliceInfo('successfactors'),
+          greenhouse:     sliceInfo('greenhouse'),
+          lever:          sliceInfo('lever'),
+          ashby:          sliceInfo('ashby'),
         },
+        recent_deltas: recentDeltas,
       });
     } catch (e) {
       return json({ error: e.message }, 500);
