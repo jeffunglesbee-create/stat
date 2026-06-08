@@ -1,0 +1,119 @@
+=== STAT Worker Status 20260608T232938Z ===
+
+--- GET /platform/selectminds/status ---
+{
+    "ats": "selectminds",
+    "lastRun": "2026-06-08T23:27:58.710Z",
+    "totalPolled": 45,
+    "totalMatches": 0,
+    "seenCount": 130,
+    "nextAlarm": 1780962479174,
+    "selectmindsCursor": "1122"
+}
+
+--- GET / (overview) ---
+activeDOs: 112
+watchedCompanies: 479
+seenJobIds: 757
+
+--- GET /logs?ats=selectminds&limit=10 ---
+[
+    {
+        "ts": "2026-06-08T23:07:20.929Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 2,
+        "newMatches": 0,
+        "cursor": 1,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-08T22:58:35.043Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 2,
+        "newMatches": 0,
+        "cursor": 0,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-08T22:49:49.877Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 2,
+        "newMatches": 0,
+        "cursor": 1,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-08T22:41:05.983Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 2,
+        "newMatches": 0,
+        "cursor": 0,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-08T22:32:22.385Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 2,
+        "newMatches": 0,
+        "cursor": 1,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-08T22:23:36.226Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 2,
+        "newMatches": 0,
+        "cursor": 0,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-08T22:14:49.560Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 2,
+        "newMatches": 0,
+        "cursor": 1,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-08T22:05:58.182Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 2,
+        "newMatches": 0,
+        "cursor": 0,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-08T21:57:15.674Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 2,
+        "newMatches": 0,
+        "cursor": 1,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-08T21:48:31.281Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 2,
+        "newMatches": 0,
+        "cursor": 0,
+        "errors": []
+    }
+]
+
+--- POST /bootstrap ---
+{
+    "ok": true,
+    "spawned": 0,
+    "total": 479,
+    "resumeStatus": "skipped"
+}
