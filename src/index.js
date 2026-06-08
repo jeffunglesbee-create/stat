@@ -2050,6 +2050,147 @@ Return ONLY the JSON object, no markdown, no explanation.`;
     }
   }
 
+  // ── POST /hc-probe — fetch any HC URL from CF IP, return __NEXT_DATA__ ─────
+  // Used for one-off probes of HC listing/search pages.
+  // HC blocks GitHub runner IPs; CF Worker IPs are not blocked.
+  // Body: { url: string }
+  // Returns: { ok, url, nextData, ssrKeys, ssrHitsCount, ssrTotalCount,
+  //            ssrPageSize, ssrIsLastPage, hitsHaveV5, algoliaSignals,
+  //            httpStatus, bytes }
+  if (url.pathname === '/hc-probe' && request.method === 'POST') {
+    let targetUrl;
+    try {
+      const body = await request.json();
+      targetUrl = body.url;
+      if (!targetUrl || !targetUrl.includes('hiring.cafe')) {
+        return json({ ok: false, error: 'url must be a hiring.cafe URL' }, 400);
+      }
+    } catch (e) {
+      return json({ ok: false, error: 'invalid JSON body' }, 400);
+    }
+
+    try {
+      const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+      const res = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': UA,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      });
+      const httpStatus = res.status;
+      const html = await res.text();
+      const bytes = html.length;
+
+      // Extract __NEXT_DATA__
+      const ndMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+      if (!ndMatch) {
+        return json({ ok: false, url: targetUrl, httpStatus, bytes, error: 'no __NEXT_DATA__ found' });
+      }
+
+      const nextData = JSON.parse(ndMatch[1]);
+      const pp = nextData?.props?.pageProps ?? {};
+      const ssrKeys = Object.keys(pp);
+
+      // Listing page signals
+      const ssrHits = pp.ssrHits ?? [];
+      const ssrHitsCount = ssrHits.length;
+      const ssrTotalCount = pp.ssrTotalCount ?? null;
+      const ssrPageSize = pp.ssrPageSize ?? null;
+      const ssrIsLastPage = pp.ssrIsLastPage ?? null;
+      const ssrPage = pp.ssrPage ?? null;
+      const ssrError = pp.ssrError ?? null;
+      const initialSearchState = pp.initialSearchState ?? null;
+      const ssrTimings = nextData?.ssrTimings ?? null;
+
+      // Check if ssrHits contain v5_processed_job_data
+      const hitsHaveV5 = ssrHits.length > 0 && 'v5_processed_job_data' in ssrHits[0];
+      const hitsHaveEnriched = ssrHits.length > 0 && 'enriched_company_data' in ssrHits[0];
+      const hitsHaveDesc = ssrHits.length > 0 && !!(ssrHits[0]?.job_information?.description);
+
+      // Algolia signals: objectID field, _geoloc field
+      const algoliaSignals = {
+        hasObjectId: ssrHits.length > 0 && 'objectID' in ssrHits[0],
+        hasGeoloc: ssrHits.length > 0 && '_geoloc' in ssrHits[0],
+        pageObjectId: 'objectID' in (pp.job ?? {}),
+      };
+
+      // Sample first hit (stripped for size)
+      let firstHitSample = null;
+      if (ssrHits.length > 0) {
+        const h = ssrHits[0];
+        firstHitSample = {
+          id: h.id,
+          objectID: h.objectID,
+          source: h.source,
+          board_token: h.board_token,
+          requisition_id: h.requisition_id,
+          collapse_key: h.collapse_key,
+          is_expired: h.is_expired,
+          title: h.job_information?.title,
+          v5_keys: h.v5_processed_job_data ? Object.keys(h.v5_processed_job_data) : null,
+          enriched_keys: h.enriched_company_data ? Object.keys(h.enriched_company_data) : null,
+          hc_geoloc: h._geoloc,
+        };
+      }
+
+      // Check for Algolia credentials in page HTML
+      const algoliaCredsInHtml = {
+        algoliaNet: /[a-zA-Z0-9]{10}\.algolia\.net/.test(html),
+        algoliaAppId: /X-Algolia-Application-Id/.test(html),
+        algoliaApiKey: /X-Algolia-API-Key/.test(html),
+        algoliaInstantSearch: /instantsearch|algoliasearch/i.test(html),
+        appIdPattern: (html.match(/[A-Z0-9]{10}(?=\.algolia)/g) ?? []),
+      };
+
+      // Pagination signals from URL params or HTML
+      const paginationSignals = {
+        pageParam: /[?&]page=\d+/.test(targetUrl),
+        offsetParam: /[?&]offset=\d+/.test(targetUrl),
+        ssrPage,
+        ssrIsLastPage,
+        nextPageHint: pp.nextPage ?? pp.nextCursor ?? null,
+      };
+
+      // searchState from URL
+      let parsedSearchState = null;
+      try {
+        const searchStateParam = new URL(targetUrl).searchParams.get('searchState');
+        if (searchStateParam) parsedSearchState = JSON.parse(decodeURIComponent(searchStateParam));
+      } catch {}
+
+      return json({
+        ok: true,
+        url: targetUrl,
+        httpStatus,
+        bytes,
+        buildId: nextData.buildId,
+        page: nextData.page,
+        query: nextData.query,
+        gsp: nextData.gsp,
+        ssrKeys,
+        ssrHitsCount,
+        ssrTotalCount,
+        ssrPageSize,
+        ssrIsLastPage,
+        ssrPage,
+        ssrError,
+        ssrTimings,
+        hitsHaveV5,
+        hitsHaveEnriched,
+        hitsHaveDesc,
+        algoliaSignals,
+        algoliaCredsInHtml,
+        paginationSignals,
+        parsedSearchState,
+        initialSearchState,
+        firstHitSample,
+      });
+    } catch (e) {
+      return json({ ok: false, url: targetUrl, error: e.message }, 500);
+    }
+  }
+
   return json({ error: 'Not found' }, 404);
 }
 
