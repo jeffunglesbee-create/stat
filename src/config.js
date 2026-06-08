@@ -451,6 +451,10 @@ export const SEED_COMPANIES = [
   { name: 'Rush University Medical',   ats: 'workday', token: 'rush',
     url: 'https://rush.wd5.myworkdayjobs.com/en-US/RushCareers' },
 
+  { name: 'Stanford Health Care',        ats: 'workday', token: 'stanfordmedicine',
+    url: 'https://stanfordmedicine.wd115.myworkdayjobs.com/en-US/shc_external_career_site' },
+  // Confirmed 2026-06-08: wd115 tenant, shc_external_career_site board
+
   // ── Health systems — iCIMS ────────────────────────────────────────────────
   // Verified live tenants (Session Part 1, 2026-06-06):
   //   VHC Health: plain fetch + ?in_iframe=1 confirmed → 8 jobs, 423ms, not blocked
@@ -540,9 +544,6 @@ export const SEED_COMPANIES = [
     url: 'https://career4.successfactors.com/career?company=carilion&career_ns=job_listing_summary&resultType=XML' },
   { name: 'Memorial Hermann',           ats: 'successfactors', token: 'memorialhermann',
     url: 'https://career4.successfactors.com/career?company=memorialhermann&career_ns=job_listing_summary&resultType=XML' },
-  // VERIFY: Stanford may use Workday or Greenhouse
-  { name: 'Stanford Health Care',       ats: 'successfactors', token: 'stanfordhealthcare',
-    url: 'https://career4.successfactors.com/career?company=stanfordhealthcare&career_ns=job_listing_summary&resultType=XML' },
   { name: 'Aultman Health Foundation',  ats: 'successfactors', token: 'aultman',
     url: 'https://career4.successfactors.com/career?company=aultman&career_ns=job_listing_summary&resultType=XML' },
   { name: 'OhioHealth',                 ats: 'successfactors', token: 'ohiohealth',
