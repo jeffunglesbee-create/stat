@@ -530,3 +530,128 @@ company.token:  ATS board token or tenant identifier
 company.url:  required for: workday, icims, successfactors, taleo, oracle_hcm, infor_hcm
               optional for: greenhouse, lever, ashby (built from token)
 company.mdApproved: boolean — known to hire remotely in Maryland
+
+
+════════════════════════════════════════════════════════════════
+10. SELECTMINDS (Oracle Taleo Social Sourcing)
+════════════════════════════════════════════════════════════════
+
+Status: ACTIVE — UTMB Health live (S10 deploy, S11 cursor fixes)
+Companies: 1 (UTMB Health)
+
+REVERSE ENGINEERING FINDINGS (2026-06-08):
+  Platform: Oracle SelectMinds / Taleo Social Sourcing (TSS)
+  Framework: Ember SPA. Listing pages: Ember renders job cards client-side — no job
+    hrefs in SSR HTML. Detail pages: fully SSR'd.
+  Backend: Taleo (Job.taleo_job_number in hidden inputs — UTMB Taleo backend)
+  CF Worker IPs: unblocked. Standard User-Agent sufficient.
+  Previous S9 "host not in allowlist" error: wrong URL path (/utmb/jobs vs /utmb).
+
+ADAPTER STRATEGY: Sequential ID walk (plain GET).
+  Job IDs at UTMB are sequential integers (active range ~1000–3400).
+  GET /jobs/{id} → 200 = active or closed job, 404 = gap or expired.
+  Closed jobs: 200 with "this position has been closed" text — detected and skipped.
+  Active jobs: full SSR — title, location, description, hidden inputs.
+
+CURSOR ARCHITECTURE (updated S11 — 3 bugs fixed):
+  Constants:
+    SELECTMINDS_MIN_ID = 1000   (floor — confirmed active jobs start here)
+    SELECTMINDS_MAX_ID = 3400   (soft ceiling — update as new jobs post above this)
+    SELECTMINDS_SCAN_WINDOW = 60  (IDs checked per alarm cycle)
+
+  Cursor flow:
+    1. platform-do reads 'selectminds_cursor' from DO storage before alarm.
+    2. Passes cursor as fetchSelectMinds(company, selectmindsCursor).
+    3. Adapter computes effectiveStart = cursor > MAX_ID ? MIN_ID : max(cursor, MIN_ID).
+    4. Scans IDs effectiveStart … effectiveStart+60.
+    5. Attaches jobs._nextCursor = endId + 1 (wraps to MIN_ID at MAX_ID).
+    6. platform-do writes _nextCursor back to DO storage 'selectminds_cursor'.
+
+  BUG HISTORY:
+    MIN_ID was 2000 (wrong) — overrode config token 1000 via Math.max; 1000-1999 never scanned
+    Loop used `startId` not `effectiveStart` — wrap computed but never applied
+    Cursor not persisted — every cycle restarted from static config token
+
+DUPLICATE COMPANY BUG (fixed S11):
+  bootstrapDOs merge key was (ats, token). UTMB seeded with token '3180' in S10,
+  then changed to '1000'. Both survived in stored list (selectminds:3180 ≠ selectminds:1000).
+  Caused polled:2 per alarm cycle (UTMB fetched twice).
+  Fix: merge key changed to (ats, url) — url is stable, token is cursor state.
+
+URL patterns confirmed:
+  GET /jobs/{id}                → detail page (200 or 404)
+  GET /jobs/{title-slug}-{id}   → canonical detail URL (slug ignored server-side)
+  GET /ajax/jobs/{sessionId}/add/category/{catId}
+    → JSON {"Status":"OK","UserMessage":"{count}","Result":"{newSessionId}"}
+  GET /jobs/{id}/other-jobs-matching/location-only → all 700 UTMB jobs SSR'd (no hrefs)
+
+Detail page hidden inputs:
+  Job.id                 SelectMinds integer job ID
+  Job.taleo_job_number   Taleo requisition ID
+  Job.apply_url          Direct apply URL (may be empty)
+
+Title extraction:
+  <title> tag: "Lead Clinical Application Systems Analyst - Epic (90% remote) -
+                UTMB Health Talent Acquisition Team Careers"
+  After suffix strip: "Lead Clinical Application Systems Analyst - Epic (90% remote)"
+  og:description: boilerplate ("Job Description") — not useful for matching.
+
+Description (enrich.js NEEDS_PLAIN_FETCH path):
+  Body text parsed after "Requisition #" line.
+  Stops before "Apply for Job / Sign Up / Previous Job" footer patterns.
+  Full description available — used for keyword matching.
+
+Field mapping:
+  id          → 'selectminds_{jobId}'
+  title       → from <title> tag, UTMB suffix stripped
+  location    → from og:title "Title in {location}" pattern
+  environment → location.includes('remote') ? 'remote' : ...
+  salary      → null (SelectMinds/Taleo does not disclose salary)
+  url         → <link rel="canonical"> href
+  atsSource   → 'selectminds'
+
+Config example:
+  { name: 'UTMB Health', ats: 'selectminds', token: '1000',
+    url: 'https://aa083s01.upgrade.selectminds.com/utmb' }
+  NOTE: token is the initial cursor. Once DO has persisted 'selectminds_cursor',
+  the config token is ignored. Update token only to force a cursor reset.
+
+Known category IDs (UTMB):
+  4=Faculty(120), 5=Nursing(110), 19=Research Academic(93), 67=Allied Health,
+  8=Clinical Lab(18), 6=Business(39)
+  IT category: not yet isolated. IT jobs confirmed via "Lead Clinical Application
+  Systems Analyst - Epic (90% remote)" in Hot Jobs. Estimated ~33 IT jobs.
+
+Status in production (2026-06-08):
+  selectmindsCursor: "1122" at S11 end (cursor advancing)
+  totalMatches: 0 — cursor at 1122, Epic IT jobs estimated at ~2000-3000
+  ETA to first match: ~90 min from S11 end
+
+
+════════════════════════════════════════════════════════════════
+ADAPTER STATUS SUMMARY (updated)
+════════════════════════════════════════════════════════════════
+
+Adapter         | Status   | Method           | Companies | Description
+─────────────── | ──────── | ──────────────── | ───────── | ─────────────────
+Greenhouse      | VERIFIED | JSON GET         | 81        | In list response
+Lever           | VERIFIED | JSON GET         | 14        | In list response
+Ashby           | VERIFIED | JSON GET         | 5         | In list response
+Workday         | VERIFIED | Plain HTML GET   | 121       | enrich.js JSON-LD
+iCIMS           | VERIFIED | Plain HTML GET   | 7         | enrich.js plain
+SuccessFactors  | VERIFIED | XML GET          | 28        | CDATA in XML
+Taleo           | VERIFIED | BR search +      | 5         | initialHistory parse
+                |          | plain GET detail |           |
+Oracle HCM      | VERIFIED | Plain HTML GET   | 2         | enrich.js plain
+Infor HCM       | VERIFIED | Plain HTML GET   | 8         | enrich.js plain
+SelectMinds     | ACTIVE   | Plain GET ID     | 1         | enrich.js plain
+                |          | walk + cursor    |           |
+
+TOTAL: 272 seed companies, 10 ATS platforms.
+
+config.ats selector values:
+  'greenhouse' | 'lever' | 'ashby' | 'workday' | 'icims' |
+  'successfactors' | 'taleo' | 'oracle_hcm' | 'infor_hcm' | 'selectminds'
+
+config.token: SelectMinds: initial cursor only (overridden by DO storage cursor).
+config.url: required for all except greenhouse/lever/ashby.
