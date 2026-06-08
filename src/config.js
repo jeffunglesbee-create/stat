@@ -217,6 +217,7 @@ export function getPollingInterval(ats) {
     icims:          4 * 60_000,
     successfactors: 8 * 60_000,
     taleo:          8 * 60_000,
+    oracle_hcm:     8 * 60_000,
   };
   return Math.max(windowMs, floors[ats] ?? 4 * 60_000);
 }
@@ -602,6 +603,23 @@ export const SEED_COMPANIES = [
   { name: 'Startek', ats: 'workday', url: 'https://startek.wd5.myworkdayjobs.com/StarTek' },
   { name: 'iQor', ats: 'workday', url: 'https://iqor.wd5.myworkdayjobs.com/iQor' },
   { name: 'Webhelp', ats: 'workday', url: 'https://webhelp.wd3.myworkdayjobs.com/Webhelp' },
+  // ── Health systems — Oracle HCM (Fusion Cloud) ────────────────────────────
+  // Oracle JET SPA. Description pre-rendered for SEO in HTML.
+  // Confirmed 2026-06-08: class="job-details__description-content" contains full JD.
+  // Salary pre-rendered: Minimum/Maximum Salary fields in body text.
+  // Search URL: .../requisitions?keyword=epic
+  // Job detail URL: .../job/{jobId}
+  //
+  // Known tenants:
+  //   Cedars-Sinai:     hdkk.fa.us6.oraclecloud.com  site CX_2001
+  //   Tenet Healthcare: eodr.fa.us2.oraclecloud.com  site TBD (verify with live job URL)
+  { name: 'Cedars-Sinai',              ats: 'oracle_hcm', token: 'cedars-sinai',
+    url: 'https://hdkk.fa.us6.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_2001/requisitions?keyword=epic' },
+  // Tenet Healthcare — Oracle HCM tenant eodr us2 (confirmed migrated from Taleo)
+  // Site ID needed — find a live job URL to extract siteId, then add:
+  // { name: 'Tenet Healthcare', ats: 'oracle_hcm', token: 'tenet',
+  //   url: 'https://eodr.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/{SITE_ID}/requisitions?keyword=epic' },
+
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

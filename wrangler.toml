@@ -54,6 +54,10 @@ name = "TALEO_DO"
 class_name = "TaleoDO"
 
 [[durable_objects.bindings]]
+name = "ORACLE_HCM_DO"
+class_name = "OracleHcmDO"
+
+[[durable_objects.bindings]]
 name = "BATCH_POLLER"
 class_name = "BatchPollerDO"
 
@@ -93,6 +97,10 @@ binding = "MYBROWSER"
 [[migrations]]
   tag = "v4"
   new_sqlite_classes = ["StateStoreDO"]
+
+[[migrations]]
+  tag = "v5"
+  new_sqlite_classes = ["OracleHcmDO"]
 
 
 # ── Module rules — treat .html files as text imports ─────────────────────────

@@ -8,6 +8,7 @@
  *   Ashby         → description in list API response (j.jobDescription.descriptionHtml)
  *   HiringCafe    → description in v5 payload (job_information.description)
  *   Workday       → JSON-LD schema.org/JobPosting (full desc, ~4k chars) → data-automation-id="jobPostingDescription" DOM → og:description fallback (boilerplate only)
+ *   Oracle HCM    → class="job-details__description-content" div → og:description fallback
  *   iCIMS         → page is a SPA — Browser Rendering API required
  *   Taleo         → page is a SPA — Browser Rendering API required
  *   SuccessFactors → page is a SPA — no path without auth; use HiringCafe v5 coverage
@@ -30,7 +31,7 @@ import puppeteer from '@cloudflare/puppeteer';
 // ATS platforms needing plain HTML og:description fetch
 // iCIMS verified 2026-06-06: plain fetch() with ?in_iframe=1 works from CF Worker.
 // Moved from NEEDS_BROWSER_FETCH. See session doc Part 2 for full investigation.
-const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe']);
+const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe', 'oracle_hcm']);
 
 // ATS platforms needing JavaScript execution via Browser Rendering.
 // Taleo only — iCIMS moved to NEEDS_PLAIN_FETCH (plain fetch + ?in_iframe=1).
@@ -186,6 +187,44 @@ async function fetchPlainDescription(job) {
       /<meta\s+content="([^"]{20,})"[^>]*(?:name|property)="(?:og:description|description)"[^>]*>/i
     );
     if (og) return decodeHtmlEntities(og[1]);
+
+    // Oracle HCM (Fusion Cloud): description pre-rendered for SEO in Oracle JET HTML.
+    // Confirmed 2026-06-08 via Cedars-Sinai: class="job-details__description-content" div
+    // contains full JD. No JSON-LD, no og:description with actual content.
+    // Salary also pre-rendered: "Minimum Salary {n}" / "Maximum Salary {n}" in body text.
+    if (job.atsSource === 'oracle_hcm') {
+      // PATH 1: job-details__description-content div (confirmed Cedars-Sinai)
+      const oracleDesc = html.match(/class="[^"]*job-details__description-content[^"]*"[^>]*>([\s\S]{100,15000}?)<\/div>\s*<\/div>/i);
+      if (oracleDesc) {
+        const stripped = stripHtml(oracleDesc[1]);
+        if (stripped.length > 100) return stripped;
+      }
+      // PATH 2: full body text extraction starting from description region
+      // Oracle pre-renders full page including Qualifications and Job Info
+      const bodyText = html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ').trim();
+      // Find start of actual job content (skip header nav)
+      const jobStart = bodyText.search(/(?:What will you be doing|Job Description|Overview|Position Summary|Responsibilities)/i);
+      if (jobStart > 0) {
+        const endMarkers = ['Sign In', 'Apply Now', 'Similar Jobs', 'Related Jobs', 'Job Info'];
+        let jobEnd = bodyText.length;
+        for (const m of endMarkers) {
+          const idx = bodyText.indexOf(m, jobStart + 100);
+          if (idx > jobStart) jobEnd = Math.min(jobEnd, idx);
+        }
+        const extracted = bodyText.slice(jobStart, jobEnd).trim();
+        if (extracted.length > 100) return extracted;
+      }
+      // PATH 3: og:description fallback (limited but better than nothing)
+      const ogFb = html.match(/<meta[^>]+(?:name|property)="og:description"[^>]+content="([^"]{20,})"/i)
+                || html.match(/<meta[^>]+content="([^"]{20,})"[^>]+(?:name|property)="og:description"/i);
+      if (ogFb) return decodeHtmlEntities(ogFb[1]);
+      return '';
+    }
 
     return '';
   } catch {

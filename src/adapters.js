@@ -984,6 +984,101 @@ export async function fetchHcDescription(requisitionId) {
   } catch { return null; }
 }
 
+// ORACLE HCM (Fusion Cloud)
+// Oracle JET SPA — no Next.js, no JSON-LD, no public REST API.
+//
+// Confirmed 2026-06-08 via Cedars-Sinai HTML analysis:
+//   Framework: Oracle JET with Knockout.js (data-bind="html: pageData().job.description")
+//   Description: pre-rendered in class="job-details__description-content" div for SEO
+//   Salary: pre-rendered in body text (Minimum Salary / Maximum Salary fields)
+//   JSON-LD: ABSENT — Oracle does not emit schema.org/JobPosting
+//   REST API: private, not exposed in page HTML
+//
+// URL structure: {tenant}.fa.{region}.oraclecloud.com/hcmUI/CandidateExperience/en/sites/{siteId}
+// Job search URL: .../requisitions?keyword={term}&lastSelectedFacet=SITES&selectedTitleName=...
+// Job detail URL: .../job/{jobId}
+//
+// Search approach: keyword search URL returns pre-rendered job cards in HTML.
+// Each card contains title, location, jobId, and apply URL.
+// Description fetched separately via job detail page (fetchOracleHcmDescription).
+//
+// Confirmed companies:
+//   Cedars-Sinai: hdkk.fa.us6.oraclecloud.com, site CX_2001
+//   Tenet Healthcare: eodr.fa.us2.oraclecloud.com (site TBD — verify with job URL)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function fetchOracleHcm(company) {
+  if (!company.url) return [];
+  try {
+    const res = await fetch(company.url, {
+      headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Accept-Language': 'en-US,en;q=0.9' },
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+
+    // Oracle JET pre-renders job cards in the HTML for SEO/crawlers.
+    // Each job card has data-bind attributes but the key data is in
+    // structured JSON objects embedded in script tags.
+    //
+    // Primary path: requisitionsResults JSON in page scripts
+    const scriptJson = html.match(/requisitionsResults[\s\S]{0,50}?(\[[\s\S]{100,50000}?\])\s*[,;]/);
+    if (scriptJson) {
+      try {
+        const jobs = JSON.parse(scriptJson[1]);
+        return jobs.map(j => _mapOracleJob(j, company)).filter(Boolean);
+      } catch {}
+    }
+
+    // Fallback: parse job cards from pre-rendered HTML
+    // Oracle renders: <div class="job-grid-item" ...> with title, location, jobId
+    const cards = [...html.matchAll(/data-job-id="(\d+)"[\s\S]{0,800}?class="[^"]*job-title[^"]*"[^>]*>([^<]+)</g)];
+    if (cards.length) {
+      return cards.map(([, jobId, title]) => {
+        const baseUrl = company.url.split('/requisitions')[0];
+        return makeJob({
+          id:          `oracle_${company.token}_${jobId}`,
+          title:       title.trim(),
+          company:     company.name,
+          location:    '',
+          environment: '',
+          salary:      null,
+          url:         `${baseUrl}/job/${jobId}`,
+          postedAt:    null,
+          atsSource:   'oracle_hcm',
+          description: '', // enrichDescriptions() fetches via job detail page
+        });
+      });
+    }
+
+    return [];
+  } catch { return []; }
+}
+
+function _mapOracleJob(j, company) {
+  if (!j) return null;
+  const baseUrl = (company.url || '').split('/requisitions')[0];
+  const jobId = j.Id || j.jobId || j.requisitionId || '';
+  const title = j.Title || j.title || j.JobTitle || '';
+  const location = j.PrimaryLocation || j.primaryLocation || j.Location || '';
+  const remote = (j.WorkFromHome || j.workFromHome || j.RemoteAllowed || '');
+  const environment = String(remote).toLowerCase() === 'true' ? 'remote'
+    : (location || '').toLowerCase().includes('remote') ? 'remote'
+    : '';
+  const postedAt = j.PostedDate || j.postedDate || null;
+
+  return makeJob({
+    id:          `oracle_${company.token}_${jobId}`,
+    title,
+    company:     company.name,
+    location,
+    environment,
+    salary:      null,
+    url:         jobId ? `${baseUrl}/job/${jobId}` : company.url,
+    postedAt:    postedAt ? new Date(postedAt).toISOString() : null,
+    atsSource:   'oracle_hcm',
+    description: '', // enrichDescriptions() second-pass via job detail page
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Dispatcher — routes to the right adapter by ATS type
 // ─────────────────────────────────────────────────────────────────────────────
@@ -996,6 +1091,7 @@ export async function fetchCompanyJobs(company, env) {
     case 'icims':          return fetchICIMS(company);
     case 'successfactors': return fetchSuccessFactors(company);
     case 'taleo':          return fetchTaleo(company, env);
+    case 'oracle_hcm':     return fetchOracleHcm(company);
     default: return [];
   }
 }
