@@ -2141,6 +2141,135 @@ Return ONLY the JSON object, no markdown, no explanation.`;
     }
   }
 
+  // ── POST /html-probe — fetch any URL from CF IP, return raw HTML ────────────
+  // Generic version of /hc-probe for reverse engineering any ATS page.
+  // CF Worker IPs bypass WAFs that block GitHub runner IPs (Workday, HC, etc.)
+  //
+  // Body: { url: string, maxBytes?: number }
+  // Returns: {
+  //   ok, url, httpStatus, bytes, contentType,
+  //   visibleText,    // stripped body text (first 3000 chars)
+  //   metaTags,       // og:title, og:description, etc.
+  //   jsonLd,         // parsed application/ld+json if present
+  //   scriptIds,      // id attrs on <script> tags (framework detection)
+  //   dataAutomationIds, // data-automation-id values (Workday/Oracle detection)
+  //   hiddenInputs,   // name+value of hidden <input> fields (Taleo/SF patterns)
+  //   htmlSnippet,    // first 2000 chars of raw HTML
+  // }
+  //
+  // Usage via FIELD relay (MCP):
+  //   POST /stat/html-probe { "url": "https://aah.wd5.myworkdayjobs.com/en-US/External?q=epic" }
+  if (url.pathname === '/html-probe' && request.method === 'POST') {
+    let targetUrl, maxBytes;
+    try {
+      const body = await request.json();
+      targetUrl = body.url;
+      maxBytes = body.maxBytes ?? 500_000;
+      if (!targetUrl || !targetUrl.startsWith('http')) {
+        return json({ ok: false, error: 'url required and must start with http' }, 400);
+      }
+    } catch (e) {
+      return json({ ok: false, error: 'invalid JSON body' }, 400);
+    }
+
+    try {
+      const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+      const res = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': UA,
+          'Accept': 'text/html,application/xhtml+xml,*/*;q=0.9',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control': 'no-cache',
+        },
+        redirect: 'follow',
+      });
+
+      const httpStatus = res.status;
+      const contentType = res.headers.get('content-type') ?? '';
+      let html = await res.text();
+      if (html.length > maxBytes) html = html.slice(0, maxBytes);
+      const bytes = html.length;
+
+      if (!res.ok) {
+        return json({ ok: false, url: targetUrl, httpStatus, bytes, contentType,
+          error: `HTTP ${httpStatus}` });
+      }
+
+      // 1. Visible text (strip scripts/styles/tags)
+      const visibleText = html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/\s+/g, ' ').trim().slice(0, 3000);
+
+      // 2. Meta tags
+      const metaTags = {};
+      for (const m of html.matchAll(/<meta[^>]+>/gi)) {
+        const tag = m[0];
+        const nameM = tag.match(/(?:name|property)="([^"]+)"/i);
+        const contM = tag.match(/content="([^"]{0,500})"/i);
+        if (nameM && contM) metaTags[nameM[1]] = contM[1];
+      }
+
+      // 3. JSON-LD
+      let jsonLd = null;
+      const ldMatch = html.match(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/i);
+      if (ldMatch) {
+        try { jsonLd = JSON.parse(ldMatch[1].trim()); } catch {}
+      }
+
+      // 4. Script tag IDs (framework detection)
+      const scriptIds = [...html.matchAll(/<script[^>]+id="([^"]+)"/gi)].map(m => m[1]).slice(0, 20);
+
+      // 5. data-automation-id values (Workday/Oracle/Infor pattern)
+      const dataAutomationIds = [...new Set(
+        [...html.matchAll(/data-automation-id="([^"]+)"/gi)].map(m => m[1])
+      )].slice(0, 30);
+
+      // 6. Hidden inputs (Taleo initialHistory, SF form state, etc.)
+      const hiddenInputs = [];
+      for (const m of html.matchAll(/<input[^>]+type="hidden"[^>]*>/gi)) {
+        const tag = m[0];
+        const nameM = tag.match(/name="([^"]+)"/i);
+        const idM   = tag.match(/id="([^"]+)"/i);
+        const valM  = tag.match(/value="([^"]{0,200})"/i);
+        if ((nameM || idM) && valM) {
+          hiddenInputs.push({
+            name: nameM?.[1] ?? idM?.[1],
+            value: valM[1].slice(0, 200),
+          });
+        }
+      }
+
+      // 7. Framework signals
+      const frameworks = {};
+      for (const [kw, label] of [
+        ['__NEXT_DATA__', 'nextjs'], ['_ngcontent', 'angular'], ['ember', 'ember'],
+        ['data-bind=', 'knockout'], ['react-dom', 'react'], ['workday', 'workday'],
+        ['inforcloudsuite', 'infor'], ['oraclecloud', 'oracle'], ['taleo', 'taleo'],
+        ['successfactors', 'successfactors'], ['application/ld+json', 'json-ld'],
+      ]) {
+        const count = (html.match(new RegExp(kw, 'gi')) ?? []).length;
+        if (count > 0) frameworks[label] = count;
+      }
+
+      return json({
+        ok: true, url: targetUrl, httpStatus, bytes, contentType,
+        visibleText,
+        metaTags,
+        jsonLd,
+        scriptIds,
+        dataAutomationIds,
+        hiddenInputs: hiddenInputs.slice(0, 20),
+        frameworks,
+        htmlSnippet: html.slice(0, 2000),
+      });
+    } catch (e) {
+      return json({ ok: false, url: targetUrl, error: e.message });
+    }
+  }
+
   // ── POST /hc-probe — fetch any HC URL from CF IP, return __NEXT_DATA__ ─────
   // Used for one-off probes of HC listing/search pages.
   // HC blocks GitHub runner IPs; CF Worker IPs are not blocked.
