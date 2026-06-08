@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T00:09:58Z
-HEAD: 97043ff
+Generated: 2026-06-08T00:14:23Z
+HEAD: 1e64059
 Smoke: 54/54
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  97043ff probe: extend jobhive-manifest — parquet URLs, delta slices, range support check
+  1e64059 probe: add /jobhive-sample — CSV structure inspection via range request
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
