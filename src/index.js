@@ -579,6 +579,120 @@ async function handleScheduled(env) {
   await runHiringCafeScrape(env);
   // Auto-refresh salary caches on schedule — no manual intervention required
   await maybeRefreshSalaryCaches(env);
+
+  // jobhive CSV scan — runs once per hour, not every minute
+  // Streams jobhive's ATS slices to find Epic roles at companies outside the seed list.
+  // Discovered companies auto-promoted via maybeAddOrPromoteCompany() (healthcare gate).
+  await maybeRunJobhiveScan(env);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// JOBHIVE CSV SCAN
+// Streams jobhive's ATS CSV slices to discover Epic roles at unknown companies.
+// Runs at most once per hour. On match, calls maybeAddOrPromoteCompany()
+// with gate:'strict' — only health systems and Epic consulting firms promoted.
+//
+// ATS slices scanned each cycle (ordered by relevance and size):
+//   workday (680K rows, 50MB scan), taleo (1K rows, full),
+//   icims (116K rows, 20MB scan) — Greenhouse/Lever/Ashby direct polled already
+//
+// The scan is additive to direct polling — it catches roles at companies
+// STAT has never heard of. Once discovered, they get promoted to direct DO
+// polling (which gives real-time alerts) after 2 matches.
+// ─────────────────────────────────────────────────────────────────────────────
+const JOBHIVE_SCAN_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+const JOBHIVE_SLICES = [
+  { ats: 'workday',  maxBytes: 50 * 1024 * 1024 },  // 50MB → ~430K rows
+  { ats: 'taleo',    maxBytes: 10 * 1024 * 1024 },  // 10MB → full slice
+  { ats: 'icims',    maxBytes: 20 * 1024 * 1024 },  // 20MB → ~140K rows
+];
+
+async function maybeRunJobhiveScan(env) {
+  try {
+    const store = getStatStore(env);
+    const lastRaw = await storeGet(store, 'jobhive_scan_last');
+    const lastRun = lastRaw ? parseInt(lastRaw) : 0;
+    if (Date.now() - lastRun < JOBHIVE_SCAN_INTERVAL_MS) return; // throttle
+    await storeSet(store, 'jobhive_scan_last', String(Date.now()));
+  } catch { return; }
+
+  let totalMatches = 0;
+  for (const { ats, maxBytes } of JOBHIVE_SLICES) {
+    try {
+      const csvUrl = `https://storage.stapply.ai/jobhive/v1/${ats}/jobs.csv`;
+      const res = await fetch(csvUrl, {
+        headers: {
+          'User-Agent': 'STAT-job-watcher/1.0',
+          'Range': `bytes=0-${maxBytes - 1}`,
+        },
+      });
+      if (!res.ok && res.status !== 206) continue;
+      if (!res.body) continue;
+
+      const decoder = new TextDecoder();
+      const reader  = res.body.getReader();
+      let   buf     = '';
+      let   header  = null;
+
+      function parseCSVLine(line) {
+        const fields = [];
+        let cur = '', inQ = false;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (c === '"') {
+            if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+            else inQ = !inQ;
+          } else if (c === ',' && !inQ) { fields.push(cur); cur = ''; }
+          else { cur += c; }
+        }
+        fields.push(cur);
+        return fields;
+      }
+
+      async function processLine(line) {
+        if (!line.trim()) return;
+        if (!header) { header = parseCSVLine(line); return; }
+        const f = parseCSVLine(line);
+        const title      = (f[1] || '').toLowerCase();
+        const company    = f[2] || '';
+        const atsId      = f[4] || '';
+        const location   = f[5] || '';
+        const isRemote   = f[6] === 'true' || f[6] === '1' || f[6] === 'True';
+        const applyUrl   = f[18] || f[0] || '';
+        const countryIso = (f[21] || '').toUpperCase();
+
+        if (countryIso && countryIso !== 'US' && countryIso !== 'USA') return;
+        if (!title.includes('epic')) return;
+        if (!isRemote && !/\b[A-Z]{2}\b/.test(location)) return;
+
+        totalMatches++;
+        // Build a minimal job object for maybeAddOrPromoteCompany
+        await maybeAddOrPromoteCompany(env, {
+          url:     applyUrl,
+          company,
+          title:   f[1] || '',
+          location,
+        }, { gate: 'strict' }).catch(() => {});
+      }
+
+      let done = false;
+      while (!done) {
+        const chunk = await reader.read();
+        if (chunk.done) { done = true; break; }
+        buf += decoder.decode(chunk.value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const line of lines) await processLine(line);
+      }
+      if (buf.trim()) await processLine(buf);
+      await reader.cancel();
+
+      console.log(`[STAT jobhive] ${ats}: scanned, ${totalMatches} epic matches total`);
+    } catch (e) {
+      console.warn(`[STAT jobhive] ${ats} scan error:`, e.message);
+    }
+    await new Promise(r => setTimeout(r, 500)); // polite delay between slices
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

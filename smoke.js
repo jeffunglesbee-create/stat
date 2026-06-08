@@ -97,6 +97,9 @@ assert('ui: browse desc button uses data-desc attr',
   ui.includes('data-desc='));
 assert('adapters: SF description cleaned via descRaw',
   read('adapters.js').includes('descRaw'));
+assert('index: maybeRunJobhiveScan defined', read('index.js').includes('function maybeRunJobhiveScan'));
+assert('index: maybeRunJobhiveScan called in cron', read('index.js').includes('await maybeRunJobhiveScan(env)'));
+assert('index: /jobhive-scan endpoint present', read('index.js').includes("pathname === '/jobhive-scan'"));
 
 // ─── JS syntax: no escaped backticks ─────────────────────────────────────────
 // Escaped backticks (\`) inside JS source are never valid — they appear when
