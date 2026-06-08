@@ -473,9 +473,87 @@ export async function dispatchAlerts(env, newMatches) {
   // P3: email only — no Pushover (Product / Project / IT roles)
   // These are lower-signal matches. A push notification would be noise.
 
-  // Email: one digest for all matches (P1 + P2 + P3)
-  await sendEmail(env, {
-    subject:  `[STAT] ${newMatches.length} new match${newMatches.length > 1 ? 'es' : ''} — ${newMatches[0].job.title} @ ${newMatches[0].job.company}`,
-    htmlBody: buildEmailHtml(newMatches),
-  });
+  // Email: queue matches and send at most once per EMAIL_COOLDOWN_MS window.
+  // This prevents hitting Resend's 100/day free tier limit when many cron
+  // ticks fire in succession (e.g. after new ATS platforms come online).
+  // P1 Pushover fires immediately above — email is the batched digest.
+  await queueAndMaybeSendEmail(env, newMatches);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMAIL QUEUE + THROTTLE
+// Accumulates matches across cron ticks and sends at most once per
+// EMAIL_COOLDOWN_MS. On free Resend tier (100/day) with 4hr cooldown:
+//   max 6 emails/day = well under limit regardless of match volume.
+// Queue stored in StateStoreDO under 'email_queue'.
+// ─────────────────────────────────────────────────────────────────────────────
+const EMAIL_COOLDOWN_MS = 4 * 60 * 60 * 1000; // 4 hours = max 6/day on free tier
+
+export async function queueAndMaybeSendEmail(env, newMatches) {
+  if (!env.RESEND_API_KEY || !env.ALERT_EMAIL) return;
+  if (!newMatches || newMatches.length === 0) return;
+
+  try {
+    const stub = getEmailQueueStore(env);
+    if (!stub) return;
+
+    // Load existing queue
+    const queueRaw = await storeGetEmail(stub, 'email_queue');
+    const queue = queueRaw ? JSON.parse(queueRaw) : { matches: [], lastSentAt: 0 };
+
+    // Append new matches (cap at 200 total to bound memory)
+    queue.matches = [...queue.matches, ...newMatches].slice(-200);
+
+    const now = Date.now();
+    const cooldownElapsed = (now - (queue.lastSentAt || 0)) >= EMAIL_COOLDOWN_MS;
+
+    if (cooldownElapsed && queue.matches.length > 0) {
+      // Send digest of all queued matches
+      const toSend = queue.matches;
+      const p1Count = toSend.filter(m => effectivePriority(m.match.priority, m.job.fitScore) === 1).length;
+      const subject = p1Count > 0
+        ? `[STAT] ${p1Count} P1 alert${p1Count > 1 ? 's' : ''} + ${toSend.length - p1Count} more — ${toSend[0].job.title} @ ${toSend[0].job.company}`
+        : `[STAT] ${toSend.length} new match${toSend.length > 1 ? 'es' : ''} — ${toSend[0].job.title} @ ${toSend[0].job.company}`;
+
+      await sendEmail(env, { subject, htmlBody: buildEmailHtml(toSend) });
+
+      // Reset queue after successful send
+      queue.matches = [];
+      queue.lastSentAt = now;
+    }
+
+    // Save updated queue state
+    await storeSetEmail(stub, 'email_queue', JSON.stringify(queue));
+  } catch (e) {
+    // Queue failure is non-fatal — fall back to direct send to avoid losing alerts
+    console.warn('[STAT email] Queue error, falling back to direct send:', e.message);
+    try {
+      await sendEmail(env, {
+        subject:  `[STAT] ${newMatches.length} new match${newMatches.length > 1 ? 'es' : ''} — ${newMatches[0].job.title} @ ${newMatches[0].job.company}`,
+        htmlBody: buildEmailHtml(newMatches),
+      });
+    } catch {}
+  }
+}
+
+// Thin helpers — use StateStoreDO (same store as seen_ids etc.)
+function getEmailQueueStore(env) {
+  try {
+    const id = env.STATE_STORE.idFromName('global');
+    return env.STATE_STORE.get(id);
+  } catch { return null; }
+}
+async function storeGetEmail(stub, key) {
+  try {
+    const res = await stub.fetch(`https://stat-store/get?key=${encodeURIComponent(key)}`);
+    const data = await res.json();
+    return data.value ?? null;
+  } catch { return null; }
+}
+async function storeSetEmail(stub, key, value) {
+  try {
+    await stub.fetch(`https://stat-store/set?key=${encodeURIComponent(key)}`, {
+      method: 'POST', body: value,
+    });
+  } catch {}
 }
