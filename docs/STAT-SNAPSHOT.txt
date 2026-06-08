@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T00:03:40Z
-HEAD: c8b7fee
+Generated: 2026-06-08T00:09:58Z
+HEAD: 97043ff
 Smoke: 54/54
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  c8b7fee feat: jobhive-manifest probe endpoint — fetch manifest via Worker egress
+  97043ff probe: extend jobhive-manifest — parquet URLs, delta slices, range support check
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
