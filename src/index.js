@@ -600,6 +600,81 @@ async function handleScheduled(env) {
 // STAT has never heard of. Once discovered, they get promoted to direct DO
 // polling (which gives real-time alerts) after 2 matches.
 // ─────────────────────────────────────────────────────────────────────────────
+// Epic-specific terms to match against title + description.
+// Intentionally more specific than 'epic' alone — avoids false positives like
+// "epic growth", "an epic adventure", generic uses of the word.
+// Mirrors WATCH_GROUPS P1 keywords but filtered to terms that appear in
+// job descriptions at health systems and consulting firms.
+const JOBHIVE_EPIC_TERMS = [
+  // Module names — most specific, highest precision
+  'epic ambulatory', 'epiccare', 'epic cadence', 'epic clindoc', 'epic willow',
+  'epic optime', 'epic stork', 'epic beacon', 'epic radiant', 'epic cupid',
+  'epic resolute', 'epic cogito', 'epic orders', 'epic him', 'epic identity',
+  'epic inpatient', 'epic myChart', 'epic tapestry', 'epic grand central',
+  // Role signals
+  'epic analyst', 'epic application analyst', 'epic build', 'epic implementation',
+  'epic go-live', 'epic go live', 'ehr analyst', 'ehr application analyst',
+  'clarity sql', 'clinical informatics analyst', 'health informatics analyst',
+  // Certification signals — appear in descriptions even when title is generic
+  'within epic', 'epic certification', 'epic certified', 'epic training',
+  'epic ecosystem', 'epic upgrade', 'epic optimization',
+  // EHR-adjacent — high specificity in healthcare IT context
+  'epic ehr', 'epic emr', 'epic system', 'epic systems analyst',
+];
+
+function matchesEpicTerms(text) {
+  const lower = text.toLowerCase();
+  return JOBHIVE_EPIC_TERMS.some(t => lower.includes(t));
+}
+
+// Quote-aware CSV row iterator for streaming chunks.
+// Yields complete rows only — holds partial rows in carry buffer across chunks.
+// Handles: quoted fields with embedded commas, embedded newlines, escaped quotes ("").
+function* csvRows(chunk, carry) {
+  let buf = carry;
+  let inQ = false;
+  for (let i = 0; i < chunk.length; i++) {
+    const c = chunk[i];
+    if (c === '"') {
+      if (inQ && chunk[i + 1] === '"') { buf += '"'; i++; } // escaped quote
+      else inQ = !inQ;
+      buf += c;
+    } else if (c === '\n' && !inQ) {
+      if (buf.trim()) yield buf;
+      buf = '';
+    } else {
+      buf += c;
+    }
+  }
+  return buf; // incomplete last row — caller stores as carry for next chunk
+}
+
+function parseCSVRow(line) {
+  const fields = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      fields.push(cur.replace(/^"|"$/g, '')); cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  fields.push(cur.replace(/^"|"$/g, ''));
+  return fields;
+}
+
+function cleanDesc(raw) {
+  return (raw || '')
+    .replace(/\\r\\n/g, ' ').replace(/\\n/g, ' ').replace(/\\r/g, ' ')
+    .replace(/&#?[a-zA-Z0-9]+;/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+
 const JOBHIVE_SCAN_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const JOBHIVE_SLICES = [
   { ats: 'workday',  maxBytes: 50 * 1024 * 1024 },  // 50MB → ~430K rows
@@ -631,70 +706,58 @@ async function maybeRunJobhiveScan(env) {
 
       const decoder = new TextDecoder();
       const reader  = res.body.getReader();
-      let   buf     = '';
+      let   carry   = '';    // incomplete row carried between chunks
       let   header  = null;
-
-      function parseCSVLine(line) {
-        const fields = [];
-        let cur = '', inQ = false;
-        for (let i = 0; i < line.length; i++) {
-          const c = line[i];
-          if (c === '"') {
-            if (inQ && line[i+1] === '"') { cur += '"'; i++; }
-            else inQ = !inQ;
-          } else if (c === ',' && !inQ) { fields.push(cur); cur = ''; }
-          else { cur += c; }
-        }
-        fields.push(cur);
-        return fields;
-      }
-
-      async function processLine(line) {
-        if (!line.trim()) return;
-        if (!header) { header = parseCSVLine(line); return; }
-        const f = parseCSVLine(line);
-        const title      = (f[1] || '').toLowerCase();
-        const company    = f[2] || '';
-        const atsId      = f[4] || '';
-        const location   = f[5] || '';
-        const isRemote   = f[6] === 'true' || f[6] === '1' || f[6] === 'True';
-        const applyUrl   = f[18] || f[0] || '';
-        const countryIso = (f[21] || '').toUpperCase();
-
-        if (countryIso && countryIso !== 'US' && countryIso !== 'USA') return;
-        if (!title.includes('epic')) return;
-        if (!isRemote && !/\b[A-Z]{2}\b/.test(location)) return;
-
-        // Extract description only on matching rows — bounded to match count, not all rows
-        // Description at col 15: may be HTML, strip tags for matchJob/fit scoring use
-        const descRaw = f[15] || '';
-        const description = descRaw
-          .replace(/\\r\\n/g, ' ').replace(/\\n/g, ' ').replace(/\\r/g, ' ')
-          .replace(/&#?[a-zA-Z0-9]+;/g, ' ')
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\s+/g, ' ').trim();
-
-        totalMatches++;
-        // Build job object with description for matchJob/fit scoring
-        await maybeAddOrPromoteCompany(env, {
-          url:         applyUrl,
-          company,
-          title:       f[1] || '',
-          location,
-          description, // enables keyword matching against description text
-        }, { gate: 'strict' }).catch(() => {});
-      }
+      let   isFirst = true;
 
       let done = false;
       while (!done) {
         const chunk = await reader.read();
-        if (chunk.done) { done = true; break; }
-        buf += decoder.decode(chunk.value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop();
-        for (const line of lines) await processLine(line);
+        if (chunk.done) { done = true; }
+        const text = chunk.done ? carry : decoder.decode(chunk.value, { stream: true });
+
+        // csvRows() is a generator — yields complete rows, returns new carry
+        const gen = csvRows(chunk.done ? '' : text, carry);
+        let row;
+        while (!(row = gen.next()).done) {
+          const line = row.value;
+          if (!line.trim()) continue;
+          if (isFirst) { header = parseCSVRow(line); isFirst = false; continue; }
+          if (!header) continue;
+
+          const f          = parseCSVRow(line);
+          const title      = f[1] || '';
+          const company    = f[2] || '';
+          const location   = f[5] || '';
+          const isRemote   = f[6] === 'true' || f[6] === '1' || f[6] === 'True';
+          const applyUrl   = f[18] || f[0] || '';
+          const countryIso = (f[21] || '').toUpperCase();
+          const description = cleanDesc(f[15]);
+
+          // Country filter — US only
+          if (countryIso && countryIso !== 'US' && countryIso !== 'USA') continue;
+
+          // Remote / US location filter
+          const usLocale = isRemote ||
+            /\b[A-Z]{2}\b/.test(location) ||
+            location.toLowerCase().includes('remote');
+          if (!usLocale) continue;
+
+          // Epic match: search title AND description with specific module terms
+          // title.includes('epic') alone misses "EHR Analyst", "Clinical Informatics Analyst" etc.
+          const haystack = title + ' ' + description;
+          if (!matchesEpicTerms(haystack)) continue;
+
+          totalMatches++;
+          await maybeAddOrPromoteCompany(env, {
+            url: applyUrl, company, title,
+            location, description,
+          }, { gate: 'strict' }).catch(() => {});
+        }
+        // gen.return() gives us the new carry buffer
+        carry = gen.return().value ?? '';
+        if (chunk.done) break;
       }
-      if (buf.trim()) await processLine(buf);
       await reader.cancel();
 
       console.log(`[STAT jobhive] ${ats}: scanned, ${totalMatches} epic matches total`);
@@ -1020,100 +1083,76 @@ async function handleFetch(request, env) {
       if (!res.body) return json({ error: 'no response body' }, 502);
 
       // Stream CSV line by line — O(1) memory
-      const decoder  = new TextDecoder();
-      const reader   = res.body.getReader();
-      const matches  = [];
-      let   header   = null;
-      let   buf      = '';
+      const decoder = new TextDecoder();
+      const reader  = res.body.getReader();
+      const matches = [];
+      let   carry   = '';
+      let   header  = null;
+      let   isFirst = true;
       let   rowCount = 0;
-      let   done     = false;
-
-      // Simple CSV field parser — handles quoted fields with embedded commas
-      function parseCSVLine(line) {
-        const fields = [];
-        let cur = '', inQ = false;
-        for (let i = 0; i < line.length; i++) {
-          const c = line[i];
-          if (c === '"') {
-            if (inQ && line[i+1] === '"') { cur += '"'; i++; }
-            else inQ = !inQ;
-          } else if (c === ',' && !inQ) {
-            fields.push(cur); cur = '';
-          } else {
-            cur += c;
-          }
-        }
-        fields.push(cur);
-        return fields;
-      }
-
-      function processLine(line) {
-        if (!line.trim()) return;
-        if (!header) { header = parseCSVLine(line); return; }
-        rowCount++;
-        const f = parseCSVLine(line);
-        const title      = (f[1]  || '').toLowerCase();
-        const company    = f[2]   || '';
-        const atsType    = f[3]   || '';
-        const atsId      = f[4]   || '';
-        const location   = f[5]   || '';
-        const isRemote   = f[6]   === 'true' || f[6] === '1' || f[6] === 'True';
-        const salMin     = parseFloat(f[7]) || null;
-        const salMax     = parseFloat(f[8]) || null;
-        const salCur     = f[9]   || '';
-        const postedAt   = f[16]  || '';
-        const applyUrl   = f[18]  || f[0] || '';
-        const countryIso = (f[21] || '').toUpperCase();
-
-        // Skip non-US jobs
-        if (countryIso && countryIso !== 'US' && countryIso !== 'USA') return;
-
-        // Epic keyword match in title
-        if (!title.includes('epic')) return;
-
-        // Environment filter: remote or US location
-        const locLower = location.toLowerCase();
-        const usState  = /\b[A-Z]{2}\b/.test(location) || locLower.includes('remote') || isRemote;
-        if (!usState && !isRemote) return;
-
-        const salStr = salMin && salCur === 'USD'
-          ? (salMax ? `$${Math.round(salMin/1000)}k–$${Math.round(salMax/1000)}k` : `$${Math.round(salMin/1000)}k+`)
-          : null;
-
-        // Extract description only on matching rows
-        const descRaw = f[15] || '';
-        const description = descRaw
-          .replace(/\\r\\n/g, ' ').replace(/\\n/g, ' ').replace(/\\r/g, ' ')
-          .replace(/&#?[a-zA-Z0-9]+;/g, ' ')
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\s+/g, ' ').trim().slice(0, 1000); // cap at 1KB for probe response
-
-        matches.push({
-          id:          `jobhive:${ats}:${atsId || f[17] || rowCount}`,
-          title:       f[1] || '',
-          company,
-          location:    location.replace(/\{[^}]+\}/g, '').trim(),
-          atsType,
-          atsId,
-          isRemote,
-          salary:      salStr,
-          postedAt,
-          url:         applyUrl,
-          description: description || null,
-          source:      'jobhive-csv',
-        });
-      }
+      let   done    = false;
 
       while (!done && matches.length < limit) {
         const chunk = await reader.read();
-        if (chunk.done) { done = true; break; }
-        buf += decoder.decode(chunk.value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop(); // keep incomplete last line
-        for (const line of lines) processLine(line);
+        if (chunk.done) { done = true; }
+
+        const gen = csvRows(chunk.done ? '' : decoder.decode(chunk.value, { stream: true }), carry);
+        let row;
+        while (!(row = gen.next()).done) {
+          const line = row.value;
+          if (!line.trim()) continue;
+          if (isFirst) { header = parseCSVRow(line); isFirst = false; continue; }
+          if (!header) continue;
+          rowCount++;
+
+          const f          = parseCSVRow(line);
+          const title      = f[1]  || '';
+          const company    = f[2]  || '';
+          const atsType    = f[3]  || '';
+          const atsId      = f[4]  || '';
+          const location   = f[5]  || '';
+          const isRemote   = f[6]  === 'true' || f[6] === '1' || f[6] === 'True';
+          const salMin     = parseFloat(f[7]) || null;
+          const salMax     = parseFloat(f[8]) || null;
+          const salCur     = f[9]  || '';
+          const postedAt   = f[16] || '';
+          const applyUrl   = f[18] || f[0] || '';
+          const countryIso = (f[21] || '').toUpperCase();
+          const description = cleanDesc(f[15]);
+
+          if (countryIso && countryIso !== 'US' && countryIso !== 'USA') continue;
+
+          const usLocale = isRemote ||
+            /\b[A-Z]{2}\b/.test(location) ||
+            location.toLowerCase().includes('remote');
+          if (!usLocale) continue;
+
+          // Search title AND description with Epic module terms
+          const haystack = title + ' ' + description;
+          if (!matchesEpicTerms(haystack)) continue;
+
+          const salStr = (salMin && salCur === 'USD')
+            ? (salMax ? `$${Math.round(salMin/1000)}k–$${Math.round(salMax/1000)}k` : `$${Math.round(salMin/1000)}k+`)
+            : null;
+
+          matches.push({
+            id:          `jobhive:${ats}:${atsId || f[17] || rowCount}`,
+            title,
+            company,
+            location:    location.replace(/\{[^}]+\}/g, '').trim(),
+            atsType,
+            atsId,
+            isRemote,
+            salary:      salStr,
+            postedAt,
+            url:         applyUrl,
+            description: description.slice(0, 800) || null,
+            source:      'jobhive-csv',
+          });
+        }
+        carry = gen.return().value ?? '';
+        if (chunk.done) break;
       }
-      // Process remaining buffer
-      if (buf.trim()) processLine(buf);
       await reader.cancel();
 
       return json({

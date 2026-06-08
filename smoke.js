@@ -100,6 +100,11 @@ assert('adapters: SF description cleaned via descRaw',
 assert('index: maybeRunJobhiveScan defined', read('index.js').includes('function maybeRunJobhiveScan'));
 assert('index: maybeRunJobhiveScan called in cron', read('index.js').includes('await maybeRunJobhiveScan(env)'));
 assert('index: /jobhive-scan endpoint present', read('index.js').includes("pathname === '/jobhive-scan'"));
+assert('index: JOBHIVE_EPIC_TERMS defined with module names', read('index.js').includes('JOBHIVE_EPIC_TERMS') && read('index.js').includes('epic ambulatory'));
+assert('index: matchesEpicTerms searches title and description', read('index.js').includes('matchesEpicTerms(haystack)'));
+assert('index: csvRows quote-aware generator defined', read('index.js').includes('function* csvRows'));
+assert('index: parseCSVRow defined', read('index.js').includes('function parseCSVRow'));
+assert('index: cleanDesc defined', read('index.js').includes('function cleanDesc'));
 
 // ─── JS syntax: no escaped backticks ─────────────────────────────────────────
 // Escaped backticks (\`) inside JS source are never valid — they appear when
