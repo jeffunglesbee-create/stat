@@ -961,6 +961,29 @@ export async function fetchHiringCafe(keyword, environment) {
   } catch { return []; }
 }
 
+// ── fetchHcDescription — second-pass fetch for full job description ──────────
+// hitsHaveDesc: false (confirmed 2026-06-08) — full HTML description is only
+// available on the job detail page: hiring.cafe/job/{requisition_id}
+// Call only for jobs that passed v5/keyword match — one fetch per survivor.
+// Returns description HTML string, or null on failure.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function fetchHcDescription(requisitionId) {
+  if (!requisitionId) return null;
+  try {
+    const url = `https://hiring.cafe/job/${requisitionId}`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*' },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (!m) return null;
+    const data = JSON.parse(m[1]);
+    const desc = data?.props?.pageProps?.job?.job_information?.description ?? null;
+    return desc || null;
+  } catch { return null; }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Dispatcher — routes to the right adapter by ATS type
 // ─────────────────────────────────────────────────────────────────────────────

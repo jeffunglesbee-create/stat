@@ -25,7 +25,7 @@ export {
 
 import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, BATCH_POLLER, LEARNING } from './config.js';
 import { bootstrapSalaryDO } from './salary.js';
-import { fetchHiringCafe, fetchHiringCafeBR, mapHiringCafeHit } from './adapters.js';
+import { fetchHiringCafe, fetchHiringCafeBR, mapHiringCafeHit, fetchHcDescription } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
@@ -496,6 +496,18 @@ async function runHiringCafeScrape(env) {
       if (!match) continue;
 
       job.matchedKeyword = match.matchedKw;
+
+      // ── Description second-pass (2026-06-08) ─────────────────────────────
+      // hitsHaveDesc:false — full description only on /job/{requisition_id}.
+      // Fetch only for matched jobs (v5/keyword survivors), not all ssrHits.
+      // Enriches job.description for Gemini fit scoring + MD scoring.
+      if (!job.description && job.hc?.requisitionId) {
+        try {
+          const desc = await fetchHcDescription(job.hc.requisitionId);
+          if (desc) job.description = desc;
+        } catch { /* non-fatal — scoring works without description */ }
+      }
+
       const adjustedPriority = companyAwarePriority(job, match);
       const adjustedMatch = adjustedPriority !== match.priority
         ? { ...match, priority: adjustedPriority }
