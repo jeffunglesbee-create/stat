@@ -1,20 +1,20 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-08T15:16:24Z
-HEAD: cbbe89f
+Generated: 2026-06-08T15:42:23Z
+HEAD: 33973ab
 Smoke: 66/66
 
 COMPANIES
   SEED total: 206
-  Workday: 89 (searchText: 'epic ehr within')
+  Workday: 90 (searchText: 'epic ehr within')
   Greenhouse: 59
 
 RECENT COMMITS
-  cbbe89f feat: seed 26 additional SAP SuccessFactors health systems
+  33973ab fix: Stanford Health Care → Workday wd115 (not SuccessFactors)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
   2. Platform DOs: 7 DOs, CHUNK_SIZE=15, cursor rotation
-     Workday sweep (89 cos): ~24min | GH sweep (59 cos): ~8min
+     Workday sweep (90 cos): ~24min | GH sweep (59 cos): ~8min
   3. BatchPollerDO: 57 cos, 25/cycle, 2min interval
   4. Backfill: manual POST /backfill-browse
 
