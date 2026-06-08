@@ -7,7 +7,7 @@
  *   Lever         → description in list API response (j.description.content)
  *   Ashby         → description in list API response (j.jobDescription.descriptionHtml)
  *   HiringCafe    → description in v5 payload (job_information.description)
- *   Workday       → og:description meta tag on job page (plain HTML GET, ~200ms)
+ *   Workday       → JSON-LD schema.org/JobPosting (full desc, ~4k chars) → data-automation-id="jobPostingDescription" DOM → og:description fallback (boilerplate only)
  *   iCIMS         → page is a SPA — Browser Rendering API required
  *   Taleo         → page is a SPA — Browser Rendering API required
  *   SuccessFactors → page is a SPA — no path without auth; use HiringCafe v5 coverage
@@ -142,23 +142,46 @@ async function fetchPlainDescription(job) {
       return '';
     }
 
-    // Workday: og:description in meta tag
+    // Workday: three paths in priority order (confirmed 2026-06-08 via MSMC HTML analysis)
+    //
+    // PATH 1 — JSON-LD schema.org/JobPosting (BEST)
+    //   Full description as JSON string — no HTML parsing, clean text.
+    //   Confirmed present on Workday job detail pages (MSMC: 4,000+ chars).
+    //   Only available on job DETAIL pages (not listing pages).
+    //
+    // PATH 2 — data-automation-id="jobPostingDescription" DOM element
+    //   Full description pre-rendered in SSR HTML shell by Workday for SEO.
+    //   Ember SPA renders into this element client-side, but it's also in
+    //   the server-rendered HTML. 6,694 chars confirmed on MSMC page.
+    //
+    // PATH 3 — og:description (LAST RESORT)
+    //   Confirmed to be company boilerplate only (668 chars on MSMC).
+    //   NOT the job description. Only use if both above fail.
+
+    // PATH 1: JSON-LD
+    const ld = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
+    if (ld) {
+      try {
+        const d = JSON.parse(ld[1]);
+        const desc = d.description || d.jobDescription;
+        if (desc && desc.length > 100) return stripHtml(desc);
+      } catch {}
+    }
+
+    // PATH 2: data-automation-id="jobPostingDescription" pre-rendered DOM
+    const domDesc = html.match(/data-automation-id="jobPostingDescription"[^>]*>([\s\S]+?)(?=data-automation-id="similar-jobs|data-automation-id="jobSidebar|<\/section|<\/main)/i);
+    if (domDesc) {
+      const stripped = stripHtml(domDesc[1]);
+      if (stripped.length > 100) return stripped;
+    }
+
+    // PATH 3: og:description — boilerplate fallback only
     const og = html.match(
       /<meta\s+(?:name|property)="(?:og:description|description)"[^>]*content="([^"]{20,})"[^>]*>/i
     ) || html.match(
       /<meta\s+content="([^"]{20,})"[^>]*(?:name|property)="(?:og:description|description)"[^>]*>/i
     );
     if (og) return decodeHtmlEntities(og[1]);
-
-    // JSON-LD schema.org/JobPosting fallback (Workday)
-    const ld = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
-    if (ld) {
-      try {
-        const d = JSON.parse(ld[1]);
-        const desc = d.description || d.jobDescription;
-        if (desc && desc.length > 20) return stripHtml(desc);
-      } catch {}
-    }
 
     return '';
   } catch {
