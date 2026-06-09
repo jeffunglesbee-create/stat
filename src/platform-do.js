@@ -352,13 +352,15 @@ class PlatformDO {
       console.warn(`[STAT ${this.ats}] Global seen-set save failed:`, e.message);
     }
 
-    // Update totals
-    const prev = {
-      polled:  (await this.storage.get('total_polled'))  ?? 0,
-      matches: (await this.storage.get('total_matches')) ?? 0,
-    };
-    await this.storage.put('total_polled',  prev.polled  + polledCount);
-    await this.storage.put('total_matches', prev.matches + newMatches.length);
+    // Update totals (parallel reads + parallel writes)
+    const [prevPolled, prevMatches] = await Promise.all([
+      this.storage.get('total_polled'),
+      this.storage.get('total_matches'),
+    ]);
+    await Promise.all([
+      this.storage.put('total_polled',  (prevPolled  ?? 0) + polledCount),
+      this.storage.put('total_matches', (prevMatches ?? 0) + newMatches.length),
+    ]);
 
     // Fit score + dispatch
     if (newMatches.length > 0) {

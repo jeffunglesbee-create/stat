@@ -188,6 +188,7 @@ assert('platform-do: maybeAddOrPromoteCompany called after match', read('platfor
 assert('platform-do: maybeAddOrPromoteCompany passes ctx', read('platform-do.js').includes('ctx: promoCtx'));
 assert('platform-do: alarm-start reads parallelized', read('platform-do.js').includes("Promise.all([\n        storeGet(store, 'company_list')"));
 assert('platform-do: promoCtx dirty flush after job loop', read('platform-do.js').includes('promoCtx.dirty.counts'));
+assert('platform-do: total_polled and total_matches reads parallelized', read('platform-do.js').includes("Promise.all([\n      this.storage.get('total_polled')"));
 assert('store: maybeAddOrPromoteCompany accepts ctx param', read('store.js').includes('{ gate = \'strict\', ctx = null }'));
 assert('store: maybeAddOrPromoteCompany uses ctx.counts when available', read('store.js').includes('ctx?.counts ?? await loadMatchCounts'));
 assert('store: maybeAddOrPromoteCompany sets dirty flag', read('store.js').includes('ctx.dirty.counts = true'));
