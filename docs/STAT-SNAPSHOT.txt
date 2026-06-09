@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-09T00:28:42Z
-HEAD: 78358e8
-Smoke: 109/109
+Generated: 2026-06-09T00:44:20Z
+HEAD: daf0bf0
+Smoke: 113/113
 
 COMPANIES
   SEED total: 204
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  78358e8 perf: CHUNK_SIZE to config + Workday chunk=25 interval=3min
+  daf0bf0 perf: ETag caching on /ui — 304 Not Modified on repeat opens
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
