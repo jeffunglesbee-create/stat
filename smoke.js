@@ -230,7 +230,8 @@ assert('index: loadSeenIds returns Map', read('index.js').includes('return new M
 assert('index: addToSeen defined', read('index.js').includes('function addToSeen('));
 assert('index: checkSeenStatus defined', read('index.js').includes('function checkSeenStatus('));
 assert('index: maybeRunSeenSweep defined', read('index.js').includes('async function maybeRunSeenSweep('));
-assert('index: maybeRunSeenSweep called in cron', read('index.js').includes('await maybeRunSeenSweep(env)'));
+assert('index: maybeRunSeenSweep called in cron', read('index.js').includes('maybeRunSeenSweep(env)'));
+assert('index: cron salary + sweep parallelized', read('index.js').includes('Promise.all([\n    maybeRefreshSalaryCaches(env),\n    maybeRunSeenSweep(env),\n  ])'));
 assert('index: SEEN_TTL_MS defined', read('index.js').includes('SEEN_TTL_MS'));
 assert('index: dead entries marked with diedAt', read('index.js').includes('diedAt'));
 assert('index: ghost resurrection in HC path', read('index.js').includes('Ghost resurrected'));

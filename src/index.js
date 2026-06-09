@@ -761,19 +761,24 @@ async function handleScheduled(env) {
     }
   }
 
-  // Wide-net HiringCafe scrape
+  // Wide-net HiringCafe scrape — must complete before jobhive (both write seen_ids)
   await runHiringCafeScrape(env);
-  // Auto-refresh salary caches on schedule — no manual intervention required
-  await maybeRefreshSalaryCaches(env);
 
-  // jobhive CSV scan — runs once per hour, not every minute
+  // Salary refresh + seen sweep are independent of each other and of jobhive.
+  // Run in parallel after HC scrape completes:
+  //   maybeRefreshSalaryCaches — touches SalaryDO only, never seen_ids
+  //   maybeRunSeenSweep        — reads/writes seen_ids (dead entries only, no promo writes)
+  // Both complete before jobhive starts, so no seen_ids write contention.
+  await Promise.all([
+    maybeRefreshSalaryCaches(env),
+    maybeRunSeenSweep(env),
+  ]);
+
+  // jobhive CSV scan — runs once per hour, not every minute.
   // Streams jobhive's ATS slices to find Epic roles at companies outside the seed list.
   // Discovered companies auto-promoted via maybeAddOrPromoteCompany() (healthcare gate).
+  // Runs last — also writes seen_ids, must not overlap with HC scrape or sweep.
   await maybeRunJobhiveScan(env);
-
-  // Seen-set sweep — re-check dead entries for ghost resurrection.
-  // 20 entries per cron tick. Cycles through all dead entries over time.
-  await maybeRunSeenSweep(env);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
