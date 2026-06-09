@@ -90,14 +90,33 @@ class PlatformDO {
 
   // ── Alarm: fetch all companies for this ATS ───────────────────────────────
   async alarm() {
-    // Load this platform's company list from KV
+    // Parallel load of all alarm-start state — 5 StateStoreDO keys in one wall-time hop.
+    // Previously: company_list, custom_keywords, seen_ids loaded sequentially (3 hops).
+    // Also preloads match_counts + do_registry for maybeAddOrPromoteCompany context,
+    // eliminating 4–6 per-match StateStoreDO hops inside the job loop.
+    const store = getStatStore(this.env);
+    let [companyRaw, ckRaw, seenRaw, countsRaw, registryRaw] = [null, null, null, null, null];
+    try {
+      [companyRaw, ckRaw, seenRaw, countsRaw, registryRaw] = await Promise.all([
+        storeGet(store, 'company_list'),
+        storeGet(store, 'custom_keywords').catch(() => null),
+        storeGet(store, 'seen_ids').catch(() => null),
+        storeGet(store, 'match_counts').catch(() => null),
+        storeGet(store, 'do_registry').catch(() => null),
+      ]);
+    } catch (e) {
+      console.error(`[STAT ${this.ats}] Failed to load alarm-start state:`, e.message);
+      await this._reschedule();
+      return;
+    }
+
+    // Parse company list
     let allCompanies;
     try {
-      const raw = await storeGet(getStatStore(this.env), 'company_list');
-      const list = raw ? JSON.parse(raw) : [];
+      const list = companyRaw ? JSON.parse(companyRaw) : [];
       allCompanies = list.filter(c => c.ats === this.ats);
     } catch (e) {
-      console.error(`[STAT ${this.ats}] Failed to load company list:`, e.message);
+      console.error(`[STAT ${this.ats}] Failed to parse company list:`, e.message);
       await this._reschedule();
       return;
     }
@@ -107,30 +126,25 @@ class PlatformDO {
       return;
     }
 
-    // Load per-platform seen-set (stored in DO storage, not KV)
+    // Load per-platform seen-set (DO-local storage, not StateStoreDO — fast in-process)
     let seenIds;
     try {
       const raw = await this.storage.get('seen_ids');
       seenIds = raw ? new Set(JSON.parse(raw)) : new Set();
     } catch (e) { console.warn(`[STAT ${this.ats}] seenIds load failed (dedup may be incomplete):`, e.message); seenIds = new Set(); }
 
-    // Load profile-generated custom keywords (profile-driven contextual matching)
+    // Parse custom keywords (optional — static list is fallback)
     let customKeywords = null;
     try {
-      const ckRaw = await storeGet(getStatStore(this.env), 'custom_keywords');
-      if (ckRaw) {
-        const ckData = JSON.parse(ckRaw);
-        customKeywords = ckData.keywords || null;
-      }
-    } catch { /* custom keywords optional — static list is fallback */ }
+      if (ckRaw) customKeywords = JSON.parse(ckRaw).keywords ?? null;
+    } catch { /* non-fatal */ }
 
-    // Also load global seen-map for cross-platform dedup
+    // Parse global seen-map for cross-platform dedup
     // Format: Map<id, {id, seenAt, diedAt?, url?}> — structured for TTL + ghost resurrection
     let globalSeen;
     try {
-      const raw = await storeGet(getStatStore(this.env), 'seen_ids');
-      if (raw) {
-        const arr = JSON.parse(raw);
+      if (seenRaw) {
+        const arr = JSON.parse(seenRaw);
         globalSeen = new Map(arr.map(e => {
           const entry = typeof e === 'string' ? { id: e, seenAt: new Date(0).toISOString() } : e;
           return [entry.id, entry];
@@ -139,6 +153,15 @@ class PlatformDO {
         globalSeen = new Map();
       }
     } catch (e) { console.warn(`[STAT ${this.ats}] globalSeen load failed (cross-platform dedup may be incomplete):`, e.message); globalSeen = new Map(); }
+
+    // Promotion context — preloaded once, mutated in-place during job loop, flushed after.
+    // Eliminates 4–6 StateStoreDO hops per match inside maybeAddOrPromoteCompany.
+    const promoCtx = {
+      counts:    countsRaw   ? JSON.parse(countsRaw)   : {},
+      registry:  registryRaw ? JSON.parse(registryRaw) : {},
+      companies: allCompanies,
+      dirty:     { counts: false, registry: false, companies: false },
+    };
 
     const newMatches    = [];
     const unmatchedJobs = [];   // env-filtered, not keyword-matched
@@ -260,7 +283,8 @@ class PlatformDO {
 
           // Auto-discovery: track health system matches, promote to DO polling
           // gate:'strict' filters out non-healthcare companies (Lightspeed, IBM etc.)
-          maybeAddOrPromoteCompany(env, job, { gate: 'strict' }).catch(() => {});
+          // ctx: preloaded promo context — avoids 4–6 StateStoreDO hops per match
+          maybeAddOrPromoteCompany(this.env, job, { gate: 'strict', ctx: promoCtx }).catch(() => {});
         }
 
         // Polite inter-company delay
@@ -289,6 +313,21 @@ class PlatformDO {
       }
       newMatches.length = 0;
       newMatches.push(...mdFiltered);
+    }
+
+    // Flush dirty promotion context — replaces per-match saveMatchCounts/saveDoRegistry/saveCompanyList
+    // Only writes keys that were actually mutated during the job loop (dirty flags).
+    try {
+      const flushOps = [];
+      if (promoCtx.dirty.counts)
+        flushOps.push(storeSet(store, 'match_counts', JSON.stringify(promoCtx.counts)));
+      if (promoCtx.dirty.registry)
+        flushOps.push(storeSet(store, 'do_registry', JSON.stringify(promoCtx.registry)));
+      if (promoCtx.dirty.companies)
+        flushOps.push(storeSet(store, 'company_list', JSON.stringify(promoCtx.companies)));
+      if (flushOps.length > 0) await Promise.all(flushOps);
+    } catch (e) {
+      console.warn(`[STAT ${this.ats}] promoCtx flush failed:`, e.message);
     }
 
     // Persist local seen-set (cap at 10,000 per platform)

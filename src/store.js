@@ -320,7 +320,7 @@ const _PLATFORM_MAP = {
   successfactors: 'SUCCESSFACTORS_DO', taleo: 'TALEO_DO',
 };
 
-export async function maybeAddOrPromoteCompany(env, job, { gate = 'strict' } = {}) {
+export async function maybeAddOrPromoteCompany(env, job, { gate = 'strict', ctx = null } = {}) {
   if (!job.url || !job.company) return;
 
   // Healthcare gate
@@ -348,24 +348,29 @@ export async function maybeAddOrPromoteCompany(env, job, { gate = 'strict' } = {
   const doKey = `${ats}:${token}`;
   const now   = Date.now();
 
-  // Track match count
-  const counts = await loadMatchCounts(env);
+  // Use preloaded ctx when available (avoids 4–6 StateStoreDO hops per match).
+  // ctx is provided by platform-do alarm() which pre-loads these keys once at alarm start.
+  // Callers without ctx (HC cron, jobhive scan) fall back to individual loads — correct,
+  // since those paths don't have a pre-loaded context object.
+  const counts = ctx?.counts ?? await loadMatchCounts(env);
   if (!counts[doKey]) counts[doKey] = { count: 0, firstSeen: now, lastSeen: now, name: job.company };
   counts[doKey].count++;
   counts[doKey].lastSeen = now;
-  await saveMatchCounts(env, counts);
+  if (ctx) { ctx.counts = counts; ctx.dirty.counts = true; }
+  else await saveMatchCounts(env, counts);
 
   // Already promoted — nothing more to do
-  const registry = await loadDoRegistry(env);
+  const registry = ctx?.registry ?? await loadDoRegistry(env);
   if (registry[doKey]) return;
 
   // Add to company_list on first sighting
-  const companies = await loadCompanyList(env) ?? [];
+  const companies = ctx ? ctx.companies : (await loadCompanyList(env) ?? []);
   const exists = companies.some(c => c.ats === ats && c.token === token);
   if (!exists) {
     companies.push({ name: job.company, ats, token, url: job.url,
       autoDiscovered: true, firstMatchAt: new Date().toISOString() });
-    await saveCompanyList(env, companies);
+    if (ctx) { ctx.companies = companies; ctx.dirty.companies = true; }
+    else await saveCompanyList(env, companies);
     console.log(`[STAT] Auto-discovered: ${job.company} (${ats}:${token})`);
   }
 
@@ -376,7 +381,8 @@ export async function maybeAddOrPromoteCompany(env, job, { gate = 'strict' } = {
       name: job.company, ats, autoDiscovered: true, promoted: true,
       promotedAt: new Date().toISOString(), matchCount: counts[doKey].count,
     };
-    await saveDoRegistry(env, registry);
+    if (ctx) { ctx.registry = registry; ctx.dirty.registry = true; }
+    else await saveDoRegistry(env, registry);
     console.log(`[STAT] Promoted: ${job.company} (${ats}) after ${counts[doKey].count} matches`);
   }
 }

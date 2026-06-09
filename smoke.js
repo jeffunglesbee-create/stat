@@ -184,7 +184,13 @@ assert('notify: NON_US_ISO set defined', read('notify.js').includes('NON_US_ISO'
 assert('store: maybeAddOrPromoteCompany exported', read('store.js').includes('export async function maybeAddOrPromoteCompany'));
 assert('store: healthcare gate in maybeAddOrPromoteCompany', read('store.js').includes('_looksLikeEpicEmployer'));
 assert('platform-do: maybeAddOrPromoteCompany imported from store', read('platform-do.js').includes('maybeAddOrPromoteCompany'));
-assert('platform-do: maybeAddOrPromoteCompany called after match', read('platform-do.js').includes("maybeAddOrPromoteCompany(env, job"));
+assert('platform-do: maybeAddOrPromoteCompany called after match', read('platform-do.js').includes("maybeAddOrPromoteCompany(this.env, job"));
+assert('platform-do: maybeAddOrPromoteCompany passes ctx', read('platform-do.js').includes('ctx: promoCtx'));
+assert('platform-do: alarm-start reads parallelized', read('platform-do.js').includes("Promise.all([\n        storeGet(store, 'company_list')"));
+assert('platform-do: promoCtx dirty flush after job loop', read('platform-do.js').includes('promoCtx.dirty.counts'));
+assert('store: maybeAddOrPromoteCompany accepts ctx param', read('store.js').includes('{ gate = \'strict\', ctx = null }'));
+assert('store: maybeAddOrPromoteCompany uses ctx.counts when available', read('store.js').includes('ctx?.counts ?? await loadMatchCounts'));
+assert('store: maybeAddOrPromoteCompany sets dirty flag', read('store.js').includes('ctx.dirty.counts = true'));
 assert('batch: maybeAddOrPromoteCompany called after match', read('batch.js').includes("maybeAddOrPromoteCompany(this.env, job"));
 assert('index: detectAts function defined', read('index.js').includes('function detectAts(rawUrl)'));
 assert('ui: detect-ats URL field present', read('ui.html').includes('f-url-detect'));
