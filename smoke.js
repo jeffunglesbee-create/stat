@@ -235,6 +235,10 @@ assert('index: checkSeenStatus defined', read('index.js').includes('function che
 assert('index: maybeRunSeenSweep defined', read('index.js').includes('async function maybeRunSeenSweep('));
 assert('index: maybeRunSeenSweep called in cron', read('index.js').includes('maybeRunSeenSweep(env)'));
 assert('index: cron salary + sweep parallelized', read('index.js').includes('Promise.all([\n    maybeRefreshSalaryCaches(env),\n    maybeRunSeenSweep(env),\n  ])'));
+assert('index: UI_ETAG computed at module load', read('index.js').includes('const UI_ETAG = (() =>'));
+assert('index: /ui returns 304 on ETag match', read('index.js').includes('status: 304'));
+assert('index: /ui ETag header set on 200', read('index.js').includes("'ETag': UI_ETAG"));
+assert('index: /ui no-store removed', !read('index.js').includes('no-store'));
 assert('index: SEEN_TTL_MS defined', read('index.js').includes('SEEN_TTL_MS'));
 assert('index: dead entries marked with diedAt', read('index.js').includes('diedAt'));
 assert('index: ghost resurrection in HC path', read('index.js').includes('Ghost resurrected'));

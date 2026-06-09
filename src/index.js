@@ -36,6 +36,19 @@ export { StateStoreDO } from './store.js';
 import UI_HTML from './ui.html';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// UI ETAG — computed once at Worker startup (module load), never at request time.
+// 32-bit hash of UI_HTML content. Changes on every deploy since UI_HTML is
+// baked into the Worker bundle. Enables 304 Not Modified on repeat /ui opens.
+// ─────────────────────────────────────────────────────────────────────────────
+const UI_ETAG = (() => {
+  let h = 0;
+  for (let i = 0; i < UI_HTML.length; i++) {
+    h = (Math.imul(31, h) + UI_HTML.charCodeAt(i)) | 0;
+  }
+  return '"' + (h >>> 0).toString(36) + '"';
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GLOBAL STATE — DO SQLite helpers (via StateStoreDO)
 // All five previously-KV keys now live in StateStoreDO SQLite storage.
 // Helpers accept env and derive the stub internally for a clean call site.
@@ -1065,12 +1078,22 @@ async function handleFetch(request, env) {
   const url = new URL(request.url);
 
   // GET /ui — HTML dashboard (served inline from ui.html)
+  // ETag-based caching: repeat opens return 304 (no body) instead of 85KB.
+  // UI_ETAG is computed once at module load from UI_HTML content hash.
+  // Cache-Control: max-age=0 forces revalidation on every open, but the
+  // 304 path skips the body transfer entirely — fast on slow connections.
   if (url.pathname === '/ui' && request.method === 'GET') {
+    if (request.headers.get('If-None-Match') === UI_ETAG) {
+      return new Response(null, {
+        status: 304,
+        headers: { 'ETag': UI_ETAG, 'Cache-Control': 'max-age=0, must-revalidate' },
+      });
+    }
     return new Response(UI_HTML, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'Pragma': 'no-cache',
+        'Cache-Control': 'max-age=0, must-revalidate',
+        'ETag': UI_ETAG,
       },
     });
   }
