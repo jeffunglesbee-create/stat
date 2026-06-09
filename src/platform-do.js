@@ -37,7 +37,7 @@ import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './n
 import { enrichJobWithSalary } from './salary.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import { getStatStore, storeGet, storeSet, saveRecentMatches, saveUnmatchedJobs, appendLog, maybeAddOrPromoteCompany } from './store.js';
-import { getPollingInterval, KV, GHOST } from './config.js';
+import { getPollingInterval, CHUNK_SIZES, KV, GHOST } from './config.js';
 import { applyMarylandScore } from './maryland.js';
 import { enrichDescriptions } from './enrich.js';
 
@@ -173,7 +173,10 @@ class PlatformDO {
     // Platform DOs have ~30s CPU per alarm. With 400ms delay between fetches,
     // max ~70 companies per alarm safely. We rotate through the full list using
     // a cursor stored in DO storage, so every company gets polled over time.
-    const CHUNK_SIZE = 15; // 15 companies × 400ms = 6s, well within 30s limit
+    // Per-platform chunk size from config.js.
+    // Workday=25 (121 cos × 180s floor → 14.5min sweep) vs default 15.
+    // CPU budget: ~16s at 25 companies × 150ms delay + ~500ms fetch avg.
+    const CHUNK_SIZE = CHUNK_SIZES[this.ats] ?? 15;
     let cursor = 0;
     try {
       cursor = (await this.storage.get('poll_cursor') ?? 0) % allCompanies.length;

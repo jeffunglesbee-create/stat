@@ -213,7 +213,7 @@ export function getPollingInterval(ats) {
     greenhouse:     2 * 60_000,
     lever:          2 * 60_000,
     ashby:          2 * 60_000,
-    workday:        4 * 60_000,
+    workday:        3 * 60_000,  // 3min floor — 121 cos / 25 chunk = 14.5min sweep
     icims:          4 * 60_000,
     successfactors: 8 * 60_000,
     taleo:          8 * 60_000,
@@ -223,6 +223,24 @@ export function getPollingInterval(ats) {
   };
   return Math.max(windowMs, floors[ats] ?? 4 * 60_000);
 }
+
+// Per-platform chunk sizes — companies polled per alarm cycle.
+// Workday is the largest platform (121 cos) and benefits most from a larger chunk.
+// CPU budget: 30s wall-clock. At 150ms inter-company delay + ~500ms avg fetch:
+//   chunk=15 → ~9.75s | chunk=20 → ~13s | chunk=25 → ~16.25s
+// All are well within 30s. Workday at 25: 121/25 × 180s = 14.5min full sweep.
+export const CHUNK_SIZES = {
+  greenhouse:     15,
+  lever:          15,
+  ashby:          15,
+  workday:        25,  // 121 companies; 25 × 180s = 14.5min worst-case alert latency
+  icims:          15,
+  successfactors: 15,
+  taleo:          15,
+  oracle_hcm:     15,
+  infor_hcm:      15,
+  selectminds:     1,  // ID-walk adapter — 1 company per cycle by design
+};
 
 // Legacy static intervals — used only by HiringCafe cron (not DO-based)
 export const POLL_INTERVALS = { hiringcafe: 60_000 };

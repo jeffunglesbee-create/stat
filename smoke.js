@@ -223,6 +223,9 @@ assert('platform-do: SelectMindsDO exported', read('platform-do.js').includes('e
 assert('index: SelectMindsDO exported', read('index.js').includes('SelectMindsDO'));
 assert('index: SELECTMINDS_DO in bootstrap', read('index.js').includes("'SELECTMINDS_DO'"));
 assert('config: selectminds polling interval defined', read('config.js').includes("selectminds:"));
+assert('config: CHUNK_SIZES exported', read('config.js').includes('export const CHUNK_SIZES'));
+assert('config: Workday chunkSize is 25', read('config.js').includes('workday:        25,'));
+assert('platform-do: CHUNK_SIZE read from CHUNK_SIZES config', read('platform-do.js').includes('CHUNK_SIZES[this.ats] ?? 15'));
 assert('enrich: selectminds in NEEDS_PLAIN_FETCH', read('enrich.js').includes("'selectminds'"));
 assert('index: bootstrapDOs merges SEED_COMPANIES into stored list', read('index.js').includes('newFromSeed'));
 assert('index: PLATFORM_MAP includes selectminds', read('index.js').includes("selectminds: 'SELECTMINDS_DO'"));
