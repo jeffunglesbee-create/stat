@@ -191,6 +191,8 @@ assert('ui: detect-ats URL field present', read('ui.html').includes('f-url-detec
 assert('ui: btn-detect handler wired', read('ui.html').includes("'/detect-ats'"));
 assert('platform-do: appendLog imported', read('platform-do.js').includes('appendLog'));
 assert('platform-do: appendLog called in alarm loop', read('platform-do.js').includes('await appendLog('));
+assert('platform-do: appendLog outside unmatchedJobs block (brace fix)',
+  read('platform-do.js').includes("saveUnmatchedJobs(getStatStore(this.env), unmatchedJobs);\n    }\n\n    // \u2500\u2500 Structured log entry"));
 assert('platform-do: brLog declared in alarm loop', read('platform-do.js').includes('const brLog'));
 assert('platform-do: brLog captures workday _source', read('platform-do.js').includes('jobs._source'));
 assert('adapters: fetchWorkday tags result with log', adaptersSrc.includes('Workday-SSR plain fetch') || adaptersSrc.includes('[STAT Workday]'));

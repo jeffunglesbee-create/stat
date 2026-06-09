@@ -341,12 +341,14 @@ class PlatformDO {
     // Save env-filtered non-matches for browsing (outside match gate)
     if (unmatchedJobs.length > 0) {
       await saveUnmatchedJobs(getStatStore(this.env), unmatchedJobs);
+    }
 
     // ── Structured log entry for GET /logs diagnostic endpoint ─────────────
+    // Runs unconditionally — every alarm cycle logged, including zero-match cycles.
+    // Zero-match cycles are diagnostic signal (confirms polling is running even when quiet).
     // Captures per-alarm-cycle results so CI log-check can surface open questions:
-    //   - Is Workday BR XHR intercept returning jobs or falling back to SSR?
     //   - Which companies are returning 0 jobs consistently?
-    //   - Is match rate improving after Workday fix?
+    //   - Is match rate improving after adapter changes?
     await appendLog(getStatStore(this.env), {
       type:       'alarm',
       ats:        this.ats,
@@ -356,7 +358,6 @@ class PlatformDO {
       errors:     errorLog,
       ...(this.ats === 'workday' && brLog.length > 0 ? { br: brLog } : {}),
     });
-    }
 
     await this._reschedule();
   }
