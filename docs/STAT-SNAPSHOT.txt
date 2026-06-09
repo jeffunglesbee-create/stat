@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-09T00:19:46Z
-HEAD: 52e0a38
-Smoke: 105/105
+Generated: 2026-06-09T00:22:48Z
+HEAD: 4bdb9c8
+Smoke: 106/106
 
 COMPANIES
   SEED total: 204
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  52e0a38 perf: parallelize total_polled + total_matches reads and writes at alarm end
+  4bdb9c8 perf: parallelize salary cache refresh + seen sweep in cron handler
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
