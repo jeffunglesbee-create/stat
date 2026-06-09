@@ -1,0 +1,192 @@
+STAT — ADR: StateStoreDO Raw SQL Migration (Option 3)
+Status: DEFERRED — spec only, not scheduled
+Created: 2026-06-08 (S12)
+Prereq: No prior discussion. Novel relative to all S1–S11 decisions.
+Trigger: Performance audit surfaced 2MB per-value wall on SQLite-backed DOs.
+
+════════════════════════════════════════════════════════════════
+CONTEXT
+════════════════════════════════════════════════════════════════
+
+StateStoreDO is declared as new_sqlite_classes (wrangler.toml v4 migration).
+It uses only the KV-style get()/put() API — deliberately, per the S6
+migration decision: "No SQL code needed — same API, better billing tier."
+
+The KV-style API on SQLite-backed DOs stores each key as a row in a hidden
+internal table. Per-value limit: 2MB (key + value combined).
+
+Current payload estimates at cap:
+  unmatched_jobs  2000 entries × ~300B avg  = ~600KB  (HC jobs: no description)
+  recent_matches   200 entries × ~800B avg  = ~160KB  (enriched, with description)
+  seen_ids        5000 entries × ~147B avg  = ~735KB
+
+No key is at the wall today. HC jobs in Browse have empty descriptions
+(absent from ssrHits — confirmed S8). Platform-DO descriptions are
+og:description truncated (~150–300 chars). Real Browse payload is
+likely 400–600KB at cap, not the theoretical 586KB estimate.
+
+TRIGGER FOR REVISIT:
+  - unmatched_jobs approaches 1.5MB (monitor via /logs or /browse count)
+  - Description enrichment added to Browse-capture path (would jump payload)
+  - Browse promoted to primary discovery surface with filter/sort UI
+
+════════════════════════════════════════════════════════════════
+THE OPTION 3 ARCHITECTURE
+════════════════════════════════════════════════════════════════
+
+StateStoreDO is already SQLite-backed. The raw SQL API is available via
+this.ctx.storage.sql (Cursor API) inside the DO's fetch() handler.
+
+Instead of storing JSON blobs keyed by name, store each job as a row:
+
+  CREATE TABLE IF NOT EXISTS browse_jobs (
+    id          TEXT PRIMARY KEY,
+    ats         TEXT,
+    title       TEXT,
+    company     TEXT,
+    location    TEXT,
+    environment TEXT,
+    salary      TEXT,
+    url         TEXT,
+    description TEXT,       -- nullable, stored separately from core fields
+    seen_at     INTEGER,    -- Unix ms
+    is_matched  INTEGER,    -- 0 = unmatched browse, 1 = keyword match
+    job_json    TEXT        -- full job object for card rendering
+  );
+
+  CREATE TABLE IF NOT EXISTS match_jobs (
+    id          TEXT PRIMARY KEY,
+    ats         TEXT,
+    priority    INTEGER,
+    title       TEXT,
+    company     TEXT,
+    seen_at     INTEGER,
+    job_json    TEXT        -- full enriched job+match object
+  );
+
+Per-row limit: 2MB. Unlimited rows per DO instance.
+Total storage per DO: 10GB (SQLite-backed, Workers Plus).
+
+════════════════════════════════════════════════════════════════
+WHAT CHANGES
+════════════════════════════════════════════════════════════════
+
+store.js:
+  StateStoreDO gains SQL schema init on first fetch (CREATE TABLE IF NOT EXISTS).
+  New HTTP routes:
+    POST /browse/upsert    — insert/replace browse job rows (batch)
+    GET  /browse/list      — SELECT with optional ats/q/limit params
+    POST /matches/upsert   — insert/replace match rows
+    GET  /matches/list     — SELECT with optional priority/ats/q/limit
+    POST /browse/prune     — DELETE WHERE seen_at < cutoff (TTL enforcement)
+
+  Existing routes unchanged:
+    /get /set /delete /ping — KV-style, unchanged for seen_ids, profile,
+      company_list, do_registry, match_counts, email_queue, log_buffer,
+      seen_sweep_cursor, jobhive_scan_last, custom_keywords.
+
+  Only unmatched_jobs and recent_matches move to SQL rows.
+  Everything else stays KV-style (blobs, fine as-is).
+
+platform-do.js / batch.js / index.js:
+  saveUnmatchedJobs() → POST /browse/upsert (batch of job rows)
+  loadUnmatchedJobs() → GET /browse/list
+  saveRecentMatches() → POST /matches/upsert
+  loadRecentMatches() → GET /matches/list
+
+/browse endpoint:
+  Passes ?ats= ?q= ?limit= to GET /browse/list → SQL WHERE clauses.
+  No longer loads 2000-entry JSON array into Worker memory.
+
+/jobs endpoint:
+  Passes ?priority= ?ats= ?q= ?limit= to GET /matches/list.
+  Same improvement.
+
+════════════════════════════════════════════════════════════════
+WHAT THIS ENABLES THAT KV BLOBS CANNOT
+════════════════════════════════════════════════════════════════
+
+1. Unlimited Browse entries (no cap, TTL by seen_at age instead of count)
+2. Server-side filtering — ?ats=workday ?q=analyst resolved in SQL, not
+   by loading full array into Worker and filtering in JS
+3. Sorted results without full-array sort — ORDER BY seen_at DESC
+4. COUNT(*) without deserializing the full payload
+5. Per-field updates — mark job as applied/skipped without rewriting blob
+6. Description stored separately — can be NULL for Browse, populated on
+   demand, without inflating the core row payload
+
+════════════════════════════════════════════════════════════════
+CONSTRAINTS AND RISKS
+════════════════════════════════════════════════════════════════
+
+CONSTRAINT 1: Single-threaded DO
+  StateStoreDO serializes all requests. SQL queries run synchronously
+  inside the DO. With 7 platform DOs + HC cron all calling upsert
+  concurrently, each call queues behind the previous.
+  Current KV blob approach has the same constraint — no change here.
+  SQL upsert is faster than JSON parse+merge+serialize for large sets.
+
+CONSTRAINT 2: Migration of existing data
+  Existing unmatched_jobs and recent_matches blobs must be migrated.
+  Options:
+    a. On first deploy, read old blob → INSERT rows → delete blob key.
+       StateStoreDO detects presence of old key on first SQL init.
+    b. One-time /migrate endpoint (POST, admin-only).
+    c. Clean break — old data lost, Browse repopulates within one day.
+  Option c is acceptable given Browse is a discovery surface, not an
+  alert archive. Losing Browse history on migration day is low cost.
+
+CONSTRAINT 3: Schema versioning
+  SQL schema changes require wrangler.toml migration entries.
+  new_sqlite_classes already declared — schema init via CREATE TABLE
+  IF NOT EXISTS in DO constructor or first fetch handles this without
+  a new migration tag (idempotent DDL).
+
+CONSTRAINT 4: Smoke test changes
+  All assertions checking saveUnmatchedJobs/loadUnmatchedJobs JSON blob
+  patterns need updating. Estimate: 4–6 assertions replaced.
+
+CONSTRAINT 5: StateStoreDO HTTP API surface grows
+  New routes (/browse/upsert, /browse/list, etc.) increase DO complexity.
+  The "dumb store" principle from the original design is partially relaxed —
+  the DO now contains query logic. Acceptable tradeoff for this use case.
+
+════════════════════════════════════════════════════════════════
+EFFORT ESTIMATE
+════════════════════════════════════════════════════════════════
+
+store.js SQL schema + new routes:         ~120 lines
+platform-do.js + batch.js + index.js:     ~40 lines changed
+/browse + /jobs endpoint updates:          ~20 lines changed
+Smoke assertion updates:                   ~10 assertions
+Migration strategy (option c):            0 lines (clean break)
+TOTAL:                                    ~1 session (~2–3 hours)
+
+════════════════════════════════════════════════════════════════
+DECISION GATE
+════════════════════════════════════════════════════════════════
+
+Do NOT build until one of:
+  a. /browse payload confirmed approaching 1.5MB via live monitoring, OR
+  b. Description enrichment added to Browse-capture path, OR
+  c. Browse promoted to primary UI surface requiring filter/sort/count,
+     at which point the server-side query benefit alone justifies the work.
+
+Current state: no trigger met. Option 2 (strip description on write)
+remains the zero-effort mitigation if payload grows before this is built.
+
+════════════════════════════════════════════════════════════════
+RELATED DECISIONS
+════════════════════════════════════════════════════════════════
+
+S6 StateStoreDO migration: "same API, better billing" — this ADR is the
+  explicit revisit of that decision for the Browse/Matches use case only.
+  All other keys (seen_ids, profile, company_list, etc.) stay KV-style.
+
+S11 Browse model: "seen = alert dedup only, not Browse suppression" —
+  the SQL migration enables this more cleanly (INSERT OR REPLACE by job_id,
+  TTL by seen_at, no manual dedup array logic).
+
+STAT-ARCHITECTURE.txt: update "StateStoreDO" section when built.
+STAT-CURRENT-STATE.txt: update DO classes section when built.
+Add wrangler.toml migration tag if schema changes require it.
