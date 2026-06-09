@@ -331,3 +331,63 @@ DECISION: Bootstrap merge key = (ats, url) not (ats, token) (S11)
   DECISION: Use url as identity key (url is stable; token is cursor state).
   EDGE CASE: A company that genuinely changes its ATS URL will be treated as
     a new addition. Acceptable — URL changes are rare and deliberate.
+
+
+════════════════════════════════════════════════════════════════
+PERFORMANCE IMPROVEMENTS — S12 (2026-06-08)
+════════════════════════════════════════════════════════════════
+
+FIX 1: appendLog brace (608f1ec)
+  appendLog was inside 'if (unmatchedJobs.length > 0)' block — missing brace.
+  Zero-match alarm cycles never logged. Fixed: appendLog unconditional.
+
+FIX 2: Parallel alarm-start reads + promoCtx (bab609c)
+  maybeAddOrPromoteCompany made 4–6 StateStoreDO round-trips per match inside
+  the job loop. All three read targets are constant within an alarm cycle.
+  Fix: Promise.all of 5 keys at alarm start. promoCtx passed to function.
+  Dirty flags set in-place; flushed after loop. HC cron + jobhive callers
+  pass no ctx — fall back to individual loads (backward compat).
+  Impact: 43 → 13 hops at 5 matches (70% reduction).
+
+FIX 3: Parallel totals r/w (52e0a38)
+  total_polled + total_matches: 2 sequential reads + 2 sequential writes.
+  Fix: Promise.all on read pair, Promise.all on write pair. ~2ms/alarm.
+
+FIX 4: Cron parallelism (4bdb9c8)
+  maybeRunSeenSweep (up to 80s of HEAD requests) blocked jobhive scan.
+  Fix: maybeRefreshSalaryCaches + maybeRunSeenSweep in Promise.all after
+  HC scrape, before jobhive. HC and jobhive stay sequential (both write seen_ids).
+
+FIX 5: CHUNK_SIZE to config + Workday 25 (78358e8)
+  CHUNK_SIZE = 15 hardcoded. Workday sweep latency: 32.3min worst-case.
+  Fix: CHUNK_SIZES exported from config.js. Workday: chunkSize=25, floor=180s.
+  Platform-do reads CHUNK_SIZES[this.ats] ?? 15.
+  New Workday sweep: 121/25 × 180s = 14.5min worst-case (55% faster).
+
+FIX 6: /ui ETag caching (daf0bf0)
+  /ui (85KB) served with Cache-Control: no-store. Every open re-fetched full file.
+  Fix: 32-bit content hash at module load. 304 on matching If-None-Match.
+  ETag rotates on every deploy (UI_HTML baked into Worker bundle).
+
+════════════════════════════════════════════════════════════════
+STORAGE WALL RESEARCH — S12
+════════════════════════════════════════════════════════════════
+
+StateStoreDO per-value limit: 2MB (SQLite-backed via new_sqlite_classes).
+NOT 128KB — that is the KV-backed limit. StateStoreDO migrated to SQLite in S6.
+
+Current payload estimates at cap (safe):
+  unmatched_jobs: ~600KB (HC jobs have no description — absent from ssrHits)
+  recent_matches: ~160KB (enriched, with truncated descriptions)
+  seen_ids:       ~735KB
+  All well within 2MB wall today.
+
+Three mitigation options documented:
+  Option 1: Key sharding by platform (~20MB theoretical)
+  Option 2: Strip description on write, fetch on demand (zero-risk)
+  Option 3: Raw SQL API — unlimited rows, server-side filtering
+
+ADR written: docs/STAT-ADR-SQL-STORE.txt
+Decision gate: DO NOT BUILD Option 3 until Browse approaches 1.5MB,
+or description enrichment added to Browse path, or Browse becomes primary
+filter/sort surface with query requirements.

@@ -1,6 +1,6 @@
 STAT — Job Intelligence System
 Current State & Master Reference
-Updated: 2026-06-08 (S11)
+Updated: 2026-06-08 (S12)
 
 This document is the primary reference for all things STAT.
 Read before every session. Plain text, ≤220KB per session rule.
@@ -348,12 +348,24 @@ VERIFY NEXT SESSION:
 
 OPEN ITEMS:
   #7  Feedback loop end-to-end — Applied/Skip buttons built; verify Claude context update.
+      UI visibility piece spec'd: add "Based on N past decisions" to review panel.
   #11 STAT_KV dead binding — old KV namespace in wrangler.toml; 3-line removal.
   Oracle HCM — Tenet site ID unknown. One html_probe: eodr.fa.us2.oraclecloud.com
   Avature adapter — UCSF (careers.ucsf.edu, portal ID=9). One html_probe.
   Taleo tbe.taleo.net — Mount Sinai (phg.tbe.taleo.net). One html_probe.
   Infor HCM verification — Lee Health confirmed. Other 7 tenants seeded by pattern only.
   Workday broad verification — plain GET confirmed for Advocate Health. Spot-check others.
+
+S12 NEW OPEN ITEMS:
+  UI enhancement list (17 items) — Drive: 1mrzi1SjZ90Q2kfr6l-9dhdEbedSrOjz5y0s1nwIfsSQ
+    Tier 1 (under 10 min each): default tab, Browse filter label, ATS dropdown,
+    backfill label, feedback visibility. Start here.
+    Tier 2: browseScoreCard serialization (prerequisite for Browse Review + drop zone),
+    Browse Review button, drop zone wiring, stale config intervals, AbortController.
+  StateStoreDO SQL migration ADR — docs/STAT-ADR-SQL-STORE.txt (committed 667de42)
+    Do NOT build until Browse payload approaches 1.5MB or use-case trigger met.
+  Workday URL verification audit — STAT-COMMITMENTS.txt HIGH priority open item.
+    121 Workday companies, none verified post-deploy. Silent failures invisible.
 
 ═══════════════════════════════════════════════════════════════
 KEY DOCUMENT IDs (Google Drive)
@@ -362,3 +374,5 @@ KEY DOCUMENT IDs (Google Drive)
 STAT Session 9 doc:   18NcJ-kvt1eCxXSPaHRQXNjwXMSZRGZ7-xglTpmhFV-4
 STAT Session 10 doc:  1PseUku92vjTHto8HYE2_cKgOoyPom5v1
 STAT Session 11 doc:  1rpnrtEOxCem_EbMQ0pJ_nZHXcsW4tnz-
+STAT Session 12 doc:  1mvdDa3vKIcY7ks8ppTnKaTkEYFi_XG6XqV6Fw2BK8u0
+STAT UI Enhancements: 1mrzi1SjZ90Q2kfr6l-9dhdEbedSrOjz5y0s1nwIfsSQ
