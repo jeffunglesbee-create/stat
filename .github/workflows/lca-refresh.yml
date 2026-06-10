@@ -68,11 +68,28 @@ jobs:
 
 
           echo "Verifying output files..."
-          ls -la /tmp/lca-*.json || echo "NO LCA FILES IN /tmp"
-          echo "Uploading to R2 via wrangler..."
-          cat /tmp/lca-by-employer.json | npx wrangler@4.98.0 r2 object put stat-salary-cache/lca-by-employer.json --pipe --content-type=application/json
-          cat /tmp/lca-by-soc.json | npx wrangler@4.98.0 r2 object put stat-salary-cache/lca-by-soc.json --pipe --content-type=application/json
-          echo "R2 upload done"
+          ls -la /tmp/lca-*.json || (echo "NO LCA FILES IN /tmp" && exit 1)
+
+          ACCOUNT_ID="b57e9af57ab46c52ca9215804e689c29"
+          BUCKET="stat-salary-cache"
+
+          for key in lca-by-employer lca-by-soc; do
+            FILE="/tmp/${key}.json"
+            SIZE=$(wc -c < "$FILE")
+            echo "Uploading ${key}.json (${SIZE} bytes) via CF API..."
+            HTTP=$(curl -s -w "%{http_code}" -o /tmp/r2-upload-result.txt \
+              -X PUT "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/r2/buckets/${BUCKET}/objects/${key}.json" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data-binary "@${FILE}")
+            BODY=$(cat /tmp/r2-upload-result.txt)
+            echo "  HTTP $HTTP: $BODY"
+            if [ "$HTTP" != "200" ] && [ "$HTTP" != "201" ]; then
+              echo "UPLOAD FAILED for ${key}.json — HTTP $HTTP"
+              exit 1
+            fi
+          done
+          echo "R2 upload complete"
 
       - name: Trigger salary DO cache invalidation
         env:
