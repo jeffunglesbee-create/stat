@@ -86,8 +86,15 @@ jobs:
             echo "   (bucket may already exist under a different API response code)"
           fi
 
+      - name: Wrangler dry-run (diagnose before live deploy)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "=== WRANGLER DRY RUN ==="
+          npx wrangler@4.98.0 deploy --dry-run --outdir /tmp/dryrun 2>&1 || true
+          echo "=== DRY RUN COMPLETE ==="
+
       - name: Deploy to Cloudflare Workers
-        id: deploy
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -95,17 +102,6 @@ jobs:
           wranglerVersion: "4.98.0"
           # Worker secrets are set directly on Cloudflare via wrangler secret put
           # and persist across deploys - do not push from CI
-        continue-on-error: true
-
-      - name: Capture deploy error to outbox
-        if: steps.deploy.outcome == 'failure'
-        run: |
-          mkdir -p outbox
-          echo "Deploy failed at $(date -u)" > outbox/deploy-error-${{ github.sha }}.txt
-          npx wrangler deploy --dry-run 2>&1 | tee outbox/deploy-dryrun-${{ github.sha }}.txt || true
-          git config user.email "ci@stat" && git config user.name "CI"
-          git add outbox/ && git commit -m "ci: deploy error log ${{ github.sha }} [skip ci]" && git push || true
-          exit 1
 
       - name: Post-deploy bootstrap + verify
         run: |
