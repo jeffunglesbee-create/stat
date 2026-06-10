@@ -63,6 +63,16 @@ function parseXLSX(filePath) {
 // ── Filter + normalize ────────────────────────────────────────────────────────
 
 function filterRows(rows) {
+  // Debug: show actual column names from the file
+  if (rows.length > 0) {
+    const keys = Object.keys(rows[0]);
+    console.log('  Columns:', keys.slice(0, 20).join(' | '));
+    // Show a few status values to check exact casing
+    const statuses = [...new Set(rows.slice(0,100).map(r => String(r['CASE_STATUS']||'').trim()))];
+    console.log('  CASE_STATUS values (sample):', statuses.slice(0,5).join(', '));
+    const socs = rows.slice(0,100).filter(r => r['SOC_CODE']).map(r => String(r['SOC_CODE']).trim()).slice(0,5);
+    console.log('  SOC_CODE values (sample):', socs.join(', '));
+  }
   const result = [];
   for (const row of rows) {
     // Status gate — only certified applications
