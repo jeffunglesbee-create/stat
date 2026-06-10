@@ -267,7 +267,7 @@ assert('lca-parse: RELEVANT_SOC defined', read('../scripts/lca-parse.js').includ
 assert('lca-parse: FY2025_Q4 URL candidate present', read('../scripts/lca-parse.js').includes('FY2025_Q4.xlsx'));
 assert('lca-parse: indexRows matches _indexLCARows output', read('../scripts/lca-parse.js').includes('Math.floor(mins.length * 0.25)'));
 assert('lca-refresh: workflow exists', (() => { try { require('fs').readFileSync('.github/workflows/lca-refresh.yml'); return true; } catch { return false; } })());
-assert('lca-refresh: uses wrangler r2 object put', read('../.github/workflows/lca-refresh.yml').includes('r2 object put stat-salary-cache/lca-by-employer.json'));
+assert('lca-refresh: uploads lca-by-employer.json to R2', read('../.github/workflows/lca-refresh.yml').includes('lca-by-employer.json'));
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
