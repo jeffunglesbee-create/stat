@@ -1,28 +1,16 @@
 name: cf-api-probe
-# Calls api.cloudflare.com from a CI runner (unrestricted egress).
-# Sandbox cannot reach api.cloudflare.com directly — this is the established
-# workaround pattern from FIELD (INCIDENT 10, CI/Deploy Reference doc).
+# Calls any URL from a CI runner (unrestricted egress).
+# Handles both Cloudflare API calls (auto-adds CF auth) and third-party URLs (no auth).
 #
 # TRIGGER: write outbox/.trigger-cf-api with method/url/body fields, then push.
-#   CRITICAL: commit message MUST NOT contain [skip ci] — GitHub skips all
-#   workflows for a push when any commit contains [skip ci].
+#   CRITICAL: commit message MUST NOT contain [skip ci].
 #
 # FORMAT (outbox/.trigger-cf-api):
 #   method=GET
 #   url=https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/r2/buckets
-#   body={"name":"stat-salary-cache"}   ← optional, only for POST/PUT/DELETE
+#   body={"name":"stat-salary-cache"}   ← optional, only for POST/PUT
 #
 # RESULT: outbox/cf-result-{timestamp}.txt — committed by this workflow [skip ci].
-#   Read via: git pull && cat outbox/cf-result-*.txt | tail -1 | python3 -m json.tool
-#
-# USEFUL URLS:
-#   Worker metadata:  .../workers/scripts/stat-job-watcher
-#   Worker settings:  .../workers/scripts/stat-job-watcher/settings
-#   R2 buckets:       .../r2/buckets
-#   R2 bucket detail: .../r2/buckets/stat-salary-cache
-#   Verify token:     .../user/tokens/verify
-#   List workers:     .../workers/scripts
-#   DO namespaces:    .../workers/durable_objects/namespaces
 
 on:
   push:
@@ -38,45 +26,43 @@ jobs:
         with:
           token: ${{ secrets.STAT_PAT }}
 
-      - name: Read trigger file
-        id: trigger
-        run: |
-          METHOD=$(grep '^method=' outbox/.trigger-cf-api | cut -d= -f2- | tr -d '\r')
-          URL=$(grep '^url=' outbox/.trigger-cf-api | cut -d= -f2- | tr -d '\r')
-          BODY=$(grep '^body=' outbox/.trigger-cf-api | cut -d= -f2- | tr -d '\r')
-          echo "method=${METHOD:-GET}" >> $GITHUB_OUTPUT
-          echo "url=$URL" >> $GITHUB_OUTPUT
-          echo "body=$BODY" >> $GITHUB_OUTPUT
-          echo "METHOD: ${METHOD:-GET}"
-          echo "URL: $URL"
-          echo "BODY: $BODY"
-
-      - name: Call Cloudflare API
+      - name: Call API
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           mkdir -p outbox
           TS=$(date -u +%Y%m%dT%H%M%SZ)
           OUT="outbox/cf-result-${TS}.txt"
-          METHOD="${{ steps.trigger.outputs.method }}"
-          URL="${{ steps.trigger.outputs.url }}"
-          BODY="${{ steps.trigger.outputs.body }}"
+
+          METHOD=$(grep '^method=' outbox/.trigger-cf-api | cut -d= -f2- | tr -d '\r')
+          URL=$(grep '^url=' outbox/.trigger-cf-api | cut -d= -f2- | tr -d '\r')
+          METHOD="${METHOD:-GET}"
 
           echo "=== CF API Probe ${TS} ===" | tee "$OUT"
           echo "Method: $METHOD" | tee -a "$OUT"
           echo "URL: $URL" | tee -a "$OUT"
           echo "" | tee -a "$OUT"
 
-          if [ -n "$BODY" ]; then
+          # Write body to temp file — avoids GITHUB_OUTPUT mangling JSON quotes
+          grep '^body=' outbox/.trigger-cf-api | cut -d= -f2- | tr -d '\r' > /tmp/probe_body.json || true
+
+          # CF API calls get Bearer auth; third-party URLs (BLS, DOL) get no auth
+          if echo "$URL" | grep -q "api.cloudflare.com"; then
+            CURL_AUTH=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
+          else
+            CURL_AUTH=()
+          fi
+
+          if [ -s /tmp/probe_body.json ]; then
             curl -s -w "\nHTTP_STATUS:%{http_code}" \
               -X "$METHOD" "$URL" \
-              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "${CURL_AUTH[@]}" \
               -H "Content-Type: application/json" \
-              -d "$BODY" | tee -a "$OUT"
+              --data @/tmp/probe_body.json | tee -a "$OUT"
           else
             curl -s -w "\nHTTP_STATUS:%{http_code}" \
               -X "$METHOD" "$URL" \
-              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | tee -a "$OUT"
+              "${CURL_AUTH[@]}" | tee -a "$OUT"
           fi
 
           echo "" | tee -a "$OUT"
