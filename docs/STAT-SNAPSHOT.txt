@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-10T02:45:50Z
-HEAD: c25e1c1
+Generated: 2026-06-10T02:48:53Z
+HEAD: 46e2348
 Smoke: 126/126
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  c25e1c1 ci: trigger — write wrangler output to outbox
+  46e2348 ci: trigger with write permission + outbox
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
