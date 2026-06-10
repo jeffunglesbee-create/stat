@@ -1,0 +1,7 @@
+=== CF API Probe 20260610T045819Z ===
+Method: GET
+URL: https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2025_Q4.txt
+
+<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>Not Found</h1><p>The requested URL "http://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2025_Q4.txt" was not found on this server.</p></body></html>
+HTTP_STATUS:404
+=== END ===
