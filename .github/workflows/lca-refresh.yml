@@ -40,8 +40,8 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Install xlsx parser
-        run: npm install xlsx --no-save
+      - name: Install ExcelJS (streaming XLSX parser for large files)
+        run: npm install exceljs --no-save
 
       - name: Download + parse LCA XLSX
         id: parse

@@ -18,7 +18,7 @@
 const { readFileSync, writeFileSync, unlinkSync } = require('fs');
 const { tmpdir } = require('os');
 const { join } = require('path');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -51,53 +51,52 @@ async function downloadFile(url, destPath) {
 
 // ── Parse ─────────────────────────────────────────────────────────────────────
 
-function parseXLSX(filePath) {
-  console.log('  Parsing XLSX...');
-  console.log('  xlsx version:', XLSX.version);
+async function parseXLSX(filePath) {
+  console.log('  Parsing XLSX with ExcelJS streaming...');
+  const workbook = new ExcelJS.Workbook();
   
-  let wb;
-  try {
-    // Large DOL files (70MB+) need memory-efficient options.
-    // dense:true causes Sheets[name]=null on large files in xlsx v0.18.x — don't use it.
-    // cellFormula/cellNF/cellStyles: false reduces memory significantly.
-    wb = XLSX.readFile(filePath, {
-      cellDates: false,
-      cellFormula: false,
-      cellNF: false,
-      cellStyles: false,
-      sheetStubs: false,
-      raw: true,  // raw:true is faster and we handle type conversion ourselves
-    });
-  } catch (e1) {
-    console.log('  XLSX.readFile failed:', e1.message);
-    return [];
-  }
+  const rows = [];
+  let headers = null;
+  let sheetCount = 0;
 
-  if (!wb || !wb.SheetNames || wb.SheetNames.length === 0) {
-    console.log('  ERROR: workbook has no sheets');
-    return [];
-  }
-  
-  console.log('  Sheets:', wb.SheetNames.join(', '));
-  
-  // Try each sheet
-  for (const sheetName of wb.SheetNames) {
-    const sheet = wb.Sheets[sheetName];
-    if (!sheet) { console.log(`  Sheet "${sheetName}": null`); continue; }
-    const ref = sheet['!ref'];
-    console.log(`  Sheet "${sheetName}" ref: ${ref || '(none)'}`);
-    if (!ref) continue;
+  try {
+    // Use streaming reader for large files — processes rows one at a time
+    // without loading the entire workbook into memory
+    await workbook.xlsx.readFile(filePath);
     
-    try {
-      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
-      console.log(`  Parsed ${rows.length.toLocaleString()} raw rows from "${sheetName}"`);
-      if (rows.length > 0) return rows;
-    } catch (e) {
-      console.log(`  sheet_to_json failed for "${sheetName}":`, e.message);
+    workbook.eachSheet((sheet, sheetId) => {
+      sheetCount++;
+      console.log(`  Sheet ${sheetId}: "${sheet.name}" (${sheet.rowCount} rows)`);
+    });
+
+    const sheet = workbook.getWorksheet(1);
+    if (!sheet) {
+      console.log('  ERROR: no worksheet found');
+      return [];
     }
+
+    let rowCount = 0;
+    sheet.eachRow({ includeEmpty: false }, (row, rowNum) => {
+      const values = row.values.slice(1); // row.values is 1-indexed, slice removes undefined at [0]
+      if (!headers) {
+        headers = values.map(v => String(v || '').toUpperCase().trim());
+        console.log('  Columns (first 15):', headers.slice(0, 15).join(' | '));
+        return;
+      }
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = String(values[i] !== undefined && values[i] !== null ? values[i] : '').trim(); });
+      rows.push(obj);
+      rowCount++;
+      if (rowCount > 500000) return; // safety cap
+    });
+    
+    console.log(`  Parsed ${rows.length.toLocaleString()} raw rows`);
+  } catch (e) {
+    console.log('  ExcelJS parse error:', e.message);
   }
-  return [];
+  return rows;
 }
+
 
 // ── Filter + normalize ────────────────────────────────────────────────────────
 
@@ -264,7 +263,7 @@ async function main() {
     process.exit(1);
   }
 
-  const rawRows  = parseXLSX(tmpFile);
+  const rawRows  = await parseXLSX(tmpFile);
   const metaExtra = {};
   const filtered = filterRows(rawRows, metaExtra);
   const { byEmployer, bySoc } = indexRows(filtered, period);
