@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-10T02:52:14Z
-HEAD: 88a6aa6
+Generated: 2026-06-10T02:56:03Z
+HEAD: 26cfa52
 Smoke: 126/126
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  88a6aa6 ci: trigger — outbox bash fix
+  26cfa52 ci: trigger deploy — GITHUB_TOKEN outbox push
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
