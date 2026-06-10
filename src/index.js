@@ -1704,7 +1704,7 @@ async function handleFetch(request, env) {
   // GET /description/:jobId — full job description from R2 cache
   // Populated by enrichDescriptions() at alert time. Served on card expand.
   // Falls back to empty string if description was never fetched for this job.
-  // Cache-Control: max-age=3600 — descriptions are immutable.
+  // Cache-Control: max-age=3600
   // Serves description stored by enrichDescriptions() at job alert time.
   // UI calls this on card expand instead of embedding desc in StateStoreDO payload.
   // Keeps recent_matches + unmatched_jobs payloads lean (no description field).
