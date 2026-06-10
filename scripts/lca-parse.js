@@ -53,25 +53,49 @@ async function downloadFile(url, destPath) {
 
 function parseXLSX(filePath) {
   console.log('  Parsing XLSX...');
-  // DOL LCA files can be large (70MB+). Use cellDates:false, raw:false for text values.
-  // dense:false (default) is more memory-efficient for large files.
-  const wb = XLSX.readFile(filePath, {
-    cellDates: false,
-    raw: false,
-    sheetStubs: false,
-  });
+  console.log('  xlsx version:', XLSX.version);
+  
+  let wb;
+  try {
+    // Try with dense mode first (better memory handling for large files)
+    wb = XLSX.readFile(filePath, {
+      dense: true,
+      cellDates: false,
+      raw: false,
+      type: 'file',
+    });
+  } catch (e1) {
+    console.log('  dense read failed:', e1.message, '— trying default');
+    try {
+      wb = XLSX.readFile(filePath);
+    } catch (e2) {
+      console.log('  default read also failed:', e2.message);
+      return [];
+    }
+  }
+
+  if (!wb || !wb.SheetNames || wb.SheetNames.length === 0) {
+    console.log('  ERROR: workbook has no sheets');
+    return [];
+  }
+  
   console.log('  Sheets:', wb.SheetNames.join(', '));
   
-  // Try each sheet — DOL may use a non-first sheet
+  // Try each sheet
   for (const sheetName of wb.SheetNames) {
     const sheet = wb.Sheets[sheetName];
+    if (!sheet) { console.log(`  Sheet "${sheetName}": null`); continue; }
     const ref = sheet['!ref'];
     console.log(`  Sheet "${sheetName}" ref: ${ref || '(none)'}`);
     if (!ref) continue;
     
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
-    console.log(`  Parsed ${rows.length.toLocaleString()} raw rows from "${sheetName}"`);
-    if (rows.length > 0) return rows;
+    try {
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
+      console.log(`  Parsed ${rows.length.toLocaleString()} raw rows from "${sheetName}"`);
+      if (rows.length > 0) return rows;
+    } catch (e) {
+      console.log(`  sheet_to_json failed for "${sheetName}":`, e.message);
+    }
   }
   return [];
 }
