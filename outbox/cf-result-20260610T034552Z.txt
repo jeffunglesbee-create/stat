@@ -1,0 +1,11 @@
+=== CF API Probe 20260610T034552Z ===
+Method: POST
+URL: https://api.bls.gov/publicAPI/v2/timeseries/data/
+
+{"status":"REQUEST_SUCCEEDED","responseTime":105,"message":["No Data Available for Series OEUN000000000000015121112 Year: 2023","No Data Available for Series OEUN000000000000015121112 Year: 2024","No Data Available for Series OEUN000000000000015121114 Year: 2023","No Data Available for Series OEUN000000000000015121114 Year: 2024"],"Results":{
+"series":
+[{"seriesID":"OEUN000000000000015121112","data":[{"year":"2025","period":"A01","periodName":"Annual","latest":"true","value":"82860","footnotes":[{}]}]},
+{"seriesID":"OEUN000000000000015121114","data":[{"year":"2025","period":"A01","periodName":"Annual","latest":"true","value":"134110","footnotes":[{}]}]}]
+}}
+HTTP_STATUS:200
+=== END ===
