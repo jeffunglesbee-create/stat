@@ -732,7 +732,12 @@ async function runHiringCafeScrape(env) {
     });
     await dispatchAlerts(env, newMatches);
     // ── saveRecentMatches — makes HC matches visible in Matches tab ───────
-    await saveRecentMatches(getStatStore(env), newMatches);
+    // Strip description before StateStoreDO write — descriptions live in R2.
+    // UI fetches via GET /description/:jobId on card expand.
+    const matchesForStore = newMatches.map(m => ({
+      ...m, job: { ...m.job, description: undefined },
+    }));
+    await saveRecentMatches(getStatStore(env), matchesForStore);
   }
 
   return newMatches.length;
@@ -1695,6 +1700,30 @@ async function handleFetch(request, env) {
       jobs:  filtered,
     });
   }
+
+  // GET /description/:jobId — full job description from R2 cache
+  // Serves description stored by enrichDescriptions() at job alert time.
+  // UI calls this on card expand instead of embedding desc in StateStoreDO payload.
+  // Keeps recent_matches + unmatched_jobs payloads lean (no description field).
+  if (url.pathname.startsWith('/description/') && request.method === 'GET') {
+    const jobId = decodeURIComponent(url.pathname.slice('/description/'.length));
+    if (!jobId) return json({ error: 'missing jobId' }, 400);
+    if (!env.STAT_R2) return json({ error: 'R2 not bound' }, 503);
+    try {
+      const obj = await env.STAT_R2.get(`desc/${jobId}`);
+      if (!obj) return json({ description: '' });
+      const description = await obj.text();
+      return new Response(JSON.stringify({ description }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'max-age=3600',  // descriptions are immutable once written
+        },
+      });
+    } catch (e) {
+      return json({ error: 'R2 read failed', detail: e.message }, 500);
+    }
+  }
+
 
   // POST /backfill-browse — RECOVERY ONLY (Rule 11).
   // Originally created because Browse capture was after the dedup gate (bug).

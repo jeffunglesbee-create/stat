@@ -132,11 +132,16 @@ fallthrough = false
 # ALERT_EMAIL         — address for email digests
 # ANTHROPIC_API_KEY   — for resume fit scoring (optional)
 
-# ── R2 (optional, for large salary cache files) ───────────────────────────────
-# wrangler r2 bucket create stat-salary-cache
-# [[r2_buckets]]
-# binding = "STAT_R2"
-# bucket_name = "stat-salary-cache"
+# ── R2 — salary cache (LCA/BLS processed JSON) + job descriptions ────────────
+# Bucket created: wrangler r2 bucket create stat-salary-cache
+# Keys:
+#   lca-by-employer.json   — DOL LCA employer wage index (~300KB, quarterly)
+#   lca-by-soc.json        — DOL LCA SOC+state index (~20KB, quarterly)
+#   bls-wages.json         — BLS OEWS national percentiles (~50KB, annual)
+#   desc/{job_id}          — full job descriptions (written by enrichDescriptions)
+[[r2_buckets]]
+binding = "STAT_R2"
+bucket_name = "stat-salary-cache"
 
 
 

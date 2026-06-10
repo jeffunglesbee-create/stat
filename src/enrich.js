@@ -383,6 +383,19 @@ async function fetchPlainDescription(job) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // fetchJobDescription — routes to correct strategy by ATS
+// ── R2 description cache helper ──────────────────────────────────────────────
+// Writes full job descriptions to R2 keyed by job_id.
+// Fire-and-forget — failure never blocks alert dispatch.
+// Key format: desc/{job_id}  e.g. desc/greenhouse:nordic:12345678
+async function cacheDescriptionInR2(env, jobId, description) {
+  if (!env?.STAT_R2 || !jobId || !description) return;
+  try {
+    await env.STAT_R2.put(`desc/${jobId}`, description, {
+      httpMetadata: { contentType: 'text/plain; charset=utf-8' },
+    });
+  } catch { /* non-fatal */ }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchJobDescription(job, env) {
   if (job.description) return job.description; // already have it
@@ -424,6 +437,7 @@ export async function enrichDescriptions(matches, env) {
       if (desc) {
         job.description = desc;
         console.log(`[STAT enrich] Plain ${job.atsSource}: ${job.title} @ ${job.company} (${desc.length} chars)`);
+        cacheDescriptionInR2(env, job.id, desc).catch(() => {});
       }
     }));
     if (i + CONCURRENCY < plain.length) {
@@ -436,6 +450,7 @@ export async function enrichDescriptions(matches, env) {
     const desc = await fetchBrowserDescription(job, env);
     if (desc) {
       job.description = desc;
+      cacheDescriptionInR2(env, job.id, desc).catch(() => {});
     }
     // Small gap between browser fetches
     await new Promise(r => setTimeout(r, 500));

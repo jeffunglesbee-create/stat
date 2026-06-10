@@ -89,8 +89,8 @@ assert('store: loadUnmatchedJobs exported',
 
 assert('store: UNMATCHED_MAX cap defined',
   store.includes('UNMATCHED_MAX'));
-assert('store: UNMATCHED_MAX >= 2000',
-  store.includes('UNMATCHED_MAX = 2000'));
+assert('store: UNMATCHED_MAX >= 4000',
+  store.includes('UNMATCHED_MAX = 8000'));
 assert('ui: browse desc button calls toggleDescBrowse',
   ui.includes("toggleDescBrowse('${job.id}'"));
 assert('ui: browse desc button uses data-desc attr',
@@ -199,7 +199,7 @@ assert('ui: btn-detect handler wired', read('ui.html').includes("'/detect-ats'")
 assert('platform-do: appendLog imported', read('platform-do.js').includes('appendLog'));
 assert('platform-do: appendLog called in alarm loop', read('platform-do.js').includes('await appendLog('));
 assert('platform-do: appendLog outside unmatchedJobs block (brace fix)',
-  read('platform-do.js').includes("saveUnmatchedJobs(getStatStore(this.env), unmatchedJobs);\n    }\n\n    // \u2500\u2500 Structured log entry"));
+  read('platform-do.js').includes("saveUnmatchedJobs(getStatStore(this.env), browseForStore);\n    }\n\n    // \u2500\u2500 Structured log entry"));
 assert('platform-do: brLog declared in alarm loop', read('platform-do.js').includes('const brLog'));
 assert('platform-do: brLog captures workday _source', read('platform-do.js').includes('jobs._source'));
 assert('adapters: fetchWorkday tags result with log', adaptersSrc.includes('Workday-SSR plain fetch') || adaptersSrc.includes('[STAT Workday]'));
@@ -245,6 +245,20 @@ assert('index: ghost resurrection in HC path', read('index.js').includes('Ghost 
 assert('platform-do: ghost resurrection in alarm loop', read('platform-do.js').includes('Ghost resurrected'));
 assert('platform-do: globalSeen uses Map format', read('platform-do.js').includes('globalSeen = new Map()'));
 
+// ── R2 salary + description architecture ──────────────────────────────────
+assert('wrangler: R2 bucket bound as STAT_R2', read('../wrangler.toml').includes('binding = "STAT_R2"'));
+assert('salary: R2 helper _r2Get defined', read('salary.js').includes('async _r2Get(key)'));
+assert('salary: R2 helper _r2Put defined', read('salary.js').includes('async _r2Put(key'));
+assert('salary: _queryLCAExact uses R2 L1 cache', read('salary.js').includes('this._r2Cache.lca_employer'));
+assert('salary: _queryBLS uses R2 L1 cache', read('salary.js').includes('this._r2Cache.bls'));
+assert('salary: _refreshLCA writes to R2', read('salary.js').includes("_r2Put('lca-by-employer.json'"));
+assert('salary: _refreshBLS writes to R2', read('salary.js').includes("_r2Put('bls-wages.json'"));
+assert('enrich: R2 description cache helper defined', read('enrich.js').includes('cacheDescriptionInR2'));
+assert('enrich: plain fetch writes to R2', read('enrich.js').includes('cacheDescriptionInR2(env, job.id, desc)'));
+assert('index: /description/:jobId endpoint present', read('index.js').includes("startsWith('/description/')"));
+assert('index: description served from R2', read('index.js').includes("STAT_R2.get(`desc/${jobId}`)"));
+assert('platform-do: matches strip description before store', read('platform-do.js').includes('description: undefined'));
+assert('store: RECENT_MATCHES_MAX = 4000', read('store.js').includes('RECENT_MATCHES_MAX = 4000'));
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
 const failed = results.filter(r => !r.ok);
@@ -261,3 +275,18 @@ if (failed.length > 0) {
   console.log('\nAll assertions passed.\n');
   process.exit(0);
 }
+// ── R2 salary + description architecture ──────────────────────────────────
+assert('wrangler: R2 bucket bound as STAT_R2', read('../wrangler.toml').includes('binding = "STAT_R2"'));
+assert('salary: R2 helper _r2Get defined', read('salary.js').includes('async _r2Get(key)'));
+assert('salary: R2 helper _r2Put defined', read('salary.js').includes('async _r2Put(key'));
+assert('salary: _queryLCAExact uses R2 L1 cache', read('salary.js').includes('this._r2Cache.lca_employer'));
+assert('salary: _queryBLS uses R2 L1 cache', read('salary.js').includes('this._r2Cache.bls'));
+assert('salary: _refreshLCA writes to R2', read('salary.js').includes("_r2Put('lca-by-employer.json'"));
+assert('salary: _refreshBLS writes to R2', read('salary.js').includes("_r2Put('bls-wages.json'"));
+assert('enrich: R2 description cache helper defined', read('enrich.js').includes('cacheDescriptionInR2'));
+assert('enrich: plain fetch writes to R2', read('enrich.js').includes('cacheDescriptionInR2(env, job.id, desc)'));
+assert('index: /description/:jobId endpoint present', read('index.js').includes("startsWith('/description/')"));
+assert('index: description served from R2', read('index.js').includes("STAT_R2.get(`desc/${jobId}`)"));
+assert('platform-do: matches strip description before store', read('platform-do.js').includes('description: undefined'));
+assert('store: RECENT_MATCHES_MAX = 4000', read('store.js').includes('RECENT_MATCHES_MAX = 4000'));
+

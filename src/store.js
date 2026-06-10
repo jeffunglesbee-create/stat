@@ -121,7 +121,7 @@ export async function storeDel(stub, key) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const RECENT_MATCHES_KEY = 'recent_matches';
-const RECENT_MATCHES_MAX = 200;
+const RECENT_MATCHES_MAX = 4000; // Raised from 200 — descriptions now in R2, payload ~500B/entry
 
 /**
  * Append new matches to the recent_matches store.
@@ -166,7 +166,7 @@ export async function loadRecentMatches(stub) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const UNMATCHED_KEY = 'unmatched_jobs';
-const UNMATCHED_MAX = 2000;
+const UNMATCHED_MAX = 8000;   // Raised from 2000 — descriptions now in R2, payload ~400B/entry
 
 /**
  * Append env-filtered non-matching jobs to the unmatched store.

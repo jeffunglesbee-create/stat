@@ -110,7 +110,35 @@ export class SalaryInferenceDO {
     this.state   = state;
     this.env     = env;
     this.storage = state.storage;
+    // DO-local in-memory L1 cache for R2 salary data.
+    // Loaded once per DO instance lifetime. Eliminates repeated R2 reads per /infer call.
+    this._r2Cache = { lca_employer: null, lca_soc: null, bls: null };
   }
+
+  // ── R2 helpers ─────────────────────────────────────────────────────────────
+  async _r2Get(key) {
+    if (!this.env.STAT_R2) return null;
+    try {
+      const obj = await this.env.STAT_R2.get(key);
+      if (!obj) return null;
+      return JSON.parse(await obj.text());
+    } catch (e) {
+      console.warn('[STAT salary] R2 get failed:', key, e.message);
+      return null;
+    }
+  }
+
+  async _r2Put(key, data) {
+    if (!this.env.STAT_R2) return;
+    try {
+      await this.env.STAT_R2.put(key, JSON.stringify(data), {
+        httpMetadata: { contentType: 'application/json' },
+      });
+    } catch (e) {
+      console.warn('[STAT salary] R2 put failed:', key, e.message);
+    }
+  }
+
 
   async fetch(request) {
     const url = new URL(request.url);
@@ -144,11 +172,26 @@ export class SalaryInferenceDO {
 
     // ── Status ────────────────────────────────────────────────────────────────
     if (url.pathname === '/status') {
-      const peerCount = await this.storage.get('peer_count') ?? 0;
-      const lcaCount  = await this.storage.get('lca_count')  ?? 0;
-      const blsDate   = await this.storage.get('bls_fetched_at') ?? null;
-      const lcaDate   = await this.storage.get('lca_fetched_at') ?? null;
-      return new Response(JSON.stringify({ peerCount, lcaCount, blsDate, lcaDate }));
+      const [peerCount, lcaCount, blsDate, lcaDate] = await Promise.all([
+        this.storage.get('peer_count'),
+        this.storage.get('lca_count'),
+        this.storage.get('bls_fetched_at'),
+        this.storage.get('lca_fetched_at'),
+      ]);
+      const r2Bound = !!this.env.STAT_R2;
+      // Quick R2 health check — does lca key exist?
+      let r2lca = false;
+      if (r2Bound) {
+        try { r2lca = !!(await this.env.STAT_R2.head('lca-by-employer.json')); } catch {}
+      }
+      return new Response(JSON.stringify({
+        peerCount: peerCount ?? 0,
+        lcaCount:  lcaCount  ?? 0,
+        blsDate:   blsDate   ?? null,
+        lcaDate:   lcaDate   ?? null,
+        r2Bound,
+        r2lca,
+      }));
     }
 
     return new Response('SalaryInferenceDO', { status: 200 });
@@ -308,9 +351,16 @@ export class SalaryInferenceDO {
   async _queryLCAExact(companyName) {
     if (!companyName) return null;
     try {
-      const raw = await this.storage.get('lca_by_employer');
-      if (!raw) return null;
-      const index = JSON.parse(raw);
+      // L1: DO-local memory cache (loaded once per DO lifetime)
+      // L2: R2 processed JSON (written by _refreshLCA)
+      // L3: DO storage fallback (backward compat if R2 not populated yet)
+      if (!this._r2Cache.lca_employer) {
+        this._r2Cache.lca_employer =
+          await this._r2Get('lca-by-employer.json') ||
+          await this.storage.get('lca_by_employer').then(r => r ? JSON.parse(r) : null);
+      }
+      const index = this._r2Cache.lca_employer;
+      if (!index) return null;
 
       // Normalize company name for fuzzy matching
       const norm = companyName.toLowerCase()
@@ -332,9 +382,13 @@ export class SalaryInferenceDO {
   // ── P3: LCA by SOC code + state ───────────────────────────────────────────
   async _queryLCABySOC(job, state) {
     try {
-      const raw = await this.storage.get('lca_by_soc');
-      if (!raw) return null;
-      const index = JSON.parse(raw);
+      if (!this._r2Cache.lca_soc) {
+        this._r2Cache.lca_soc =
+          await this._r2Get('lca-by-soc.json') ||
+          await this.storage.get('lca_by_soc').then(r => r ? JSON.parse(r) : null);
+      }
+      const index = this._r2Cache.lca_soc;
+      if (!index) return null;
 
       // Determine SOC from match group
       const group = job._matchGroup || 'Epic / EHR / Healthcare IT';
@@ -352,9 +406,13 @@ export class SalaryInferenceDO {
   // ── P4: BLS OEWS benchmark ────────────────────────────────────────────────
   async _queryBLS(job, state) {
     try {
-      const raw = await this.storage.get('bls_wages');
-      if (!raw) return null;
-      const index = JSON.parse(raw);
+      if (!this._r2Cache.bls) {
+        this._r2Cache.bls =
+          await this._r2Get('bls-wages.json') ||
+          await this.storage.get('bls_wages').then(r => r ? JSON.parse(r) : null);
+      }
+      const index = this._r2Cache.bls;
+      if (!index) return null;
 
       const group = job._matchGroup || 'Epic / EHR / Healthcare IT';
       const soc   = GROUP_TO_SOC[group] || '15-1211';
@@ -580,8 +638,11 @@ export class SalaryInferenceDO {
     }
 
     if (Object.keys(results).length > 0) {
-      await this.storage.put('bls_wages', JSON.stringify(results));
-      await this.storage.put('bls_fetched_at', new Date().toISOString());
+      await Promise.all([
+        this._r2Put('bls-wages.json', results),
+        this.storage.put('bls_fetched_at', new Date().toISOString()),
+      ]);
+      this._r2Cache.bls = null; // invalidate L1
       return Object.keys(results).length;
     }
 
@@ -629,10 +690,14 @@ export class SalaryInferenceDO {
 
         const { byEmployer, bySoc } = this._indexLCARows(rows, period);
 
-        await this.storage.put('lca_by_employer', JSON.stringify(byEmployer));
-        await this.storage.put('lca_by_soc',      JSON.stringify(bySoc));
-        await this.storage.put('lca_count',        rows.length);
-        await this.storage.put('lca_fetched_at',   new Date().toISOString());
+        await Promise.all([
+          this._r2Put('lca-by-employer.json', byEmployer),
+          this._r2Put('lca-by-soc.json', bySoc),
+          this.storage.put('lca_count',      rows.length),
+          this.storage.put('lca_fetched_at', new Date().toISOString()),
+        ]);
+        this._r2Cache.lca_employer = null;
+        this._r2Cache.lca_soc = null;
 
         return {
           ok: true, url, rows: rows.length,

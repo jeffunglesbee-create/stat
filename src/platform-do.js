@@ -379,12 +379,20 @@ class PlatformDO {
       console.log(`[STAT ${this.ats}] ${newMatches.length} matches from ${polledCount} companies`);
       await dispatchAlerts(this.env, newMatches);
       // Store matches in rolling job history for GET /jobs
-      await saveRecentMatches(getStatStore(this.env), newMatches);
+      // Strip description — descriptions live in R2 (written by enrichDescriptions).
+      // UI fetches via GET /description/:jobId on card expand.
+      const matchesForStore = newMatches.map(m => ({
+        ...m, job: { ...m.job, description: undefined },
+      }));
+      await saveRecentMatches(getStatStore(this.env), matchesForStore);
     }
 
     // Save env-filtered non-matches for browsing (outside match gate)
+    // Strip description — Browse descriptions also live in R2.
+    // Browse jobs (especially Greenhouse/Lever) can have full HTML descriptions.
     if (unmatchedJobs.length > 0) {
-      await saveUnmatchedJobs(getStatStore(this.env), unmatchedJobs);
+      const browseForStore = unmatchedJobs.map(j => ({ ...j, description: undefined }));
+      await saveUnmatchedJobs(getStatStore(this.env), browseForStore);
     }
 
     // ── Structured log entry for GET /logs diagnostic endpoint ─────────────
