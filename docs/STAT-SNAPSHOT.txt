@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-10T02:34:17Z
-HEAD: 9aac500
+Generated: 2026-06-10T02:37:25Z
+HEAD: 5f8d66a
 Smoke: 126/126
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  9aac500 ci: trigger deploy with non-fatal R2 provision
+  5f8d66a ci: trigger deploy with outbox error capture
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
