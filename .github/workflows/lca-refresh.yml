@@ -1,0 +1,82 @@
+name: lca-refresh
+# Downloads DOL OFLC H-1B LCA disclosure XLSX and writes processed JSON to R2.
+#
+# WHY CI AND NOT WORKER:
+#   DOL's dol.gov CDN (Akamai) blocks Cloudflare Worker IPs as bots.
+#   GitHub Actions runners use Azure IP space — not blocked.
+#   Same pattern as BLS WAF block; same solution.
+#
+# SCHEDULE: Quarterly — DOL releases new disclosure data each quarter.
+#   Q1 (Oct-Dec): released ~Jan/Feb
+#   Q2 (Jan-Mar): released ~Apr/May
+#   Q3 (Apr-Jun): released ~Jul/Aug
+#   Q4 (Jul-Sep): released ~Oct/Nov
+#   Runs 1st of Jan/Apr/Jul/Oct to catch new releases.
+#   Also available via workflow_dispatch for manual trigger.
+#
+# OUTPUT: R2 bucket stat-salary-cache
+#   lca-by-employer.json  — employer → {min, max, count, state, period}
+#   lca-by-soc.json       — soc:state → {p25, p50, p75, count, period}
+#
+# FORMAT matches SalaryInferenceDO._indexLCARows() output exactly.
+# Worker reads via _r2Get('lca-by-employer.json') in _queryLCAExact().
+
+on:
+  schedule:
+    - cron: '0 6 1 1,4,7,10 *'  # 6am UTC on 1st of Jan, Apr, Jul, Oct
+  workflow_dispatch:             # manual trigger from GitHub Actions UI
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install xlsx parser
+        run: npm install xlsx --no-save
+
+      - name: Download + parse LCA XLSX
+        run: node scripts/lca-parse.js
+
+      - name: Write processed JSON to R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: b57e9af57ab46c52ca9215804e689c29
+        run: |
+          echo "Uploading lca-by-employer.json to R2..."
+          npx wrangler@4.98.0 r2 object put stat-salary-cache/lca-by-employer.json \
+            --file /tmp/lca-by-employer.json \
+            --content-type application/json
+
+          echo "Uploading lca-by-soc.json to R2..."
+          npx wrangler@4.98.0 r2 object put stat-salary-cache/lca-by-soc.json \
+            --file /tmp/lca-by-soc.json \
+            --content-type application/json
+
+          echo "✅ R2 upload complete"
+
+      - name: Trigger salary DO cache invalidation
+        env:
+          STAT_WORKER: https://stat-job-watcher.jeffunglesbee.workers.dev
+        run: |
+          # POST /salary-refresh tells SalaryDO to reload from R2
+          # (clears _r2Cache.lca_employer and _r2Cache.lca_soc in-memory cache)
+          RESULT=$(curl -sf --max-time 30 -X POST "$STAT_WORKER/salary-refresh" || echo '{"error":"unreachable"}')
+          echo "Salary refresh result: $RESULT"
+
+      - name: Commit result summary
+        run: |
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          mkdir -p outbox
+          cp /tmp/lca-meta.json outbox/lca-result-${TS}.json
+          git config user.email "ci@stat" && git config user.name "CI"
+          git add outbox/lca-result-${TS}.json
+          git commit -m "ci: LCA refresh result ${TS} [skip ci]" && git push || true

@@ -261,6 +261,14 @@ assert('index: /description/:jobId endpoint present', read('index.js').includes(
 assert('index: description served from R2', read('index.js').includes("STAT_R2.get(`desc/${jobId}`)"));
 assert('platform-do: matches strip description before store', read('platform-do.js').includes('description: undefined'));
 assert('store: RECENT_MATCHES_MAX = 4000', read('store.js').includes('RECENT_MATCHES_MAX = 4000'));
+// ── LCA CI refresh workflow ───────────────────────────────────────────────────
+assert('lca-parse: script exists', (() => { try { require('fs').readFileSync('scripts/lca-parse.js'); return true; } catch { return false; } })());
+assert('lca-parse: RELEVANT_SOC defined', read('../scripts/lca-parse.js').includes("'15-1211'"));
+assert('lca-parse: FY2025_Q4 URL candidate present', read('../scripts/lca-parse.js').includes('FY2025_Q4.xlsx'));
+assert('lca-parse: indexRows matches _indexLCARows output', read('../scripts/lca-parse.js').includes('Math.floor(mins.length * 0.25)'));
+assert('lca-refresh: workflow exists', (() => { try { require('fs').readFileSync('.github/workflows/lca-refresh.yml'); return true; } catch { return false; } })());
+assert('lca-refresh: uses wrangler r2 object put', read('../.github/workflows/lca-refresh.yml').includes('r2 object put stat-salary-cache/lca-by-employer.json'));
+
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
 const failed = results.filter(r => !r.ok);
