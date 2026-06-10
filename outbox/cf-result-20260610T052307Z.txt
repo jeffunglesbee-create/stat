@@ -1,0 +1,7 @@
+=== CF API Probe 20260610T052307Z ===
+Method: GET
+URL: https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/r2/buckets/stat-salary-cache/objects
+
+{"success":true,"errors":[],"messages":[],"result":[{"key":"bls-wages.json","etag":"be11b5939e580ebe0b949a3401430170","last_modified":"2026-06-10T05:20:03.168Z","size":465,"http_metadata":{"contentType":"application/json"},"custom_metadata":{},"storage_class":"Standard"},{"key":"lca-by-employer.json","etag":"f00f8510790659dc7b9bd3fbbd94af4c","last_modified":"2026-06-10T05:20:00.607Z","size":204666,"http_metadata":{"contentType":"application/json"},"custom_metadata":{},"storage_class":"Standard"},{"key":"lca-by-soc.json","etag":"177c0f70ad7b8797d4cc922e3c81b980","last_modified":"2026-06-10T05:20:01.737Z","size":54255,"http_metadata":{"contentType":"application/json"},"custom_metadata":{},"storage_class":"Standard"}]}
+HTTP_STATUS:200
+=== END ===
