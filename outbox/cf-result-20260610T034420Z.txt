@@ -1,0 +1,11 @@
+=== CF API Probe 20260610T034420Z ===
+Method: POST
+URL: https://api.bls.gov/publicAPI/v2/timeseries/data/
+
+{"status":"REQUEST_SUCCEEDED","responseTime":155,"message":["No Data Available for Series OEUN000000000000015121112 Year: 2024","No Data Available for Series OEUN000000000000015121114 Year: 2024"],"Results":{
+"series":
+[{"seriesID":"OEUN000000000000015121112","data":[]},
+{"seriesID":"OEUN000000000000015121114","data":[]}]
+}}
+HTTP_STATUS:200
+=== END ===
