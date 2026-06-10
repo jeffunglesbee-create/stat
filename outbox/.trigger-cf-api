@@ -1,4 +1,4 @@
 method=POST
 url=https://api.bls.gov/publicAPI/v2/timeseries/data/
-body={"seriesid": ["OEU0000000000000015121112", "OEU0000000000000015121114"], "startyear": "2024", "endyear": "2024"}
-# ts=1781062918
+body={"seriesid": ["OEUN000000000000015121112", "OEUN000000000000015121114"], "startyear": "2024", "endyear": "2024"}
+# ts=1781063051
