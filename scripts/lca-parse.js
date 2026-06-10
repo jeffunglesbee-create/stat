@@ -105,23 +105,7 @@ async function parseXLSX(filePath) {
 
 // ── Filter + normalize ────────────────────────────────────────────────────────
 
-function filterRows(rows, metaExtra) {
-  // Debug: show actual column names from the file
-  if (rows.length > 0) {
-    const keys = Object.keys(rows[0]);
-    console.log('  Columns:', keys.slice(0, 25).join(' | '));
-    const statuses = [...new Set(rows.slice(0,100).map(r => String(r['CASE_STATUS']||'').trim()))];
-    console.log('  CASE_STATUS values (sample):', statuses.slice(0,5).join(', '));
-    const socs = rows.slice(0,50).filter(r => r['SOC_CODE']).map(r => String(r['SOC_CODE']).trim()).slice(0,5);
-    console.log('  SOC_CODE values (sample):', socs.join(', '));
-    if (metaExtra) {
-      metaExtra.columns = keys.slice(0, 30);
-      metaExtra.caseStatusSample = statuses.slice(0, 5);
-      metaExtra.socSample = socs.slice(0, 5);
-    }
-  } else {
-    console.log('  WARNING: 0 rows returned from XLSX parse');
-  }
+function filterRows(rows) {
   const result = [];
   for (const row of rows) {
     // Status gate — only certified applications
@@ -240,10 +224,6 @@ function indexRows(rows, period) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const debugLog = [];
-  const log = (...args) => { const line = args.join(' '); console.log(line); debugLog.push(line); };
-  const origLog = console.log;
-  console.log = (...args) => { const line = args.join(' '); origLog(line); debugLog.push(line); };
 
   const tmpFile = join(tmpdir(), `lca-${Date.now()}.xlsx`);
 
@@ -269,8 +249,7 @@ async function main() {
   }
 
   const rawRows  = await parseXLSX(tmpFile);
-  const metaExtra = {};
-  const filtered = filterRows(rawRows, metaExtra);
+  const filtered = filterRows(rawRows);
   const { byEmployer, bySoc } = indexRows(filtered, period);
 
   console.log(`\nIndex results:`);
@@ -290,8 +269,6 @@ async function main() {
     socKeys: Object.keys(bySoc).length,
     rows: filtered.length,
     builtAt: new Date().toISOString(),
-    debug: debugLog,
-    ...metaExtra,
   };
   writeFileSync('/tmp/lca-meta.json', JSON.stringify(meta, null, 2));
 
