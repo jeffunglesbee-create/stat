@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-09T00:44:20Z
-HEAD: daf0bf0
-Smoke: 113/113
+Generated: 2026-06-10T02:21:51Z
+HEAD: 0265bc1
+Smoke: 126/126
 
 COMPANIES
   SEED total: 204
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  daf0bf0 perf: ETag caching on /ui — 304 Not Modified on repeat opens
+  0265bc1 feat: R2 salary cache + description sidecar + raised Browse/Matches caps
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
