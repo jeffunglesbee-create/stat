@@ -40,12 +40,15 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Install ExcelJS (streaming XLSX parser for large files)
-        run: npm install exceljs --no-save
+      - name: Install Python xlsx2csv (streaming converter for large files)
+        run: pip install xlsx2csv --break-system-packages -q
 
       - name: Download + parse LCA XLSX
         id: parse
-        run: node --max-old-space-size=4096 scripts/lca-parse.js
+        run: |
+          # xlsx2csv converts large XLSX to CSV in streaming fashion (no full-file load)
+          # Then Node.js reads the CSV — much more memory-efficient
+          node scripts/lca-parse.js
 
       - name: Commit debug output (on failure)
         if: failure() && steps.parse.outcome == 'failure'

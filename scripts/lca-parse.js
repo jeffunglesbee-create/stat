@@ -18,7 +18,9 @@
 const { readFileSync, writeFileSync, unlinkSync } = require('fs');
 const { tmpdir } = require('os');
 const { join } = require('path');
-const ExcelJS = require('exceljs');
+const { execSync } = require('child_process');
+const { createReadStream } = require('fs');
+const readline = require('readline');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -52,50 +54,53 @@ async function downloadFile(url, destPath) {
 // ── Parse ─────────────────────────────────────────────────────────────────────
 
 async function parseXLSX(filePath) {
-  console.log('  Parsing XLSX with ExcelJS streaming...');
-  const workbook = new ExcelJS.Workbook();
+  console.log('  Converting XLSX to CSV via xlsx2csv (streaming)...');
+  const csvPath = filePath.replace('.xlsx', '.csv');
   
+  try {
+    // xlsx2csv processes the file in Python's streaming mode — handles 70MB+ files
+    // without loading everything into memory simultaneously
+    execSync(`xlsx2csv "${filePath}" "${csvPath}"`, { stdio: 'pipe', timeout: 120000 });
+    console.log('  Conversion complete');
+  } catch (e) {
+    console.log('  xlsx2csv failed:', e.message?.slice(0, 200));
+    return [];
+  }
+
+  console.log('  Parsing CSV...');
   const rows = [];
   let headers = null;
-  let sheetCount = 0;
+  let lineCount = 0;
 
-  try {
-    // Use streaming reader for large files — processes rows one at a time
-    // without loading the entire workbook into memory
-    await workbook.xlsx.readFile(filePath);
-    
-    workbook.eachSheet((sheet, sheetId) => {
-      sheetCount++;
-      console.log(`  Sheet ${sheetId}: "${sheet.name}" (${sheet.rowCount} rows)`);
+  await new Promise((resolve, reject) => {
+    const rl = readline.createInterface({
+      input: createReadStream(csvPath, { encoding: 'utf8' }),
+      crlfDelay: Infinity,
     });
-
-    const sheet = workbook.getWorksheet(1);
-    if (!sheet) {
-      console.log('  ERROR: no worksheet found');
-      return [];
-    }
-
-    let rowCount = 0;
-    sheet.eachRow({ includeEmpty: false }, (row, rowNum) => {
-      const values = row.values.slice(1); // row.values is 1-indexed, slice removes undefined at [0]
+    rl.on('line', (line) => {
+      lineCount++;
+      const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"'));
       if (!headers) {
-        headers = values.map(v => String(v || '').toUpperCase().trim());
+        headers = cols.map(h => h.toUpperCase().trim());
         console.log('  Columns (first 15):', headers.slice(0, 15).join(' | '));
         return;
       }
       const obj = {};
-      headers.forEach((h, i) => { obj[h] = String(values[i] !== undefined && values[i] !== null ? values[i] : '').trim(); });
+      headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
       rows.push(obj);
-      rowCount++;
-      if (rowCount > 500000) return; // safety cap
+      if (rows.length > 500000) rl.close();
     });
-    
-    console.log(`  Parsed ${rows.length.toLocaleString()} raw rows`);
-  } catch (e) {
-    console.log('  ExcelJS parse error:', e.message);
-  }
+    rl.on('close', resolve);
+    rl.on('error', reject);
+  });
+
+  console.log(`  Parsed ${rows.length.toLocaleString()} raw rows from ${lineCount.toLocaleString()} lines`);
+  
+  // Clean up CSV file
+  try { require('fs').unlinkSync(csvPath); } catch {}
   return rows;
 }
+
 
 
 // ── Filter + normalize ────────────────────────────────────────────────────────
