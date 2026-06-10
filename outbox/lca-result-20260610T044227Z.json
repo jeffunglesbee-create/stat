@@ -1,0 +1,24 @@
+{
+  "period": "FY2026_Q1",
+  "url": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2026_Q1.xlsx",
+  "employers": 0,
+  "socKeys": 0,
+  "rows": 0,
+  "builtAt": "2026-06-10T04:42:27.694Z",
+  "debug": [
+    "\nTrying: https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2026_Q2.xlsx",
+    "  Failed: HTTP 404",
+    "\nTrying: https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2026_Q1.xlsx",
+    "  Downloaded 72.1 MB",
+    "  Period: FY2026_Q1",
+    "  Parsing XLSX...",
+    "  xlsx version: 0.18.5",
+    "  Sheets: LCA_Disclosure_Data_FY2026_Q1",
+    "  Sheet \"LCA_Disclosure_Data_FY2026_Q1\": null",
+    "  WARNING: 0 rows returned from XLSX parse",
+    "  Filtered to 0 relevant rows",
+    "\nIndex results:",
+    "  Employers: 0",
+    "  SOC keys:  0"
+  ]
+}
