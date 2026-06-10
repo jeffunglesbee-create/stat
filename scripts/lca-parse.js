@@ -88,7 +88,7 @@ async function parseXLSX(filePath) {
       const obj = {};
       headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
       rows.push(obj);
-      if (rows.length > 500000) rl.close();
+      // No row cap — process the full file. DOL quarterly files are ~500K rows.
     });
     rl.on('close', resolve);
     rl.on('error', reject);
