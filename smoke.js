@@ -90,7 +90,7 @@ assert('store: loadUnmatchedJobs exported',
 assert('store: UNMATCHED_MAX cap defined',
   store.includes('UNMATCHED_MAX'));
 assert('store: UNMATCHED_MAX >= 4000',
-  store.includes('UNMATCHED_MAX = 8000'));
+  store.includes('UNMATCHED_MAX = 6000'));
 assert('ui: browse desc button calls toggleDescBrowse',
   ui.includes("toggleDescBrowse('${job.id}'"));
 assert('ui: browse desc button uses data-desc attr',

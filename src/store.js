@@ -166,7 +166,7 @@ export async function loadRecentMatches(stub) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const UNMATCHED_KEY = 'unmatched_jobs';
-const UNMATCHED_MAX = 8000;   // Raised from 2000 — descriptions now in R2, payload ~400B/entry
+const UNMATCHED_MAX = 6000;   // Raised from 2000 — descriptions in R2, ~263B/entry × 6000 = ~1.5MB
 
 /**
  * Append env-filtered non-matching jobs to the unmatched store.
