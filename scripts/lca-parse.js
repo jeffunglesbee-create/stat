@@ -78,16 +78,22 @@ function parseXLSX(filePath) {
 
 // ── Filter + normalize ────────────────────────────────────────────────────────
 
-function filterRows(rows) {
+function filterRows(rows, metaExtra) {
   // Debug: show actual column names from the file
   if (rows.length > 0) {
     const keys = Object.keys(rows[0]);
-    console.log('  Columns:', keys.slice(0, 20).join(' | '));
-    // Show a few status values to check exact casing
+    console.log('  Columns:', keys.slice(0, 25).join(' | '));
     const statuses = [...new Set(rows.slice(0,100).map(r => String(r['CASE_STATUS']||'').trim()))];
     console.log('  CASE_STATUS values (sample):', statuses.slice(0,5).join(', '));
-    const socs = rows.slice(0,100).filter(r => r['SOC_CODE']).map(r => String(r['SOC_CODE']).trim()).slice(0,5);
+    const socs = rows.slice(0,50).filter(r => r['SOC_CODE']).map(r => String(r['SOC_CODE']).trim()).slice(0,5);
     console.log('  SOC_CODE values (sample):', socs.join(', '));
+    if (metaExtra) {
+      metaExtra.columns = keys.slice(0, 30);
+      metaExtra.caseStatusSample = statuses.slice(0, 5);
+      metaExtra.socSample = socs.slice(0, 5);
+    }
+  } else {
+    console.log('  WARNING: 0 rows returned from XLSX parse');
   }
   const result = [];
   for (const row of rows) {
@@ -236,7 +242,8 @@ async function main() {
   }
 
   const rawRows  = parseXLSX(tmpFile);
-  const filtered = filterRows(rawRows);
+  const metaExtra = {};
+  const filtered = filterRows(rawRows, metaExtra);
   const { byEmployer, bySoc } = indexRows(filtered, period);
 
   console.log(`\nIndex results:`);
@@ -257,6 +264,7 @@ async function main() {
     rows: filtered.length,
     builtAt: new Date().toISOString(),
     debug: debugLog,
+    ...metaExtra,
   };
   writeFileSync('/tmp/lca-meta.json', JSON.stringify(meta, null, 2));
 
