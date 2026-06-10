@@ -1,0 +1,7 @@
+=== CF API Probe 20260610T051509Z ===
+Method: GET
+URL: https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/r2/buckets/stat-salary-cache/objects
+
+{"success":true,"errors":[],"messages":[],"result":[{"key":"bls-wages.json","etag":"be11b5939e580ebe0b949a3401430170","last_modified":"2026-06-10T05:11:50.812Z","size":465,"http_metadata":{"contentType":"application/json"},"custom_metadata":{},"storage_class":"Standard"}]}
+HTTP_STATUS:200
+=== END ===
