@@ -170,6 +170,37 @@ export class SalaryInferenceDO {
       return new Response(JSON.stringify(result));
     }
 
+    // POST /load-r2-lca — sync R2-uploaded LCA data into DO storage metadata.
+    // Called after lca-refresh.yml CI workflow writes lca-by-employer.json +
+    // lca-by-soc.json to R2. The CI workflow cannot set lca_count / lca_fetched_at
+    // in DO storage directly, so this endpoint bridges the gap.
+    // Does NOT fetch from DOL — reads only from R2 (already populated by CI).
+    if (url.pathname === '/load-r2-lca' && request.method === 'POST') {
+      try {
+        const employerData = await this._r2Get('lca-by-employer.json');
+        const socData      = await this._r2Get('lca-by-soc.json');
+        if (!employerData || !socData) {
+          return new Response(JSON.stringify({ ok: false, error: 'R2 LCA files not found' }));
+        }
+        const employerCount = Object.keys(employerData).length;
+        const socCount      = Object.keys(socData).length;
+        // Approximate row count from employer data's count fields
+        const rowCount = Object.values(employerData).reduce((s, e) => s + (e.count || 0), 0);
+        await Promise.all([
+          this.storage.put('lca_count',      rowCount || employerCount * 5),
+          this.storage.put('lca_fetched_at', new Date().toISOString()),
+        ]);
+        // Warm L1 cache
+        this._r2Cache.lca_employer = employerData;
+        this._r2Cache.lca_soc      = socData;
+        return new Response(JSON.stringify({
+          ok: true, employers: employerCount, socKeys: socCount, rowCount,
+        }));
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: e.message }));
+      }
+    }
+
     // ── Status ────────────────────────────────────────────────────────────────
     if (url.pathname === '/status') {
       const [peerCount, lcaCount, blsDate, lcaDate] = await Promise.all([

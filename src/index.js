@@ -1163,6 +1163,7 @@ async function handleFetch(request, env) {
         'GET /platform/:ats/status': 'Status of a platform DO (greenhouse/lever/etc.)',
         'GET /salary-status':  'Salary DO status',
         'POST /salary-refresh':'Re-fetch salary caches',
+        'POST /salary-load-r2':'Load LCA from R2 into DO storage (after CI upload)',
         'GET /profile':        'Get stored resume profile',
         'POST /profile':       'Store resume profile (JSON from resume-matcher)',
         'DELETE /profile':     'Remove stored profile',
@@ -1291,6 +1292,21 @@ async function handleFetch(request, env) {
       return json({ ok: true, ...result });
     } catch (e) {
       return json({ error: e.message }, 500);
+    }
+  }
+
+  // POST /salary-load-r2 — load LCA data from R2 into DO storage metadata.
+  // Called after lca-refresh.yml CI workflow uploads to R2.
+  // Does NOT fetch from DOL — reads only from R2 (already populated by CI).
+  if (url.pathname === '/salary-load-r2' && request.method === 'POST') {
+    try {
+      const id   = env.SALARY_INFERENCE.idFromName('salary-inference');
+      const stub = env.SALARY_INFERENCE.get(id);
+      const res  = await stub.fetch(new Request('https://stat-salary/load-r2-lca', { method: 'POST' }));
+      const data = await res.json();
+      return json({ ok: true, ...data });
+    } catch (e) {
+      return json({ ok: false, error: e.message }, 500);
     }
   }
 

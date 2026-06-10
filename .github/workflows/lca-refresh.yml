@@ -95,10 +95,11 @@ jobs:
         env:
           STAT_WORKER: https://stat-job-watcher.jeffunglesbee.workers.dev
         run: |
-          # POST /salary-refresh tells SalaryDO to reload from R2
-          # (clears _r2Cache.lca_employer and _r2Cache.lca_soc in-memory cache)
-          RESULT=$(curl -sf --max-time 30 -X POST "$STAT_WORKER/salary-refresh" || echo '{"error":"unreachable"}')
-          echo "Salary refresh result: $RESULT"
+          # POST /salary-load-r2 tells SalaryDO to read lca-by-*.json from R2
+          # and write lca_count + lca_fetched_at into DO storage.
+          # This bypasses _refreshLCA() which fails from Worker IPs (DOL WAF).
+          RESULT=$(curl -sf --max-time 30 -X POST "$STAT_WORKER/salary-load-r2" || echo '{"error":"unreachable"}')
+          echo "Salary load-r2 result: $RESULT"
 
       - name: Commit result summary
         run: |
