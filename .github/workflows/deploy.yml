@@ -95,13 +95,11 @@ jobs:
           echo "=== DRY RUN COMPLETE ==="
 
       - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: b57e9af57ab46c52ca9215804e689c29
-          wranglerVersion: "4.98.0"
-          # Worker secrets are set directly on Cloudflare via wrangler secret put
-          # and persist across deploys - do not push from CI
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: b57e9af57ab46c52ca9215804e689c29
+        run: |
+          npx wrangler@4.98.0 deploy 2>&1
 
       - name: Post-deploy bootstrap + verify
         run: |
