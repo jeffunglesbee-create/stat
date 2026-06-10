@@ -57,21 +57,20 @@ function parseXLSX(filePath) {
   
   let wb;
   try {
-    // Try with dense mode first (better memory handling for large files)
+    // Large DOL files (70MB+) need memory-efficient options.
+    // dense:true causes Sheets[name]=null on large files in xlsx v0.18.x — don't use it.
+    // cellFormula/cellNF/cellStyles: false reduces memory significantly.
     wb = XLSX.readFile(filePath, {
-      dense: true,
       cellDates: false,
-      raw: false,
-      type: 'file',
+      cellFormula: false,
+      cellNF: false,
+      cellStyles: false,
+      sheetStubs: false,
+      raw: true,  // raw:true is faster and we handle type conversion ourselves
     });
   } catch (e1) {
-    console.log('  dense read failed:', e1.message, '— trying default');
-    try {
-      wb = XLSX.readFile(filePath);
-    } catch (e2) {
-      console.log('  default read also failed:', e2.message);
-      return [];
-    }
+    console.log('  XLSX.readFile failed:', e1.message);
+    return [];
   }
 
   if (!wb || !wb.SheetNames || wb.SheetNames.length === 0) {

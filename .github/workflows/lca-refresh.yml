@@ -45,7 +45,7 @@ jobs:
 
       - name: Download + parse LCA XLSX
         id: parse
-        run: node scripts/lca-parse.js
+        run: node --max-old-space-size=4096 scripts/lca-parse.js
 
       - name: Commit debug output (on failure)
         if: failure() && steps.parse.outcome == 'failure'
