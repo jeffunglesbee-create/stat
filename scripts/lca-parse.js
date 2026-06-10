@@ -191,6 +191,11 @@ function indexRows(rows, period) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
+  const debugLog = [];
+  const log = (...args) => { const line = args.join(' '); console.log(line); debugLog.push(line); };
+  const origLog = console.log;
+  console.log = (...args) => { const line = args.join(' '); origLog(line); debugLog.push(line); };
+
   const tmpFile = join(tmpdir(), `lca-${Date.now()}.xlsx`);
 
   let successUrl = null;
@@ -225,13 +230,15 @@ async function main() {
   // Write result files for wrangler to upload
   writeFileSync('/tmp/lca-by-employer.json', JSON.stringify(byEmployer));
   writeFileSync('/tmp/lca-by-soc.json',      JSON.stringify(bySoc));
-  writeFileSync('/tmp/lca-meta.json', JSON.stringify({
+  const meta = {
     period, url: successUrl,
     employers: Object.keys(byEmployer).length,
     socKeys: Object.keys(bySoc).length,
     rows: filtered.length,
     builtAt: new Date().toISOString(),
-  }));
+    debug: debugLog,
+  };
+  writeFileSync('/tmp/lca-meta.json', JSON.stringify(meta, null, 2));
 
   // Clean up temp XLSX
   try { unlinkSync(tmpFile); } catch {}
