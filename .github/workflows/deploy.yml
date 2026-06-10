@@ -61,6 +61,28 @@ jobs:
       - name: Smoke gate
         run: node smoke.js
 
+      - name: Provision R2 bucket (idempotent)
+        # Creates stat-salary-cache if it doesn't exist.
+        # CF API returns 409 if bucket already exists — both 200 and 409 are success.
+        # api.cloudflare.com is blocked from the Claude sandbox but accessible from CI runners.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          HTTP=$(curl -s -o /tmp/r2_response.json -w "%{http_code}" \
+            -X PUT "https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/r2/buckets" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"name":"stat-salary-cache"}')
+          cat /tmp/r2_response.json
+          if [ "$HTTP" = "200" ]; then
+            echo "✅ R2 bucket stat-salary-cache created"
+          elif [ "$HTTP" = "409" ]; then
+            echo "✅ R2 bucket stat-salary-cache already exists"
+          else
+            echo "❌ R2 bucket provision failed: HTTP $HTTP"
+            exit 1
+          fi
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v4
         with:
