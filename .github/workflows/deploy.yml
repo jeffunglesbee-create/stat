@@ -103,6 +103,7 @@ jobs:
           mkdir -p outbox
           npx wrangler@4.98.0 deploy 2>&1 | tee outbox/deploy-result-${TS}.txt; EXIT=${PIPESTATUS[0]}
           git config user.email "ci@stat" && git config user.name "CI"
+          git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/jeffunglesbee-create/stat.git
           git add outbox/deploy-result-${TS}.txt
           git commit -m "ci: deploy result ${TS} [skip ci]" && git push origin main || true
           exit $EXIT
