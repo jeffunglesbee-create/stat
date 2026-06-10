@@ -1,0 +1,132 @@
+=== STAT Worker Status 20260610T031739Z ===
+
+--- GET /platform/selectminds/status ---
+{
+    "ats": "selectminds",
+    "lastRun": "2026-06-10T03:07:50.106Z",
+    "totalPolled": 181,
+    "totalMatches": 0,
+    "seenCount": 1396,
+    "nextAlarm": 1781062073010,
+    "selectmindsCursor": "2098"
+}
+
+--- GET / (overview) ---
+activeDOs: 119
+watchedCompanies: 489
+seenJobIds: 2402
+
+--- GET /logs?ats=selectminds&limit=10 ---
+[
+    {
+        "ts": "2026-06-10T03:07:52.780Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 1,
+        "newMatches": 0,
+        "cursor": 1,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-10T02:47:18.670Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 1,
+        "newMatches": 0,
+        "cursor": 0,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-10T02:26:26.709Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 1,
+        "newMatches": 0,
+        "cursor": 1,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-10T02:05:39.165Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 1,
+        "newMatches": 0,
+        "cursor": 0,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-10T01:44:50.128Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 1,
+        "newMatches": 0,
+        "cursor": 1,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-10T01:24:06.684Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 1,
+        "newMatches": 0,
+        "cursor": 0,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-10T01:03:32.228Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 1,
+        "newMatches": 0,
+        "cursor": 1,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-10T00:43:06.478Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 1,
+        "newMatches": 0,
+        "cursor": 0,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-10T00:22:46.822Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 1,
+        "newMatches": 0,
+        "cursor": 1,
+        "errors": []
+    },
+    {
+        "ts": "2026-06-10T00:02:28.250Z",
+        "type": "alarm",
+        "ats": "selectminds",
+        "polled": 1,
+        "newMatches": 0,
+        "cursor": 0,
+        "errors": []
+    }
+]
+
+--- POST /salary-refresh ---
+{
+    "ok": true,
+    "bls": {
+        "fetched": 0,
+        "keys": 0
+    },
+    "lca": {
+        "ok": false,
+        "error": "No LCA file reachable"
+    }
+}
+
+--- POST /bootstrap ---
+{
+    "ok": true,
+    "spawned": 0,
+    "total": 489,
+    "resumeStatus": "skipped"
+}
