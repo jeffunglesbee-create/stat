@@ -39,6 +39,12 @@ jobs:
             || echo "ERROR or empty" | tee -a "$OUT"
           echo "" | tee -a "$OUT"
 
+          echo "--- POST /salary-refresh ---" | tee -a "$OUT"
+          curl -sf --max-time 60 -X POST "$WORKER/salary-refresh" \
+            | python3 -m json.tool 2>/dev/null | tee -a "$OUT" \
+            || echo "ERROR or timeout" | tee -a "$OUT"
+          echo "" | tee -a "$OUT"
+
           echo "--- POST /bootstrap ---" | tee -a "$OUT"
           curl -sf --max-time 30 -X POST "$WORKER/bootstrap" \
             | python3 -m json.tool 2>/dev/null | tee -a "$OUT" \
