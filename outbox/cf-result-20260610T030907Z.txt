@@ -1,0 +1,7 @@
+=== CF API Probe 20260610T030907Z ===
+Method: GET
+URL: https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/r2/buckets/stat-salary-cache
+
+{"success":false,"errors":[{"code":10042,"message":"Please enable R2 through the Cloudflare Dashboard."}],"messages":[],"result":null}
+HTTP_STATUS:403
+=== END ===
