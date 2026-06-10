@@ -1719,7 +1719,7 @@ async function handleFetch(request, env) {
       return new Response(JSON.stringify({ description }), {
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'max-age=3600',  // descriptions are immutable once written
+          'Cache-Control': 'max-age=3600'  // R2 descriptions are immutable,  // descriptions are immutable once written
         },
       });
     } catch (e) {
