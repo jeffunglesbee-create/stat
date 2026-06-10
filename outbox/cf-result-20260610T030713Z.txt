@@ -1,0 +1,148 @@
+=== CF API Probe 20260610T030713Z ===
+Method: GET
+URL: https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/workers/scripts/stat-job-watcher/settings
+
+{
+  "result": {
+    "placement": {},
+    "compatibility_date": "2025-09-15",
+    "compatibility_flags": [
+      "nodejs_compat"
+    ],
+    "usage_model": "standard",
+    "tags": [],
+    "tail_consumers": [],
+    "logpush": false,
+    "annotations": {
+      "workers/triggered_by": "version_upload"
+    },
+    "bindings": [
+      {
+        "name": "ALERT_EMAIL",
+        "type": "secret_text"
+      },
+      {
+        "name": "ANTHROPIC_API_KEY",
+        "type": "secret_text"
+      },
+      {
+        "class_name": "AshbyDO",
+        "name": "ASHBY_DO",
+        "namespace_id": "836e6a9cc6c146bbb4f94bf474c6ca0f",
+        "type": "durable_object_namespace"
+      },
+      {
+        "class_name": "BatchPollerDO",
+        "name": "BATCH_POLLER",
+        "namespace_id": "f1960c60443e4fa18d9f9e1c77f343bb",
+        "type": "durable_object_namespace"
+      },
+      {
+        "name": "DATAIMPULSE_PASS",
+        "type": "secret_text"
+      },
+      {
+        "name": "DATAIMPULSE_USER",
+        "type": "secret_text"
+      },
+      {
+        "name": "GEMINI_KEY",
+        "type": "secret_text"
+      },
+      {
+        "class_name": "GreenhouseDO",
+        "name": "GREENHOUSE_DO",
+        "namespace_id": "6da18f2249434cb889b357cd6a0b1d3e",
+        "type": "durable_object_namespace"
+      },
+      {
+        "class_name": "IcimsDO",
+        "name": "ICIMS_DO",
+        "namespace_id": "f0ab3667df034e79b4acd26b729f0aa9",
+        "type": "durable_object_namespace"
+      },
+      {
+        "class_name": "InforHcmDO",
+        "name": "INFOR_HCM_DO",
+        "namespace_id": "584a3900296c4a5087280c4e1c619e46",
+        "type": "durable_object_namespace"
+      },
+      {
+        "class_name": "LeverDO",
+        "name": "LEVER_DO",
+        "namespace_id": "adc271d8b8134f90b662d156440ce22a",
+        "type": "durable_object_namespace"
+      },
+      {
+        "name": "MYBROWSER",
+        "type": "browser",
+        "version": 2
+      },
+      {
+        "class_name": "OracleHcmDO",
+        "name": "ORACLE_HCM_DO",
+        "namespace_id": "c61c5f7a26c540b3baa4ce9483c84b4c",
+        "type": "durable_object_namespace"
+      },
+      {
+        "name": "PUSHOVER_APP_TOKEN",
+        "type": "secret_text"
+      },
+      {
+        "name": "PUSHOVER_USER_KEY",
+        "type": "secret_text"
+      },
+      {
+        "name": "RESEND_API_KEY",
+        "type": "secret_text"
+      },
+      {
+        "class_name": "SalaryInferenceDO",
+        "name": "SALARY_INFERENCE",
+        "namespace_id": "5e86d6ea8da74deca1bb025a41255cb5",
+        "type": "durable_object_namespace"
+      },
+      {
+        "class_name": "SelectMindsDO",
+        "name": "SELECTMINDS_DO",
+        "namespace_id": "01dc3a2b7b9041c984fdb3123abaafc2",
+        "type": "durable_object_namespace"
+      },
+      {
+        "class_name": "StateStoreDO",
+        "name": "STATE_STORE",
+        "namespace_id": "e388f4fd48544ecc9d0b672ca3e8d90c",
+        "type": "durable_object_namespace"
+      },
+      {
+        "name": "STAT_KV",
+        "namespace_id": "67b2f7113a7c4754a263f6f984e884ae",
+        "type": "kv_namespace"
+      },
+      {
+        "class_name": "SuccessFactorsDO",
+        "name": "SUCCESSFACTORS_DO",
+        "namespace_id": "6291024a20e749ff8b755a3341c48b56",
+        "type": "durable_object_namespace"
+      },
+      {
+        "class_name": "TaleoDO",
+        "name": "TALEO_DO",
+        "namespace_id": "784dde07c38f4897aaa1fc4eda0bdbc3",
+        "type": "durable_object_namespace"
+      },
+      {
+        "class_name": "WorkdayDO",
+        "name": "WORKDAY_DO",
+        "namespace_id": "ea1256a350cf4a769ccca59cb519c283",
+        "type": "durable_object_namespace"
+      }
+    ]
+  },
+  "success": true,
+  "errors": [],
+  "messages": []
+}
+
+HTTP_STATUS:200
+=== END ===
