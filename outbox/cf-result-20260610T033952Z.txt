@@ -1,0 +1,7 @@
+=== CF API Probe 20260610T033952Z ===
+Method: POST
+URL: https://api.bls.gov/publicAPI/v2/timeseries/data/
+
+{"status":"REQUEST_FAILED","responseTime":0,"message":["Your request has failed. Please check your input parameters, and try your request again."],"Results":null}
+HTTP_STATUS:200
+=== END ===
