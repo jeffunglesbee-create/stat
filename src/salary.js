@@ -428,148 +428,19 @@ export class SalaryInferenceDO {
   }
 
   // ── BLS OEWS refresh ──────────────────────────────────────────────────────
-  // Uses BLS download.bls.gov flat file — the individual HTML pages
-  // (bls.gov/oes/current/oes151211.htm) render their wage tables via JavaScript
-  // and return empty when fetched as plain HTML. The flat file is plain text,
-  // accessible, and contains A_PCT10/A_PCT25/A_MEDIAN/A_PCT75/A_PCT90 directly.
+  // Uses BLS Public Data API v2 (not WAF-blocked, designed for programmatic access).
+  // Both www.bls.gov and download.bls.gov block Cloudflare Worker IPs via Akamai WAF.
+  // The API endpoint api.bls.gov is not blocked.
   //
-  // URL: https://www.bls.gov/oes/special.requests/oesm{YY}nat.zip
-  // Contains: national_M{YYYY}_dl.xlsx (tab-separated despite xlsx extension)
-  // Columns: OCC_CODE, OCC_TITLE, OCC_GROUP, TOT_EMP, H_MEAN, A_MEAN,
-  //          H_PCT10, H_PCT25, H_MEDIAN, H_PCT75, H_PCT90,
-  //          A_PCT10, A_PCT25, A_MEDIAN, A_PCT75, A_PCT90
+  // Series ID format: OE + U(unseasonal) + N(national) + 0000000(area) + 000000(industry)
+  //   + 6-digit SOC + 2-digit datatype = 25 chars total
+  // e.g. OEUN000000000000015121112 = 15-1211 national p25 annual
+  // Datatypes: 11=p10, 12=p25, 13=median, 14=p75, 15=p90
   //
-  // Fallback: BLS series API text files on download.bls.gov — always accessible.
+  // No API key: 25 series/request max, 500 queries/day.
+  // 4 SOC codes × 5 datatypes = 20 series — within limit.
+  // API only returns most recent available year (single-year history).
   async _refreshBLS() {
-    const results = {};
-    let fetched = 0;
-
-    // Try the national flat file first (most complete, annual percentile data)
-    // The oesm{YY}nat.zip contains a tab-separated file with all occupations
-    const flatFileUrls = [
-      'https://www.bls.gov/oes/special.requests/oesm24nat.zip',
-      'https://www.bls.gov/oes/special.requests/oesm23nat.zip',
-    ];
-
-    for (const zipUrl of flatFileUrls) {
-      try {
-        const res = await fetch(zipUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0 STAT/1.0 (salary inference; oewsinfo@bls.gov)' },
-        });
-        if (!res.ok) continue;
-
-        const year = zipUrl.match(/oesm(\d+)nat/)?.[1];
-        const fullYear = year ? (parseInt(year) < 50 ? '20' + year : '19' + year) : '2024';
-
-        // ZIP file — extract using DecompressionStream on the tab-delimited file inside
-        // The national flat file inside is typically "national_M{YYYY}_dl.xlsx" but
-        // is actually tab-delimited despite the extension
-        const buf = await res.arrayBuffer();
-        const rows = await this._parseOESFlatFile(buf, fullYear);
-
-        if (rows < 1) continue;
-        fetched = rows;
-        break;
-      } catch (e) {
-        console.warn('[STAT salary] BLS flat file error:', e.message);
-      }
-    }
-
-    // If flat file failed, use BLS series text files (always accessible)
-    if (fetched === 0) {
-      try {
-        const seriesResults = await this._refreshBLSViaSeries();
-        if (seriesResults > 0) fetched = seriesResults;
-      } catch (e) {
-        console.warn('[STAT salary] BLS series fallback error:', e.message);
-      }
-    }
-
-    return { fetched, keys: Object.keys(results).length };
-  }
-
-  // Parse BLS OEWS national flat file (ZIP containing tab-delimited data)
-  async _parseOESFlatFile(zipBuffer, year) {
-    try {
-      // XLSX ZIP structure: find the shared strings and sheet data
-      // The national_M{YYYY}_dl.xlsx is a real XLSX (ZIP of XML files)
-      // Use DecompressionStream to decompress ZIP entries
-      const bytes = new Uint8Array(zipBuffer);
-
-      // Find the inner xlsx file by scanning for its local file header
-      // ZIP local file header signature: PK
-      const results = {};
-      let parsed = 0;
-
-      // Locate the tab-delimited content — scan for header row
-      // The file contains a row starting with "OCC_CODE	"
-      const text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-
-      // Find the tab-delimited section (starts after ZIP local headers)
-      const headerIdx = text.indexOf('OCC_CODE\t');
-      if (headerIdx === -1) {
-        // Try without escape — raw tab
-        const rawIdx = text.indexOf('OCC_CODE');
-        if (rawIdx === -1) return 0;
-      }
-
-      // The file may be compressed inside the ZIP — try to find readable content
-      // by looking for the OCC_CODE header after any ZIP header bytes
-      const lines = text.split('\n').filter(l => l.includes('\t') || l.includes('OCC_CODE'));
-      if (lines.length < 2) return 0;
-
-      const headerLine = lines.find(l => l.includes('OCC_CODE'));
-      if (!headerLine) return 0;
-
-      const headers = headerLine.split('\t').map(h => h.trim().toUpperCase().replace(/[^A-Z0-9_]/g, ''));
-      const idxOcc   = headers.findIndex(h => h === 'OCC_CODE');
-      const idxP25   = headers.findIndex(h => h === 'A_PCT25');
-      const idxP50   = headers.findIndex(h => h === 'A_MEDIAN');
-      const idxP75   = headers.findIndex(h => h === 'A_PCT75');
-      const idxP10   = headers.findIndex(h => h === 'A_PCT10');
-      const idxP90   = headers.findIndex(h => h === 'A_PCT90');
-
-      if (idxOcc < 0 || idxP25 < 0 || idxP75 < 0) return 0;
-
-      const dataLines = lines.slice(lines.indexOf(headerLine) + 1);
-      for (const line of dataLines) {
-        const cols = line.split('\t');
-        const occ = cols[idxOcc]?.trim().replace(/[*#]/g, '');
-        if (!occ || !RELEVANT_SOC.some(s => occ.startsWith(s.slice(0, 7)))) continue;
-
-        const p25 = parseFloat((cols[idxP25] || '').replace(/[$,*#]/g, ''));
-        const p50 = parseFloat((cols[idxP50] || '').replace(/[$,*#]/g, ''));
-        const p75 = parseFloat((cols[idxP75] || '').replace(/[$,*#]/g, ''));
-        const p10 = parseFloat((cols[idxP10] || '').replace(/[$,*#]/g, ''));
-        const p90 = parseFloat((cols[idxP90] || '').replace(/[$,*#]/g, ''));
-
-        if (!p25 || !p75 || p25 < 20000 || p75 > 500000) continue;
-
-        results[`${occ}:national`] = { p10, p25, p50, p75, p90, area: 'national', year };
-        parsed++;
-      }
-
-      if (parsed > 0) {
-        await this.storage.put('bls_wages', JSON.stringify(results));
-        await this.storage.put('bls_fetched_at', new Date().toISOString());
-      }
-
-      return parsed;
-    } catch (e) {
-      console.warn('[STAT salary] OES flat file parse error:', e.message);
-      return 0;
-    }
-  }
-
-  // BLS series text file fallback — download.bls.gov is confirmed accessible.
-  // Series ID format: OEU{areatype}{area}{industry}{occupation}{datatype}
-  // National cross-industry: areatype=N, area=0000000, industry=000000
-  // Occupation code for 15-1211: 151211 (SOC no dash, 6 digits)
-  // Datatype codes (annual wages): 11=p10, 12=p25, 13=median, 14=p75, 15=p90
-  async _refreshBLSViaSeries() {
-    // Fetch once, scan all SOCs.
-    // Series ID format: OEU{areatype=0}{area=0000000}{industry=000000}{occupation=6digits}{datatype=2digits}
-    // Annual wage percentile datatypes: 11=p10, 12=p25, 13=median, 14=p75, 15=p90
     const DATATYPES = [
       { code: '11', key: 'p10' },
       { code: '12', key: 'p25' },
@@ -578,75 +449,76 @@ export class SalaryInferenceDO {
       { code: '15', key: 'p90' },
     ];
 
-    const results = {};
+    // Build series IDs and reverse-lookup map
+    const seriesIds = [];
+    const seriesMap = {};
+    for (const soc of RELEVANT_SOC) {
+      const socCode = soc.replace('-', '');
+      for (const dt of DATATYPES) {
+        // OEUN = OE(survey) + U(not seasonal) + N(national area type)
+        const sid = `OEUN0000000000000${socCode}${dt.code}`;
+        seriesIds.push(sid);
+        seriesMap[sid] = { soc, key: dt.key };
+      }
+    }
 
     try {
-      const res = await fetch('https://download.bls.gov/pub/time.series/oe/oe.data.0.Current', {
-        headers: { 'User-Agent': 'Mozilla/5.0 STAT/1.0' },
+      const res = await fetch('https://api.bls.gov/publicAPI/v2/timeseries/data/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'STAT/1.0' },
+        body: JSON.stringify({ seriesid: seriesIds }),
+        // No year range — API returns most recent available year automatically
       });
-      if (!res.ok) return 0;
 
-      const text  = await res.text();
-      const lines = text.split('\n');
+      if (!res.ok) throw new Error(`BLS API HTTP ${res.status}`);
 
-      // Build lookup: seriesId → {soc, dtKey}
-      const seriesLookup = {};
-      for (const soc of RELEVANT_SOC) {
-        const socCode = soc.replace('-', '');
-        for (const dt of DATATYPES) {
-          // National cross-industry series: OEU + 0 (areatype U=national) +
-          // 0000000 (area) + 000000 (industry) + socCode + datatype
-          // Actual BLS national series prefix confirmed from oe.txt spec:
-          // survey=OE, seasonal=U, areatype=0, area=0000000, industry=000000
-          seriesLookup[`OEU000000000000000${socCode}${dt.code}`] = { soc, key: dt.key };
-        }
-      }
+      const data = await res.json();
+      if (data.status !== 'REQUEST_SUCCEEDED') throw new Error(`BLS API: ${data.message?.[0] || data.status}`);
+      if (!data.Results?.series) throw new Error('BLS API: no Results.series');
 
-      // Build per-SOC wage accumulators
       const wageBySoc = {};
       for (const soc of RELEVANT_SOC) wageBySoc[soc] = {};
 
-      for (const line of lines) {
-        const parts = line.trim().split(/\s+/);
-        if (parts.length < 4) continue;
-        const [seriesId, , period, value] = parts;
-        // Period S01 = semi-annual average, A01 = annual — both acceptable
-        if (period !== 'S01' && period !== 'A01' && period !== 'M13') continue;
-
-        const entry = seriesLookup[seriesId];
-        if (!entry) continue;
-
-        const num = parseFloat(value);
-        if (num > 0 && num < 1000000) {
-          wageBySoc[entry.soc][entry.key] = num;
+      for (const series of data.Results.series) {
+        const entry = seriesMap[series.seriesID];
+        if (!entry || !series.data?.length) continue;
+        // Annual data (period A01); take most recent
+        const annual = series.data.filter(d => d.period === 'A01').sort((a, b) => b.year - a.year);
+        if (!annual.length) continue;
+        const value = parseFloat(annual[0].value);
+        if (value > 10000 && value < 1_000_000) {
+          wageBySoc[entry.soc][entry.key] = value;
         }
       }
 
+      const results = {};
+      let year = new Date().getFullYear().toString();
+      // Capture year from first series that returned data
+      for (const series of data.Results.series) {
+        if (series.data?.length) { year = series.data[0].year; break; }
+      }
       for (const soc of RELEVANT_SOC) {
         const w = wageBySoc[soc];
         if (w.p25 && w.p75) {
-          results[`${soc}:national`] = {
-            p10: w.p10, p25: w.p25, p50: w.p50,
-            p75: w.p75, p90: w.p90,
-            area: 'national', year: 'current',
-          };
+          results[`${soc}:national`] = { p10: w.p10, p25: w.p25, p50: w.p50,
+            p75: w.p75, p90: w.p90, area: 'national', year };
         }
       }
+
+      if (Object.keys(results).length > 0) {
+        await Promise.all([
+          this._r2Put('bls-wages.json', results),
+          this.storage.put('bls_fetched_at', new Date().toISOString()),
+        ]);
+        this._r2Cache.bls = null;
+        return { fetched: Object.keys(results).length, keys: Object.keys(results).length, source: 'bls-api', year };
+      }
+
+      return { fetched: 0, keys: 0, error: 'No wage data in API response' };
     } catch (e) {
-      console.warn('[STAT salary] BLS series fetch error:', e.message);
-      return 0;
+      console.error('[STAT salary] BLS API error:', e.message);
+      return { fetched: 0, keys: 0, error: e.message };
     }
-
-    if (Object.keys(results).length > 0) {
-      await Promise.all([
-        this._r2Put('bls-wages.json', results),
-        this.storage.put('bls_fetched_at', new Date().toISOString()),
-      ]);
-      this._r2Cache.bls = null; // invalidate L1
-      return Object.keys(results).length;
-    }
-
-    return 0;
   }
 
   // ── DOL LCA refresh ───────────────────────────────────────────────────────
@@ -664,10 +536,14 @@ export class SalaryInferenceDO {
   //   4. Parse shared strings (xl/sharedStrings.xml) for text cells
   //   5. Parse sheet rows for wage and employer data
   async _refreshLCA() {
+    // DOL uses full 4-digit fiscal year in filenames: FY2026 not FY26.
+    // FY2025 Q4 (Oct 2024–Sep 2025) confirmed reachable — use as primary fallback.
+    // FY2026 Q1/Q2 added optimistically; may 404 until DOL releases them.
     const candidates = [
-      'https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY26_Q2.xlsx',
-      'https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY26_Q1.xlsx',
-      'https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY25_Q4.xlsx',
+      'https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2026_Q2.xlsx',
+      'https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2026_Q1.xlsx',
+      'https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2025_Q4.xlsx',
+      'https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2025_Q3.xlsx',
     ];
 
     for (const url of candidates) {

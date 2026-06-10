@@ -252,7 +252,9 @@ assert('salary: R2 helper _r2Put defined', read('salary.js').includes('async _r2
 assert('salary: _queryLCAExact uses R2 L1 cache', read('salary.js').includes('this._r2Cache.lca_employer'));
 assert('salary: _queryBLS uses R2 L1 cache', read('salary.js').includes('this._r2Cache.bls'));
 assert('salary: _refreshLCA writes to R2', read('salary.js').includes("_r2Put('lca-by-employer.json'"));
-assert('salary: _refreshBLS writes to R2', read('salary.js').includes("_r2Put('bls-wages.json'"));
+assert('salary: _refreshBLS uses BLS Public Data API', read('salary.js').includes('api.bls.gov/publicAPI/v2/timeseries'));
+assert('salary: _refreshBLS uses correct OEUN series prefix', read('salary.js').includes('OEUN0000000000000'));
+assert('salary: LCA uses full 4-digit year URLs', read('salary.js').includes('FY2025_Q4.xlsx'));
 assert('enrich: R2 description cache helper defined', read('enrich.js').includes('cacheDescriptionInR2'));
 assert('enrich: plain fetch writes to R2', read('enrich.js').includes('cacheDescriptionInR2(env, job.id, desc)'));
 assert('index: /description/:jobId endpoint present', read('index.js').includes("startsWith('/description/')"));
