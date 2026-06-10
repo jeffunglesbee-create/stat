@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-10T02:24:07Z
-HEAD: e9d02d5
+Generated: 2026-06-10T02:31:13Z
+HEAD: 9657abd
 Smoke: 126/126
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  e9d02d5 fix: UNMATCHED_MAX 8000 → 6000 — 8000 × 263B = 2.05MB over 2MB wall
+  9657abd ci: trigger — provision R2 + raise caps deploy
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
