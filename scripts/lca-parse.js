@@ -246,6 +246,10 @@ async function main() {
   // Write result files for wrangler to upload
   writeFileSync('/tmp/lca-by-employer.json', JSON.stringify(byEmployer));
   writeFileSync('/tmp/lca-by-soc.json',      JSON.stringify(bySoc));
+  // Clean up temp XLSX
+  try { unlinkSync(tmpFile); } catch {}
+
+  // Always write meta + debug before any exit — CI reads this via outbox commit
   const meta = {
     period, url: successUrl,
     employers: Object.keys(byEmployer).length,
@@ -256,8 +260,10 @@ async function main() {
   };
   writeFileSync('/tmp/lca-meta.json', JSON.stringify(meta, null, 2));
 
-  // Clean up temp XLSX
-  try { unlinkSync(tmpFile); } catch {}
+  if (filtered.length === 0) {
+    console.error('\nERROR: 0 rows after filtering — check debug.Columns above for actual column names');
+    process.exit(1);
+  }
 
   console.log('\nFiles written to /tmp — ready for R2 upload');
 }

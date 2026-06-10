@@ -44,7 +44,18 @@ jobs:
         run: npm install xlsx --no-save
 
       - name: Download + parse LCA XLSX
+        id: parse
         run: node scripts/lca-parse.js
+
+      - name: Commit debug output (on failure)
+        if: failure() && steps.parse.outcome == 'failure'
+        run: |
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          mkdir -p outbox
+          [ -f /tmp/lca-meta.json ] && cp /tmp/lca-meta.json outbox/lca-result-${TS}.json || true
+          git config user.email "ci@stat" && git config user.name "CI"
+          git add outbox/lca-result-${TS}.json 2>/dev/null || true
+          git commit -m "ci: LCA parse debug ${TS} [skip ci]" && git push || true
 
       - name: Write processed JSON to R2
         env:
