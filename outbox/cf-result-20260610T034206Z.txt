@@ -1,0 +1,11 @@
+=== CF API Probe 20260610T034206Z ===
+Method: POST
+URL: https://api.bls.gov/publicAPI/v2/timeseries/data/
+
+{"status":"REQUEST_SUCCEEDED","responseTime":99,"message":["Series does not exist for Series OEU0000000000000015121112","Series does not exist for Series OEU0000000000000015121114"],"Results":{
+"series":
+[{"seriesID":"OEU0000000000000015121112","data":[]},
+{"seriesID":"OEU0000000000000015121114","data":[]}]
+}}
+HTTP_STATUS:200
+=== END ===
