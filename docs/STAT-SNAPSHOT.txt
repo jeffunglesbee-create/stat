@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-10T03:15:02Z
-HEAD: 906dd4a
-Smoke: 126/126
+Generated: 2026-06-10T03:48:49Z
+HEAD: 2dfdf5c
+Smoke: 128/128
 
 COMPANIES
   SEED total: 204
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  906dd4a ci: trigger deploy — R2 now enabled
+  2dfdf5c fix: BLS salary cache — replace WAF-blocked flat file with Public Data API
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
