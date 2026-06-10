@@ -65,17 +65,14 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: b57e9af57ab46c52ca9215804e689c29
         run: |
-          echo "Uploading lca-by-employer.json to R2..."
-          npx wrangler@4.98.0 r2 object put stat-salary-cache/lca-by-employer.json \
-            --file /tmp/lca-by-employer.json \
-            --content-type application/json
 
-          echo "Uploading lca-by-soc.json to R2..."
-          npx wrangler@4.98.0 r2 object put stat-salary-cache/lca-by-soc.json \
-            --file /tmp/lca-by-soc.json \
-            --content-type application/json
 
-          echo "✅ R2 upload complete"
+          echo "Verifying output files..."
+          ls -la /tmp/lca-*.json || echo "NO LCA FILES IN /tmp"
+          echo "Uploading to R2 via wrangler..."
+          cat /tmp/lca-by-employer.json | npx wrangler@4.98.0 r2 object put stat-salary-cache/lca-by-employer.json --pipe --content-type=application/json
+          cat /tmp/lca-by-soc.json | npx wrangler@4.98.0 r2 object put stat-salary-cache/lca-by-soc.json --pipe --content-type=application/json
+          echo "R2 upload done"
 
       - name: Trigger salary DO cache invalidation
         env:
