@@ -53,11 +53,27 @@ async function downloadFile(url, destPath) {
 
 function parseXLSX(filePath) {
   console.log('  Parsing XLSX...');
-  const wb = XLSX.readFile(filePath, { dense: true });
-  const sheetName = wb.SheetNames[0];
-  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
-  console.log(`  Parsed ${rows.length.toLocaleString()} raw rows`);
-  return rows;
+  // DOL LCA files can be large (70MB+). Use cellDates:false, raw:false for text values.
+  // dense:false (default) is more memory-efficient for large files.
+  const wb = XLSX.readFile(filePath, {
+    cellDates: false,
+    raw: false,
+    sheetStubs: false,
+  });
+  console.log('  Sheets:', wb.SheetNames.join(', '));
+  
+  // Try each sheet — DOL may use a non-first sheet
+  for (const sheetName of wb.SheetNames) {
+    const sheet = wb.Sheets[sheetName];
+    const ref = sheet['!ref'];
+    console.log(`  Sheet "${sheetName}" ref: ${ref || '(none)'}`);
+    if (!ref) continue;
+    
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
+    console.log(`  Parsed ${rows.length.toLocaleString()} raw rows from "${sheetName}"`);
+    if (rows.length > 0) return rows;
+  }
+  return [];
 }
 
 // ── Filter + normalize ────────────────────────────────────────────────────────
