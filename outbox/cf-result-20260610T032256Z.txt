@@ -1,0 +1,7 @@
+=== CF API Probe 20260610T032256Z ===
+Method: GET
+URL: https://api.cloudflare.com/client/v4/accounts/b57e9af57ab46c52ca9215804e689c29/r2/buckets/stat-salary-cache/objects?limit=20
+
+{"success":true,"errors":[],"messages":[],"result":[]}
+HTTP_STATUS:200
+=== END ===
