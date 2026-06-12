@@ -10,7 +10,7 @@
  *   Workday       → JSON-LD schema.org/JobPosting (full desc, ~4k chars) → data-automation-id="jobPostingDescription" DOM → og:description fallback (boilerplate only)
  *   Oracle HCM    → class="job-details__description-content" div → og:description fallback
  *   Infor HCM     → class="lm-richtext-content _op_PositionDescription..." div → full body text fallback
- *   iCIMS         → page is a SPA — Browser Rendering API required
+ *   iCIMS         → JSON-LD schema.org/JobPosting on Jibe wrapper (full desc, title, location, salary) → in_iframe=1 body text fallback
  *   Taleo         → initialHistory hidden field (URL-decoded, !|! delimited) → plain fetch
  *   SuccessFactors → page is a SPA — no path without auth; use HiringCafe v5 coverage
  *
@@ -40,12 +40,100 @@ const NEEDS_PLAIN_FETCH = new Set(['workday', 'icims', 'hiringcafe', 'oracle_hcm
 // Taleo search page still uses BR (adapters.js fetchTaleo) but detail pages do not.
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Plain HTML fetch — server-rendered description (Workday + iCIMS)
+// iCIMS JSON-LD extraction (PATH A — preferred)
+//
+// iCIMS career sites use Jibe (acquired by iCIMS) for the branded wrapper.
+// The wrapper page at job.url (without ?in_iframe=1) contains a
+// <script type="application/ld+json"> block with a full JobPosting schema:
+//   title, description, location, salary, datePosted, employmentType, etc.
+//
+// Confirmed 2026-06-12: Mercy Medical Center job 13529 on careers.stellamaris.org
+// has JSON-LD with 4000+ char description, full location, and salary range.
+//
+// This is superior to the in_iframe body-text extraction (PATH B) because:
+//   - Structured data, no HTML stripping needed
+//   - Title and location populated without a separate fetch
+//   - Salary range extracted if present in baseSalary or description
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchICIMSJsonLd(job) {
+  if (!job.url) return '';
+
+  const wrapperUrl = job.url.split('?')[0]; // no ?in_iframe=1
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), 8_000);
+
+  try {
+    const res = await fetch(wrapperUrl, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        'User-Agent':      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept':          'text/html,application/xhtml+xml,*/*;q=0.9',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control':   'no-cache',
+      },
+      redirect: 'follow',
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return '';
+
+    const html = await res.text();
+
+    // Extract JSON-LD block
+    const ldMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
+    if (!ldMatch) return '';
+
+    const ld = JSON.parse(ldMatch[1]);
+    if (!ld.description || ld.description.length < 50) return '';
+
+    // Populate title if the adapter left it empty
+    if (!job.title && ld.title) {
+      job.title = ld.title;
+    }
+
+    // Populate location from JSON-LD address
+    if (!job.location && ld.jobLocation?.address) {
+      const a = ld.jobLocation.address;
+      const parts = [a.addressLocality, a.addressRegion].filter(Boolean);
+      if (parts.length) job.location = parts.join(', ');
+    }
+
+    // Extract salary from JSON-LD baseSalary if non-zero
+    if (!job.salary && ld.baseSalary?.value) {
+      const v = ld.baseSalary.value;
+      const min = v.minValue || v.value;
+      const max = v.maxValue;
+      if (min && min > 0) {
+        const unit = (v.unitText || '').toLowerCase();
+        const suffix = unit === 'hour' ? '/hr' : unit === 'year' ? '/yr' : '';
+        job.salary = max && max > min
+          ? `$${min.toLocaleString()}–$${max.toLocaleString()}${suffix}`
+          : `$${min.toLocaleString()}${suffix}`;
+      }
+    }
+
+    // Extract posting date
+    if (!job.postedAt && ld.datePosted) {
+      job.postedAt = ld.datePosted;
+    }
+
+    // Return stripped description
+    return stripHtml(ld.description);
+
+  } catch {
+    return ''; // silent fallback to PATH B
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plain HTML fetch — server-rendered description (Workday + iCIMS fallback)
 //
 // Workday: og:description in server-rendered HTML. ~200ms.
-// iCIMS:   job detail at /jobs/{id}/job?in_iframe=1 returns server-rendered HTML.
-//          The ?in_iframe=1 param bypasses the branded wrapper redirect.
-//          Description is in body text (no og:description on iCIMS detail pages).
+// iCIMS:   PATH B fallback — job detail at /jobs/{id}/job?in_iframe=1
+//          returns server-rendered HTML body text. Used when JSON-LD (PATH A)
+//          is not available on the branded wrapper.
 //          Verified 2026-06-06: plain fetch() from CF Worker is not blocked.
 // ─────────────────────────────────────────────────────────────────────────────
 async function fetchPlainDescription(job) {
@@ -60,19 +148,20 @@ async function fetchPlainDescription(job) {
     if (!rid) return '';
     fetchUrl = `https://hiring.cafe/job/${rid}`;
   }
-  // For iCIMS: strip query params and append ?in_iframe=1
-  // Confirmed 2026-06-08 via CommonSpirit HTML: the branded wrapper loads the
-  // actual job content in #icims_content_iframe at the same URL + &in_iframe=1.
-  // The full path (including slug) must be preserved.
+  // For iCIMS: two-path strategy (confirmed 2026-06-12 via Mercy HTML analysis)
   //
-  // BUG FIXED: prior regex .replace(/\/jobs\/(\d+)\/[^?]+/, '/jobs/$1/job')
-  // was dropping the slug and the /job path segment, producing:
-  //   /jobs/468417/job?in_iframe=1  (wrong — 404 on most tenants)
-  // instead of:
-  //   /jobs/468417/it-epic-ambulatory-application-analyst-sr/job?in_iframe=1
+  // PATH A — Jibe branded wrapper (job.url without ?in_iframe=1)
+  //   Contains <script type="application/ld+json"> with full JobPosting schema:
+  //   title, description (full HTML), location, salary, datePosted, employmentType.
+  //   Confirmed on careers.stellamaris.org/stella-home/jobs/13529 (Mercy Medical Center).
+  //   Also populates job.title and job.location if they were empty from the adapter.
   //
-  // Fix: simply strip query params, keep full path, append ?in_iframe=1.
+  // PATH B — iframe content (?in_iframe=1) body text extraction (existing fallback)
+  //   Used when the branded wrapper doesn't have JSON-LD or fetch fails.
   if (job.atsSource === 'icims') {
+    const wrapperDesc = await fetchICIMSJsonLd(job);
+    if (wrapperDesc) return wrapperDesc;
+    // Fall back to in_iframe body text extraction
     fetchUrl = fetchUrl.split('?')[0] + '?in_iframe=1';
   }
 

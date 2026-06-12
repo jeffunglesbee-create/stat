@@ -268,6 +268,10 @@ assert('lca-parse: FY2025_Q4 URL candidate present', read('../scripts/lca-parse.
 assert('lca-parse: indexRows matches _indexLCARows output', read('../scripts/lca-parse.js').includes('Math.floor(mins.length * 0.25)'));
 assert('lca-refresh: workflow exists', (() => { try { require('fs').readFileSync('.github/workflows/lca-refresh.yml'); return true; } catch { return false; } })());
 assert('lca-refresh: uploads lca-by-employer.json to R2', read('../.github/workflows/lca-refresh.yml').includes('lca-by-employer.json'));
+// ── iCIMS JSON-LD enrichment ────────────────────────────────────────────────
+assert('enrich: fetchICIMSJsonLd function defined', read('enrich.js').includes('async function fetchICIMSJsonLd(job)'));
+assert('enrich: iCIMS PATH A tries wrapper before in_iframe', read('enrich.js').includes('fetchICIMSJsonLd(job)'));
+assert('enrich: iCIMS JSON-LD extracts schema.org JobPosting', read('enrich.js').includes('ld+json'));
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
