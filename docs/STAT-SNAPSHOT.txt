@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-10T05:27:28Z
-HEAD: 9bb3ef9
-Smoke: 134/134
+Generated: 2026-06-12T23:56:06Z
+HEAD: bc4b435
+Smoke: 137/137
 
 COMPANIES
   SEED total: 204
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  9bb3ef9 feat: /salary-load-r2 endpoint — sync CI-uploaded LCA from R2 to DO storage
+  bc4b435 feat: iCIMS JSON-LD enrichment — extract title, description, location, salary from Jibe wrapper
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
