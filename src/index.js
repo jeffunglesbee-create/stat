@@ -1688,6 +1688,54 @@ async function handleFetch(request, env) {
     return json({ ok: true, count: signals.length, signals });
   }
 
+  // POST /dispatch-apply — trigger apply-agent GitHub Actions workflow
+  // Body: { url, jobId, dryRun? }
+  // Requires STAT_PAT Worker secret (same PAT used for CI).
+  if (url.pathname === '/dispatch-apply' && request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+    const { url: jobUrl, jobId, dryRun = true } = body;
+    if (!jobUrl) return json({ error: 'url required' }, 400);
+
+    if (!env.STAT_PAT) {
+      return json({ error: 'STAT_PAT not configured — run: wrangler secret put STAT_PAT' }, 500);
+    }
+
+    // Dispatch via GitHub Actions API
+    try {
+      const ghRes = await fetch(
+        'https://api.github.com/repos/jeffunglesbee-create/stat/actions/workflows/apply-agent.yml/dispatches',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `token ${env.STAT_PAT}`,
+            'Accept':        'application/vnd.github.v3+json',
+            'User-Agent':    'STAT-Worker',
+          },
+          body: JSON.stringify({
+            ref: 'main',
+            inputs: {
+              job_url: jobUrl,
+              dry_run: dryRun ? 'true' : 'false',
+            },
+          }),
+        }
+      );
+
+      if (ghRes.status === 204) {
+        console.log(`[STAT apply] dispatched: ${jobId} → ${jobUrl} (dry=${dryRun})`);
+        return json({ ok: true, jobId, dispatched: true });
+      } else {
+        const errText = await ghRes.text();
+        console.error(`[STAT apply] dispatch failed ${ghRes.status}: ${errText}`);
+        return json({ error: `GitHub API ${ghRes.status}`, detail: errText }, 502);
+      }
+    } catch (e) {
+      console.error('[STAT apply] dispatch error:', e.message);
+      return json({ error: 'Dispatch failed: ' + e.message }, 500);
+    }
+  }
+
   // GET /browse — env-filtered jobs that didn't match any keyword
   // Useful for manually spotting roles STAT missed. ?ats= ?q= ?limit=
   if (url.pathname === '/browse' && request.method === 'GET') {

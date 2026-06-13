@@ -276,6 +276,8 @@ assert('enrich: iCIMS JSON-LD extracts schema.org JobPosting', read('enrich.js')
 assert('apply-agent: script exists', (() => { try { fs.readFileSync(path.join(__dirname, 'scripts/apply-agent.py')); return true; } catch { return false; } })());
 assert('apply-agent: workflow exists', (() => { try { fs.readFileSync(path.join(__dirname, '.github/workflows/apply-agent.yml')); return true; } catch { return false; } })());
 assert('apply-agent: uses browser-use', fs.readFileSync(path.join(__dirname, 'scripts/apply-agent.py'), 'utf8').includes('from browser_use import Agent'));
+assert('apply-agent: dispatch endpoint in Worker', read('index.js').includes('/dispatch-apply'));
+assert('apply-agent: UI dispatchApply function', read('ui.html').includes('async function dispatchApply'));
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;

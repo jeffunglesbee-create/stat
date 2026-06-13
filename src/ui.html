@@ -1439,6 +1439,9 @@ function renderMatchCard({ job, match, alertedAt }) {
   </div>
   <div class="match-card-actions">
     <a href="${job.url}" target="_blank" class="apply-btn">Apply →</a>
+    <button class="apply-btn" style="background:var(--accent);color:#fff;border:none" onclick="dispatchApply('${job.id}','${encodeURIComponent(job.url)}')" title="Auto-apply via browser agent (dry-run)">
+      ⚡ Auto
+    </button>
     <button class="review-btn" id="rbtn-${job.id}" onclick="toggleReview('${job.id}')" title="Claude fit review">
       ✦ Review
     </button>
@@ -1651,6 +1654,25 @@ async function toggleReview(jobId) {
     content.textContent = '⚠ ' + e.message;
   } finally {
     btn.classList.remove('loading');
+  }
+}
+
+// ── Auto Apply (browser-use agent dispatch) ──────────────────────────────
+async function dispatchApply(jobId, encodedUrl) {
+  const url = decodeURIComponent(encodedUrl);
+  if (!confirm(`Auto-apply (dry-run) to:\n${url}\n\nThis will launch a browser agent via GitHub Actions.`)) return;
+
+  toast('Dispatching apply agent…');
+  const { ok, data } = await api('/dispatch-apply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jobId, url, dryRun: true }),
+  });
+
+  if (ok) {
+    toast('Apply agent dispatched! Check Actions tab for progress.', 'success');
+  } else {
+    toast('Dispatch failed: ' + (data?.error || 'unknown'), 'error');
   }
 }
 

@@ -131,6 +131,7 @@ fallthrough = false
 # SENDGRID_API_KEY    — from sendgrid.com (Mail Send scope only)
 # ALERT_EMAIL         — address for email digests
 # ANTHROPIC_API_KEY   — for resume fit scoring (optional)
+# STAT_PAT           — GitHub PAT for dispatching CI workflows (apply-agent)
 
 # ── R2 — salary cache (LCA/BLS processed JSON) + job descriptions ────────────
 # Bucket created: wrangler r2 bucket create stat-salary-cache
