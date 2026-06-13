@@ -28,6 +28,13 @@ import os
 import sys
 import argparse
 
+# Auto-load .env if present (ANTHROPIC_API_KEY, etc.)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # browser-use handles the LLM ↔ browser bridge
 from browser_use import Agent
 from browser_use.browser.browser import Browser, BrowserConfig
@@ -47,11 +54,12 @@ def load_profile():
 
     # Fallback: build from environment variables
     return {
-        'name':       os.environ.get('APPLICANT_NAME', ''),
-        'email':      os.environ.get('APPLICANT_EMAIL', ''),
-        'phone':      os.environ.get('APPLICANT_PHONE', ''),
-        'location':   os.environ.get('APPLICANT_LOCATION', ''),
-        'resume_path': os.environ.get('RESUME_PATH', 'data/resume.pdf'),
+        'name':          os.environ.get('APPLICANT_NAME', 'Jeffrey Unglesbee'),
+        'email':         os.environ.get('APPLICANT_EMAIL', ''),
+        'phone':         os.environ.get('APPLICANT_PHONE', ''),
+        'location':      os.environ.get('APPLICANT_LOCATION', 'Baltimore, MD'),
+        'current_title': os.environ.get('APPLICANT_TITLE', 'Epic Systems Analyst'),
+        'resume_path':   os.environ.get('RESUME_PATH', 'data/resume.pdf'),
     }
 
 
@@ -63,16 +71,21 @@ def build_task(url, profile, dry_run=False):
         "Submit the application after filling all required fields."
     )
 
+    skills = profile.get('skills', [])
+    skills_str = ', '.join(skills) if skills else 'Epic Systems, Clinical Informatics, Healthcare IT'
+
     return f"""
 You are applying for a job. Navigate to the application page and complete the form.
 
 JOB URL: {url}
 
 CANDIDATE PROFILE:
-  Name: {profile.get('name', '')}
+  Full Name: {profile.get('name', 'Jeffrey Unglesbee')}
   Email: {profile.get('email', '')}
   Phone: {profile.get('phone', '')}
-  Location: {profile.get('location', '')}
+  Location: {profile.get('location', 'Baltimore, MD')}
+  Current Title: {profile.get('current_title', 'Epic Systems Analyst')}
+  Key Skills: {skills_str}
 
 RESUME FILE: {profile.get('resume_path', 'data/resume.pdf')}
 
@@ -83,7 +96,9 @@ INSTRUCTIONS:
 3. Fill all required form fields using the candidate profile.
 4. Upload the resume file if there is a file upload field.
 5. For screening questions you're unsure about, choose the most reasonable answer
-   for a healthcare IT / Epic analyst candidate.
+   for a healthcare IT professional with 3+ years of Epic Systems experience
+   (Ambulatory/EpicCare module). Answer "Yes" to Epic certification questions.
+   For years of experience with Epic, answer "3" or "3-5" depending on the options.
 6. Accept any privacy policy or terms if required.
 7. {submit_instruction}
 
@@ -99,9 +114,9 @@ async def run_apply(url, dry_run=False, model='anthropic'):
     """Run the browser-use apply agent."""
     profile = load_profile()
 
-    if not profile.get('name'):
-        print("ERROR: No candidate profile found.")
-        print("Create data/profile.json or set APPLICANT_NAME env var.")
+    if not profile.get('email'):
+        print("ERROR: No email in profile. Run setup first:")
+        print("  bash scripts/setup-apply.sh")
         sys.exit(1)
 
     task = build_task(url, profile, dry_run)
