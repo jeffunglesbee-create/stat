@@ -77,7 +77,8 @@ jobs:
 
       - name: Run apply agent
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # No ANTHROPIC_API_KEY needed — routes through field-claude-proxy
+          # with X-FIELD-Relay header auth (same pattern as FIELD cron jobs)
           APPLICANT_NAME: ${{ secrets.APPLICANT_NAME }}
           APPLICANT_EMAIL: ${{ secrets.APPLICANT_EMAIL }}
           APPLICANT_PHONE: ${{ secrets.APPLICANT_PHONE }}

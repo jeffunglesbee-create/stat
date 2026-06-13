@@ -9,69 +9,11 @@ cd "$(dirname "$0")/.."
 echo "═══ STAT Apply Agent Setup ═══"
 echo ""
 
-# ── 1. Find ANTHROPIC_API_KEY ───────────────────────────────────────────────
-# Priority: .env file → environment → wrangler (prompt to copy) → Cloudflare API
-
-KEY=""
-
-# Check .env file
-if [ -f .env ] && grep -q "ANTHROPIC_API_KEY=" .env 2>/dev/null; then
-  KEY=$(grep "ANTHROPIC_API_KEY=" .env | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
-  [ -n "$KEY" ] && echo "✓ API key found in .env"
-fi
-
-# Check environment
-if [ -z "$KEY" ] && [ -n "$ANTHROPIC_API_KEY" ]; then
-  KEY="$ANTHROPIC_API_KEY"
-  echo "✓ API key found in environment"
-fi
-
-# Check ~/.anthropic (some SDK installs store it here)
-if [ -z "$KEY" ] && [ -f ~/.anthropic/api_key ]; then
-  KEY=$(cat ~/.anthropic/api_key | tr -d '[:space:]')
-  [ -n "$KEY" ] && echo "✓ API key found in ~/.anthropic/api_key"
-fi
-
-# Try wrangler — can verify secret EXISTS but can't read the value
-if [ -z "$KEY" ] && command -v wrangler &>/dev/null; then
-  echo ""
-  echo "Checking Cloudflare Worker secrets..."
-  if wrangler secret list --name stat-job-watcher 2>/dev/null | grep -q "ANTHROPIC_API_KEY"; then
-    echo "✓ ANTHROPIC_API_KEY exists on Cloudflare Worker (stat-job-watcher)"
-    echo "  → Cloudflare secrets are write-only — can't read the value."
-    echo "  → Copy it from your Anthropic dashboard or password manager."
-    echo ""
-  fi
-
-  # Also check GitHub secrets
-  if [ -n "$STAT_PAT" ]; then
-    GH_CHECK=$(curl -s -H "Authorization: token $STAT_PAT" \
-      https://api.github.com/repos/jeffunglesbee-create/stat/actions/secrets 2>/dev/null)
-    if echo "$GH_CHECK" | grep -q "ANTHROPIC_API_KEY"; then
-      echo "✓ ANTHROPIC_API_KEY exists as GitHub repo secret"
-      echo "  → GitHub secrets are also write-only."
-      echo "  → The CI workflow already has it — local needs a copy."
-    fi
-  fi
-
-  echo ""
-  read -rp "Paste your ANTHROPIC_API_KEY: " KEY
-fi
-
-# Last resort
-if [ -z "$KEY" ]; then
-  echo "No API key found in .env, environment, or ~/.anthropic/api_key"
-  read -rp "Paste your ANTHROPIC_API_KEY: " KEY
-fi
-
-if [ -z "$KEY" ]; then
-  echo "✗ No API key provided. Exiting."
-  exit 1
-fi
-
-# Write to .env (already in .gitignore)
-echo "ANTHROPIC_API_KEY=$KEY" > .env
-echo "✓ Written to .env"
+# ── 1. API Key — handled by field-claude-proxy ──────────────────────────────
+# No local ANTHROPIC_API_KEY needed. The apply agent routes through
+# field-claude-proxy.jeffunglesbee.workers.dev which holds the key.
+# Server-to-server auth via X-FIELD-Relay header (same pattern as FIELD cron).
+echo "✓ API key: routed through field-claude-proxy (no local key needed)"
 
 # ── 2. Build profile ────────────────────────────────────────────────────────
 mkdir -p data

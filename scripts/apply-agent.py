@@ -128,16 +128,40 @@ async def run_apply(url, dry_run=False, model='anthropic'):
         )
     )
 
-    # Select LLM based on available API key
+    # ── LLM routing ──────────────────────────────────────────────────────────
+    # FIELD already solved API key distribution: field-claude-proxy Worker
+    # holds ANTHROPIC_KEY and accepts server-to-server requests via
+    # X-FIELD-Relay header bypass. No local API key needed.
+    #
+    # Priority:
+    #   1. Local ANTHROPIC_API_KEY (if set — direct to Anthropic)
+    #   2. field-claude-proxy (no key needed — relay header auth)
+    #   3. GOOGLE_API_KEY (Gemini fallback)
+    PROXY_URL = 'https://field-claude-proxy.jeffunglesbee.workers.dev'
+    RELAY_HEADER = os.environ.get('FIELD_RELAY_SECRET', 'field-relay-cron-2026')
+
     if os.environ.get('ANTHROPIC_API_KEY'):
         from langchain_anthropic import ChatAnthropic
         llm = ChatAnthropic(model='claude-sonnet-4-20250514', timeout=60)
+        print("LLM: Anthropic direct")
     elif os.environ.get('GOOGLE_API_KEY'):
         from langchain_google_genai import ChatGoogleGenerativeAI
         llm = ChatGoogleGenerativeAI(model='gemini-2.0-flash')
+        print("LLM: Google Gemini")
     else:
-        print("ERROR: Set ANTHROPIC_API_KEY or GOOGLE_API_KEY")
-        sys.exit(1)
+        # Route through field-claude-proxy — no local key needed
+        from langchain_anthropic import ChatAnthropic
+        llm = ChatAnthropic(
+            model='claude-sonnet-4-20250514',
+            anthropic_api_key='proxy-auth',  # not used — proxy has its own key
+            base_url=PROXY_URL,
+            default_headers={
+                'X-FIELD-Relay': RELAY_HEADER,
+                'X-FIELD-Force-Claude': 'true',  # bypass Gemini — agent needs multi-turn
+            },
+            timeout=60,
+        )
+        print(f"LLM: Anthropic via field-claude-proxy")
 
     agent = Agent(
         task=task,
