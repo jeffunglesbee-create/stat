@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-12T23:56:06Z
-HEAD: bc4b435
-Smoke: 137/137
+Generated: 2026-06-13T05:08:58Z
+HEAD: 322ed8b
+Smoke: 142/142
 
 COMPANIES
   SEED total: 204
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  bc4b435 feat: iCIMS JSON-LD enrichment — extract title, description, location, salary from Jibe wrapper
+  322ed8b feat: auto-apply dispatch — UI button + Worker endpoint + GitHub API
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
