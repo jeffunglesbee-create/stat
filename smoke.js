@@ -272,6 +272,10 @@ assert('lca-refresh: uploads lca-by-employer.json to R2', read('../.github/workf
 assert('enrich: fetchICIMSJsonLd function defined', read('enrich.js').includes('async function fetchICIMSJsonLd(job)'));
 assert('enrich: iCIMS PATH A tries wrapper before in_iframe', read('enrich.js').includes('fetchICIMSJsonLd(job)'));
 assert('enrich: iCIMS JSON-LD extracts schema.org JobPosting', read('enrich.js').includes('ld+json'));
+// ── Apply agent ─────────────────────────────────────────────────────────────
+assert('apply-agent: script exists', (() => { try { fs.readFileSync(path.join(__dirname, 'scripts/apply-agent.py')); return true; } catch { return false; } })());
+assert('apply-agent: workflow exists', (() => { try { fs.readFileSync(path.join(__dirname, '.github/workflows/apply-agent.yml')); return true; } catch { return false; } })());
+assert('apply-agent: uses browser-use', fs.readFileSync(path.join(__dirname, 'scripts/apply-agent.py'), 'utf8').includes('from browser_use import Agent'));
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;

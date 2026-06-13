@@ -1,0 +1,104 @@
+# STAT Apply Agent — browser-use + LLM
+# Triggered by: outbox/.apply-{jobId} files or manual dispatch
+#
+# Architecture:
+#   STAT Worker detects a matched job → user clicks "Apply" in /ui →
+#   POST /apply creates outbox/.apply-{jobId} with job metadata →
+#   this workflow picks it up and runs the browser-use agent.
+#
+# The agent uses an LLM (Claude or Gemini) to navigate the career site
+# form dynamically — no per-ATS selectors needed.
+
+name: apply-agent
+on:
+  push:
+    paths: ['outbox/.apply-*']
+  workflow_dispatch:
+    inputs:
+      job_url:
+        description: 'Job application URL'
+        required: true
+      dry_run:
+        description: 'Fill form without submitting'
+        required: false
+        default: 'true'
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install browser-use playwright langchain-anthropic
+          playwright install chromium
+
+      - name: Prepare profile
+        run: |
+          mkdir -p data
+          # Profile from GitHub secret (JSON)
+          echo '${{ secrets.APPLICANT_PROFILE }}' > data/profile.json
+          # Resume from repo or secret
+          if [ -f "data/resume.pdf" ]; then
+            echo "Resume found in repo"
+          elif [ -n "${{ secrets.RESUME_BASE64 }}" ]; then
+            echo '${{ secrets.RESUME_BASE64 }}' | base64 -d > data/resume.pdf
+            echo "Resume decoded from secret"
+          else
+            echo "WARNING: No resume found"
+          fi
+
+      - name: Determine job URL
+        id: job
+        run: |
+          if [ -n "${{ inputs.job_url }}" ]; then
+            echo "url=${{ inputs.job_url }}" >> $GITHUB_OUTPUT
+            echo "dry_run=${{ inputs.dry_run }}" >> $GITHUB_OUTPUT
+          else
+            # Read from trigger file
+            TRIGGER=$(ls outbox/.apply-* 2>/dev/null | head -1)
+            if [ -n "$TRIGGER" ]; then
+              URL=$(cat "$TRIGGER" | head -1)
+              echo "url=$URL" >> $GITHUB_OUTPUT
+              echo "dry_run=true" >> $GITHUB_OUTPUT
+            else
+              echo "ERROR: No job URL found"
+              exit 1
+            fi
+          fi
+
+      - name: Run apply agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          APPLICANT_NAME: ${{ secrets.APPLICANT_NAME }}
+          APPLICANT_EMAIL: ${{ secrets.APPLICANT_EMAIL }}
+          APPLICANT_PHONE: ${{ secrets.APPLICANT_PHONE }}
+          APPLICANT_LOCATION: ${{ secrets.APPLICANT_LOCATION }}
+        run: |
+          DRY_FLAG=""
+          if [ "${{ steps.job.outputs.dry_run }}" = "true" ]; then
+            DRY_FLAG="--dry-run"
+          fi
+          python scripts/apply-agent.py \
+            --url "${{ steps.job.outputs.url }}" \
+            $DRY_FLAG \
+            2>&1 | tee /tmp/apply-result.txt
+
+      - name: Save result
+        if: always()
+        run: |
+          mkdir -p outbox
+          cp /tmp/apply-result.txt "outbox/apply-result-$(date -u +%Y%m%dT%H%M%SZ).txt" || true
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git add outbox/
+          git commit -m "ci: apply agent result [skip ci]" || true
+          git push origin main || true
