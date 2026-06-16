@@ -85,6 +85,12 @@ assert('ui: loading class defined + applied to Matches and Browse lists',
   && ui.includes("classList.add('loading')")
   && ui.includes("classList.remove('loading')"));
 
+assert('ui: tab bar mobile — overflow-x scroll + abbreviated labels',
+  ui.includes('overflow-x: auto')
+  && ui.includes('-webkit-overflow-scrolling: touch')
+  && ui.includes("content: 'Config'")
+  && ui.includes("content: 'Log'"));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 
