@@ -170,8 +170,7 @@ assert('platform-do: _fetchJobs passes this.env to fetchWorkday',
   platformSrc.includes('return fetchWorkday(company, this.env)'));
 
 // ─── /logs endpoint wiring ───────────────────────────────────────────────────
-assert('adapters: mapHiringCafeHit exported', read('adapters.js').includes('export function mapHiringCafeHit'));
-assert('index: mapHiringCafeHit imported', read('index.js').includes('mapHiringCafeHit'));
+assert('adapters: mapHiringCafeHit defined', read('adapters.js').includes('function mapHiringCafeHit'));
 assert('index: HC uses searchState SSR — fetchHiringCafe called in cron', read('index.js').includes('fetchHiringCafe(activeTerm, envType)'));
 assert('store: appendLog exported', read('store.js').includes('export async function appendLog'));
 assert('store: readLog exported', read('store.js').includes('export async function readLog'));

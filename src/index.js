@@ -27,7 +27,7 @@ import { SEED_COMPANIES, BATCH_WATCHLIST, KV, HIRINGCAFE, BATCH_POLLER, LEARNING
 import { bootstrapSalaryDO, enrichJobWithSalary } from './salary.js';
 import { applyMarylandScore } from './maryland.js';
 import { enrichDescriptions } from './enrich.js';
-import { fetchHiringCafe, fetchHiringCafeBR, mapHiringCafeHit, fetchHcDescription } from './adapters.js';
+import { fetchHiringCafe } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { scoreBatch, companyAwarePriority } from './fit.js';
 import puppeteer from '@cloudflare/puppeteer';
