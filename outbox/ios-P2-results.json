@@ -1,0 +1,90 @@
+{
+  "device": "iPhone 16",
+  "deviceId": "P2",
+  "platform": "ios-safari",
+  "tier": "phone",
+  "timestamp": "2026-06-16T17:14:18.679Z",
+  "dataReady": true,
+  "total": 10,
+  "passed": 2,
+  "failed": 8,
+  "assertions": [
+    {
+      "id": "#1",
+      "name": "no uncaught JS errors",
+      "pass": true,
+      "actual": "clean"
+    },
+    {
+      "id": "#2",
+      "name": "Matches tab is default active",
+      "pass": false,
+      "actual": "companies"
+    },
+    {
+      "id": "#3",
+      "name": "Match cards render (or empty state shown)",
+      "pass": true,
+      "actual": "empty-state shown"
+    },
+    {
+      "id": "#4",
+      "name": "Tab bar horizontally scrollable or fits",
+      "pass": false,
+      "actual": {
+        "overflowX": "visible",
+        "scrollWidth": 604,
+        "clientWidth": 393
+      }
+    },
+    {
+      "id": "#5",
+      "name": "Loading class applies during fetch",
+      "pass": false,
+      "actual": {}
+    },
+    {
+      "id": "#6",
+      "name": "Browse card data-job attribute present in source",
+      "pass": false,
+      "actual": "neither found"
+    },
+    {
+      "id": "#7",
+      "name": "Search input exists and is interactive",
+      "pass": false,
+      "actual": {
+        "exists": true,
+        "visible": true,
+        "disabled": false,
+        "width": 0
+      }
+    },
+    {
+      "id": "#8",
+      "name": "Tab labels abbreviated below 480px",
+      "pass": false,
+      "actual": {
+        "configAfter": "none",
+        "logAfter": "none",
+        "configWidth": 131.84375,
+        "logWidth": 86.59375,
+        "viewportWidth": 393
+      }
+    },
+    {
+      "id": "#9",
+      "name": "Mobile operations panel exists and is visible",
+      "pass": false,
+      "actual": {
+        "exists": false
+      }
+    },
+    {
+      "id": "#10",
+      "name": "Mobile operations buttons meet 44px touch target",
+      "pass": false,
+      "actual": "no .mobile-ops buttons found"
+    }
+  ]
+}
