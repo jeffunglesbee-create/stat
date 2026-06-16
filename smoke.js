@@ -101,6 +101,9 @@ assert('ui: browseScoreCard uses data-job attribute (no double JSON.stringify)',
   && ui.includes('decodeURIComponent(btn.dataset.job)')
   && !ui.includes('JSON.stringify(JSON.stringify(job))'));
 
+assert('ui: review panel shows past-decision count footer',
+  ui.includes("api('/feedback/summary')") && ui.includes('past decision'));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 

@@ -1755,7 +1755,16 @@ async function toggleReview(jobId) {
       }
     }
 
-    // Cache the rendered HTML
+    // After streaming completes, append a footer showing how many past
+    // decisions inform this review — closes part of HANDOFF #7.
+    try {
+      const { ok: fbOk, data: fb } = await api('/feedback/summary');
+      if (fbOk && typeof fb?.total === 'number' && fb.total > 0) {
+        content.innerHTML += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--rule);font-size:10px;color:var(--dim)">Based on ${fb.total} past decision${fb.total === 1 ? '' : 's'}</div>`;
+      }
+    } catch { /* non-critical */ }
+
+    // Cache the rendered HTML (including the footer)
     reviewCache[jobId] = content.innerHTML;
   } catch (e) {
     content.textContent = '⚠ ' + e.message;
