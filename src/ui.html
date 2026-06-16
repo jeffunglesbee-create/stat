@@ -1396,6 +1396,15 @@ async function loadMatches() {
   if (!ok) return;
   matches = data.jobs ?? [];
   renderMatches();
+  updateMatchesTabBadge();
+}
+
+// Show "Matches (N)" on the tab when N > 0 — glanceable system health
+// without opening the tab. Especially valuable on mobile.
+function updateMatchesTabBadge() {
+  const btn = document.querySelector('.tab[data-tab="matches"]');
+  if (!btn) return;
+  btn.textContent = matches.length > 0 ? `Matches (${matches.length})` : 'Matches';
 }
 
 function renderMatches() {

@@ -69,6 +69,9 @@ assert('ui: default tab is Matches',
   ui.includes('tab active" data-tab="matches"')
   && ui.includes('tab-content active" id="tab-matches"'));
 
+assert('ui: Matches tab shows count badge',
+  ui.includes('updateMatchesTabBadge') && ui.includes('Matches (${matches.length})'));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 
