@@ -101,7 +101,7 @@ export async function fetchGreenhouse(company) {
       atsSource:   'greenhouse',
       description: j.content ?? '', // returned when ?content=true
     }));
-  } catch { return []; }
+  } catch (e) { console.warn('[STAT greenhouse]', company.token, 'fetch failed:', e.message); return []; }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -131,7 +131,7 @@ export async function fetchLever(company) {
       postedAt:    j.createdAt ? new Date(j.createdAt).toISOString() : null,
       atsSource:   'lever',
     }));
-  } catch { return []; }
+  } catch (e) { console.warn('[STAT lever]', company.token, 'fetch failed:', e.message); return []; }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ export async function fetchAshby(company) {
       postedAt:    j.publishedAt ?? null,
       atsSource:   'ashby',
     }));
-  } catch { return []; }
+  } catch (e) { console.warn('[STAT ashby]', company.token, 'fetch failed:', e.message); return []; }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -339,7 +339,7 @@ export async function fetchICIMS(company) {
       });
     });
 
-  } catch { return []; }
+  } catch (e) { console.warn('[STAT icims]', company.url, 'fetch failed:', e.message); return []; }
 }
 
 
@@ -442,7 +442,7 @@ export async function fetchSuccessFactors(company) {
         description,           // FULL HTML description — no second-pass fetch needed!
       });
     });
-  } catch { return []; }
+  } catch (e) { console.warn('[STAT successfactors]', company.url, 'fetch failed:', e.message); return []; }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -759,7 +759,7 @@ export async function fetchHiringCafe(keyword, environment) {
     }
 
     return allHits.map(mapHiringCafeHit);
-  } catch { return []; }
+  } catch (e) { console.warn('[STAT hiringcafe] fetch failed:', e.message); return []; }
 }
 
 // ORACLE HCM (Fusion Cloud)
@@ -829,7 +829,7 @@ export async function fetchOracleHcm(company) {
     }
 
     return [];
-  } catch { return []; }
+  } catch (e) { console.warn('[STAT oracle_hcm]', company.url, 'fetch failed:', e.message); return []; }
 }
 
 function _mapOracleJob(j, company) {
@@ -952,7 +952,7 @@ export async function fetchInforHcm(company) {
     }
 
     return jobs;
-  } catch { return []; }
+  } catch (e) { console.warn('[STAT infor_hcm]', company.url, 'fetch failed:', e.message); return []; }
 }
 
 // SELECTMINDS (Oracle Taleo Social Sourcing)
@@ -1101,7 +1101,7 @@ export async function fetchSelectMinds(company, selectmindsCursor = null) {
     console.log(`[STAT SelectMinds] ${company.name}: ${jobs.length} active jobs, IDs ${effectiveStart}-${endId}, nextCursor=${nextCursor}`);
     return jobs;
 
-  } catch { return []; }
+  } catch (e) { console.warn('[STAT selectminds]', company.name, 'fetch failed:', e.message); return []; }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

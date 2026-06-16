@@ -121,7 +121,9 @@ async function markSeenDead(env, jobId, jobUrl) {
     entry.diedAt = new Date().toISOString();
     if (jobUrl && !entry.url) entry.url = jobUrl;
     await saveSeenIds(env, seenMap);
-  } catch {}
+  } catch (e) {
+    console.warn('[STAT seen] markSeenDead failed:', e.message);
+  }
 }
 
 // Check if a job is seen: returns null (not seen), 'seen' (live), or 'dead' (diedAt set).
@@ -1025,7 +1027,8 @@ async function maybeRunJobhiveScan(env) {
 
           await maybeAddOrPromoteCompany(env, {
             url: applyUrl, company, title, location, description,
-          }, { gate: 'strict' }).catch(() => {});
+          }, { gate: 'strict' }).catch(e =>
+            console.warn('[STAT jobhive] promote failed:', e.message));
         }
         if (chunk.done) break;
       }
