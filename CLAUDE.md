@@ -4,13 +4,15 @@
 A personal job intelligence system monitoring healthcare IT / Epic roles across 525+ companies and 8+ ATS platforms. Deployed on Cloudflare Workers with Durable Objects. Companion relay integration via field-relay-nba MCP.
 
 ## Key Files
-- `src/index.js` — Worker entry point, API routes, alarm scheduler
+- `src/index.js` — Worker entry point, cron handler, alarm scheduler, route dispatcher
+- `src/state.js` — JSON-wrapped state helpers (seen-ids, registry, profile, match-counts) over StateStoreDO
 - `src/ui.html` — single-file UI (Matches, Browse, Companies tabs)
 - `src/adapters.js` — ATS-specific fetch adapters (Workday, iCIMS, Greenhouse, Lever, Taleo, SelectMinds, Infor, Oracle HCM)
 - `src/enrich.js` — description enrichment pipeline (JSON-LD, plain fetch, R2 cache)
 - `src/store.js` — KV/R2 storage layer
 - `src/notify.js` — alert dispatch (Pushover, email)
-- `smoke.js` — 142+ structural assertions (blocks commits)
+- `src/routes/` — HTTP route handlers, one file per domain (see below)
+- `smoke.js` — 160+ structural assertions (blocks commits)
 - `scripts/apply-agent.py` — browser-use auto-apply agent
 - `scripts/lca-parse.js` — LCA salary data parser
 - `wrangler.toml` — Cloudflare config
@@ -18,6 +20,20 @@ A personal job intelligence system monitoring healthcare IT / Epic roles across 
 - `docs/STAT-SNAPSHOT.txt` — system inventory snapshot
 - `docs/STAT-COMMITMENTS.txt` — architectural commitments and constraints
 - `docs/STAT-CLAUDE-REVIEW.txt` — required reading before UI changes
+
+### Route structure (src/routes/)
+Each file exports a single `handleX(request, url, env)` that returns a `Response` (matched its route) or `null` (try next handler). `handleFetch()` in `src/index.js` runs them in order.
+
+- `routes/_utils.js` — shared `json()` helper
+- `routes/ui.js` — `/ui`, `/`
+- `routes/salary.js` — `/salary-status`, `/salary-refresh`, `/salary-load-r2`
+- `routes/operations.js` — `/trigger`, `/jobhive-scan`, `/jobhive-sample`, `/jobhive-manifest`, `/batch-status`, `/logs`, `/reset-seen`, `/reset-all`
+- `routes/companies.js` — `/companies` (GET+POST), `/detect-ats`, `/bootstrap`, `/platform/*`, `/harvest`
+- `routes/jobs.js` — `/jobs`, `/feedback`, `/feedback/summary`, `/dispatch-apply`, `/browse`, `/backfill-browse`, `/description/:id`
+- `routes/profile.js` — `/profile` (GET+POST+DELETE), `/score-job`, `/review`, `/extract-profile`, `/regenerate-keywords`, `/learning`
+- `routes/diagnostics.js` — `/workday-probe`, `/plain-fetch-test`, `/br-test`, `/html-probe`, `/hc-probe`
+
+Cron-flow helpers (`runHiringCafeScrape`, `bootstrapDOs`, `detectAts`, `generateAndStoreKeywords`, `fetchResumeFromOneDrive`, plus CSV/jobhive helpers) stay in `src/index.js` and are imported by route files via circular import — safe because those bindings are only used inside async handlers, not at module-init.
 
 ## Rules (non-negotiable)
 1. **DO NOT INVENT** — never fabricate job data, company info, salary numbers, or fit scores
