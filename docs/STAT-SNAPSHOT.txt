@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-16T19:21:23Z
-HEAD: 72f8e31
+Generated: 2026-06-16T19:25:46Z
+HEAD: 067a6ec
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  72f8e31 fix: tighten keyword matching — eliminate false positive alerts
+  067a6ec fix: simplify keyword prompt (Gemini 500 on verbose banned list)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
