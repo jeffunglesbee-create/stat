@@ -1,7 +1,7 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-13T05:08:58Z
-HEAD: 322ed8b
-Smoke: 142/142
+Generated: 2026-06-16T17:25:43Z
+HEAD: e9c52c7
+Smoke: 193/193
 
 COMPANIES
   SEED total: 204
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  322ed8b feat: auto-apply dispatch — UI button + Worker endpoint + GitHub API
+  e9c52c7 ci: trigger deploy — CC UI changes need deployment
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
