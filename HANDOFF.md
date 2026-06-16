@@ -1,9 +1,31 @@
-# STAT HANDOFF — 2026-06-16 (Session 14 END)
+# STAT HANDOFF — 2026-06-16 (Session 15 END)
 
 ## State
-HEAD: 313a445
+HEAD: 5d4216c
 Smoke: 142/142 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 15 — Optimization Audit + Execute
+
+Two-phase Claude Code session: audit then fix.
+
+**Audit** (committed on branch `claude/jolly-johnson-mq9llj`, merged to main):
+- `outbox/cc-optimization-audit.md` — P1/P2/P3 findings against full src/
+
+**Execute** — 9 commits on main:
+1. 956bf2e — remove 12 unreachable smoke assertions (post-exit dead code)
+2. 54c3fed — batch.js customKeywords undeclared → restores BatchPollerDO alerts
+3. 6deffd1 — remove dead NEEDS_BROWSER_FETCH branches in enrich.js
+4. 1ad24cc — remove dead STAT_KV binding (closes carry-forward #11)
+5. 4e46bbc — remove 3 dead HiringCafe exports (~130 lines)
+6. 545209f — AbortSignal.timeout on 10 adapter + 4 Gemini fetches
+7. ddda036 — archive 8 orphan research scripts to scripts/_archive/
+8. 789b65a — log adapter and dedup catch blocks (Rule 9)
+9. 5d4216c — P3 cleanup (parallel store reads, hoisted HC term filter)
+
+Filter-order alignment commit skipped — audit was wrong; batch.js and platform-do.js already agree, smoke already locks the invariant.
+
+Full execution notes: `outbox/cc-optimization-results.md`.
 
 ## This Session — Full Changelog
 
@@ -49,10 +71,12 @@ Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
 
 **Carry-forward:**
 - #7  Feedback loop UI visibility (item 5 in UI enhancement list)
-- #11 STAT_KV dead binding — wrangler.toml 3-line cleanup
+- ~~#11 STAT_KV dead binding~~ — closed in commit 1ad24cc
 - SelectMinds cursor verification
 - Workday URL audit (121 companies)
 - UI enhancement list (17 items) — Drive: 1mrzi1SjZ90Q2kfr6l-9dhdEbedSrOjz5y0s1nwIfsSQ
+- handleFetch() router extraction (deferred from S15 audit — TYPE C)
+- stripHtml() helper upgrade + inline call-site dedup (deferred from S15)
 
 **New from S14:**
 - Apply agent dry-run test — pending: `bash scripts/setup-apply.sh` then run against Risant Health 9/10
