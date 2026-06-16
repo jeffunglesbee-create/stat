@@ -1,0 +1,23 @@
+name: Regenerate keywords
+on:
+  workflow_dispatch:
+
+jobs:
+  regenerate:
+    name: Regenerate profile keywords
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /regenerate-keywords
+        run: |
+          RESPONSE=$(curl -s -w "\nHTTP:%{http_code}" -X POST \
+            "https://stat-job-watcher.jeffunglesbee.workers.dev/regenerate-keywords" \
+            -H "Content-Type: application/json" \
+            --max-time 15)
+          echo "$RESPONSE"
+          HTTP=$(echo "$RESPONSE" | grep "HTTP:" | cut -d: -f2)
+          if [ "$HTTP" = "200" ]; then
+            echo "✅ Keywords regenerated"
+          else
+            echo "⚠️ HTTP $HTTP"
+            exit 1
+          fi
