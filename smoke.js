@@ -289,6 +289,26 @@ assert('governance: .claude/settings.json exists', (() => { try { fs.readFileSyn
 assert('governance: session-start hook exists', (() => { try { fs.readFileSync(path.join(__dirname, '.claude/hooks/session-start.sh')); return true; } catch { return false; } })());
 assert('governance: HANDOFF.md exists', (() => { try { fs.readFileSync(path.join(__dirname, 'HANDOFF.md')); return true; } catch { return false; } })());
 
+// ── Route extraction structure ──────────────────────────────────────────────
+// Verifies the handleFetch() router was split into per-domain files,
+// each exporting an async handler. Also asserts index.js stays trim.
+const ROUTE_DOMAINS = ['ui', 'salary', 'operations', 'companies', 'jobs', 'profile', 'diagnostics'];
+for (const d of ROUTE_DOMAINS) {
+  assert(`routes/${d}: file exists`, (() => {
+    try { fs.readFileSync(path.join(SRC, `routes/${d}.js`)); return true; } catch { return false; }
+  })());
+  assert(`routes/${d}: exports handler`,
+    read(`routes/${d}.js`).match(new RegExp(`export async function handle[A-Z]\\w*\\(request, url, env\\)`)) !== null);
+  assert(`index: imports handle${d[0].toUpperCase()}${d.slice(1)}`,
+    read('index.js').includes(`from './routes/${d}.js'`));
+}
+assert('index: line count under 1200',
+  read('index.js').split('\n').length < 1200);
+assert('routes/_utils.js: json() exported',
+  read('routes/_utils.js').includes('export function json('));
+assert('state.js: exists with seen-id helpers',
+  read('state.js').includes('export async function loadSeenIds'));
+
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
 const failed = results.filter(r => !r.ok);
