@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-16T19:25:46Z
-HEAD: 067a6ec
+Generated: 2026-06-16T19:31:37Z
+HEAD: f65a76b
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  067a6ec fix: simplify keyword prompt (Gemini 500 on verbose banned list)
+  f65a76b fix: simplify keyword prompt prohibition + bump maxOutputTokens
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
