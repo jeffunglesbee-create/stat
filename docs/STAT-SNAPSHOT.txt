@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-16T19:49:12Z
-HEAD: bf5550b
+Generated: 2026-06-16T23:13:00Z
+HEAD: 6461ec5
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  bf5550b fix: disable Gemini thinking for keyword gen + diagnostic
+  6461ec5 fix: keyword-gen maxOutputTokens 1000→4096, strip diagnostic _error return
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
