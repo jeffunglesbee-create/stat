@@ -1,3 +1,20 @@
+This is your first session on the STAT project. Before doing anything else, complete the full onboarding sequence:
+
+## Step 0 — Governance onboarding (do this FIRST, in order)
+
+1. Read CLAUDE.md — project rules, architecture, key files, deploy path, session protocol
+2. Read STANDARDS.md — development standards, session types, adapter checklist, enforcement rules
+3. Read HANDOFF.md — current HEAD, smoke count, open items, session history
+4. Read docs/STAT-COMMITMENTS.txt — architectural constraints you must not violate
+5. Read docs/STAT-CLAUDE-REVIEW.txt — required context before any UI changes
+6. Read docs/STAT-SNAPSHOT.txt — system inventory (routes, DOs, KV bindings, workflows)
+7. Run: node smoke.js — confirm baseline passes before any work
+8. Run: git log --oneline -10 — understand recent commit history
+
+Only after completing all 8 steps, proceed to the audit below.
+
+---
+
 Read CLAUDE.md and STANDARDS.md first. Then read HANDOFF.md for current state.
 
 SESSION START · Type: D (Audit) · Scope: Full codebase optimization analysis
