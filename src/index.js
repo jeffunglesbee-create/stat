@@ -34,6 +34,7 @@ import puppeteer from '@cloudflare/puppeteer';
 import { getStatStore, storeGet, storeSet, storeDel, saveRecentMatches, loadRecentMatches, loadUnmatchedJobs, saveUnmatchedJobs, appendLog, readLog, maybeAddOrPromoteCompany } from './store.js';
 export { StateStoreDO } from './store.js';
 import UI_HTML from './ui.html';
+import { json } from './routes/_utils.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UI ETAG — computed once at Worker startup (module load), never at request time.
@@ -2712,12 +2713,7 @@ Return ONLY the JSON object, no markdown, no explanation.`;
   return json({ error: 'Not found' }, 404);
 }
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data, null, 2), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
+// json() helper now lives in src/routes/_utils.js — imported below.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORKER EXPORTS
