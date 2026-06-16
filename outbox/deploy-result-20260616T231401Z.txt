@@ -1,0 +1,28 @@
+
+ ⛅️ wrangler 4.98.0 (update available 4.101.0)
+──────────────────────────────────────────────
+Total Upload: 1105.07 KiB / gzip: 228.64 KiB
+Worker Startup Time: 29 ms
+Your Worker has access to the following bindings:
+Binding                                        Resource            
+env.GREENHOUSE_DO (GreenhouseDO)               Durable Object      
+env.LEVER_DO (LeverDO)                         Durable Object      
+env.ASHBY_DO (AshbyDO)                         Durable Object      
+env.WORKDAY_DO (WorkdayDO)                     Durable Object      
+env.ICIMS_DO (IcimsDO)                         Durable Object      
+env.SUCCESSFACTORS_DO (SuccessFactorsDO)       Durable Object      
+env.TALEO_DO (TaleoDO)                         Durable Object      
+env.ORACLE_HCM_DO (OracleHcmDO)                Durable Object      
+env.INFOR_HCM_DO (InforHcmDO)                  Durable Object      
+env.SELECTMINDS_DO (SelectMindsDO)             Durable Object      
+env.BATCH_POLLER (BatchPollerDO)               Durable Object      
+env.SALARY_INFERENCE (SalaryInferenceDO)       Durable Object      
+env.STATE_STORE (StateStoreDO)                 Durable Object      
+env.STAT_R2 (stat-salary-cache)                R2 Bucket           
+env.MYBROWSER                                  Browser Run         
+
+Uploaded stat-job-watcher (2.49 sec)
+Deployed stat-job-watcher triggers (0.70 sec)
+  https://stat-job-watcher.jeffunglesbee.workers.dev
+  schedule: * * * * *
+Current Version ID: 22b3f4fb-32ce-4a7a-8287-dcf8872b9893
