@@ -65,6 +65,10 @@ assert("routes/jobs: /backfill-browse endpoint present",
 // ─── ui.html ─────────────────────────────────────────────────────────────────
 const ui = read('ui.html');
 
+assert('ui: default tab is Matches',
+  ui.includes('tab active" data-tab="matches"')
+  && ui.includes('tab-content active" id="tab-matches"'));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 
