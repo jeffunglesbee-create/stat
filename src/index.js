@@ -182,7 +182,7 @@ Max 15 per category. All lowercase. Every term must be healthcare/Epic-specific.
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 1000, temperature: 0.1 },
+          generationConfig: { maxOutputTokens: 4096, temperature: 0.1 },
         }),
         signal: AbortSignal.timeout(8000),
       }
@@ -206,8 +206,8 @@ Max 15 per category. All lowercase. Every term must be healthcare/Epic-specific.
       keywords.adjacent?.length, 'adjacent');
     return keywords;
   } catch (e) {
-    console.warn('[STAT keywords] Generation failed:', e.message, e.stack?.slice(0, 200));
-    return { _error: e.message };
+    console.warn('[STAT keywords] Generation failed:', e.message);
+    return null;
   }
 }
 
