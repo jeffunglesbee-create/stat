@@ -1049,6 +1049,17 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── Global error catcher — surfaces uncaught errors for cross-engine tests
+// (tests/stat-viewport.js reads window._statErrors). Also useful for
+// production diagnostics — anything that hits onerror sits here for review.
+window._statErrors = [];
+window.onerror = function (msg, src, line, col, err) {
+  window._statErrors.push({ msg: String(msg), src, line, col, stack: err?.stack });
+};
+window.addEventListener('unhandledrejection', (e) => {
+  window._statErrors.push({ msg: 'unhandledrejection: ' + (e.reason?.message || e.reason), stack: e.reason?.stack });
+});
+
 // ─── Config — set this after: wrangler deploy ────────────────────────────────
 const WORKER_URL = window.STAT_WORKER_URL || window.location.origin;
 // const WORKER_URL = 'http://localhost:8787'; // wrangler dev

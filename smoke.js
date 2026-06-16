@@ -115,6 +115,11 @@ assert('ui: backfill button labeled as recovery tool (Rule 11)',
   ui.includes('Recovery: Rebuild Browse')
   && !ui.includes('>Backfill Browse tab<'));
 
+assert('ui: global error catcher present (cross-engine tests rely on it)',
+  ui.includes('window._statErrors')
+  && ui.includes('window.onerror')
+  && ui.includes('unhandledrejection'));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 
