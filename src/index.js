@@ -163,19 +163,22 @@ PROFILE:
 - Target roles: ${(profile.targetRoles || []).join(', ')}
 
 Generate at THREE levels:
-1. EXACT: phrases verbatim in Epic/EHR job titles (e.g. "epic ambulatory analyst")
-2. BROAD: single words strongly indicating relevance (e.g. "ambulatory", "cogito", "clarity")
-3. ADJACENT: related roles this person could pivot to (e.g. "clinical informatics", "application coordinator")
+1. EXACT: multi-word phrases found in Epic/EHR job titles or descriptions (e.g. "epic ambulatory analyst", "epic application coordinator"). Must contain an Epic/EHR qualifier.
+2. BROAD: single words that are SPECIFIC to healthcare IT / Epic ecosystem ONLY (e.g. "ambulatory", "cogito", "clarity", "cadence", "willow", "radiant"). NEVER include generic job terms that appear in non-healthcare roles.
+3. ADJACENT: related healthcare IT roles this person could pivot to (e.g. "clinical informatics analyst", "health informatics specialist")
 
-IMPORTANT: also include certification-opportunity signals in EXACT:
+CRITICAL — NEVER generate these generic terms in any category:
+- "analyst", "data", "engineer", "consultant", "coordinator", "specialist", "manager", "lead", "director", "senior", "strategy", "solutions", "marketing", "sales", "product", "revenue", "growth", "development", "project", "program", "operations", "support", "technical", "software", "application", "system", "integration", "optimization", "implementation", "configuration", "testing", "training", "data analysis", "workflow", "project management"
+These match thousands of non-healthcare jobs and produce false alerts.
+
+ALSO include certification-opportunity signals in EXACT:
 - "within epic", "epic certification", "epic training", "epic go-live", "epic build"
-- These appear in JOB DESCRIPTIONS (not titles) and signal employers who sponsor certification
-- Epic certification costs $1,000-$3,000/module — sponsored roles are extremely high value
+- These appear in JOB DESCRIPTIONS and signal employers who sponsor certification
 
 Return ONLY JSON, no markdown:
 {"exact":["phrase1","phrase2"],"broad":["word1","word2"],"adjacent":["phrase1","phrase2"]}
 
-Max 20 per category. All lowercase.`;
+Max 20 per category. All lowercase. Every term must be healthcare/Epic-specific.`;
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${env.GEMINI_KEY}`,

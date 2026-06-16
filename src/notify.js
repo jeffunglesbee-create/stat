@@ -60,10 +60,21 @@ export function matchJob(job, customKeywords = null) {
         return { group: WATCH_GROUPS[0], priority: 1, label: 'Epic · Profile Match', matchedKw: kw, source: 'profile' };
       }
     }
-    // Check broad single words (good signal, lower confidence)
+    // Check broad single words — REQUIRE healthcare co-occurrence.
+    // Broad terms like "analyst" or "data" are too generic without a healthcare signal.
+    // The haystack must also contain a health system or consulting hint to fire P1.
+    const healthHints = [
+      ...(WATCH_GROUPS[0].companyFilter?.health_system_hints || []),
+      ...(WATCH_GROUPS[0].companyFilter?.consulting_hints || []),
+      'epic', 'ehr', 'electronic health record', 'emr', 'clinical',
+    ];
+    const hasHealthSignal = healthHints.some(h => haystack.includes(h.toLowerCase()));
     for (const kw of (customKeywords.broad || [])) {
       if (haystack.includes(kw.toLowerCase())) {
-        return { group: WATCH_GROUPS[0], priority: 1, label: 'Epic · Profile Match', matchedKw: kw, source: 'profile' };
+        if (hasHealthSignal) {
+          return { group: WATCH_GROUPS[0], priority: 1, label: 'Epic · Profile Match', matchedKw: kw, source: 'profile' };
+        }
+        // No healthcare signal — skip silently (don't alert on generic matches)
       }
     }
     // Adjacent roles — P2 priority
