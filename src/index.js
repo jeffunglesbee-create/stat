@@ -284,6 +284,7 @@ Max 20 per category. All lowercase.`;
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { maxOutputTokens: 600, temperature: 0.1 },
         }),
+        signal: AbortSignal.timeout(8000),
       }
     );
     const data = await res.json();
@@ -394,6 +395,7 @@ Return ONLY the JSON object, no markdown, no explanation.`;
         contents: [{ parts: [{ text: resumeText.slice(0, 8000) }] }],
         generationConfig: { maxOutputTokens: 800, temperature: 0.1 },
       }),
+      signal: AbortSignal.timeout(8000),
     });
     const geminiData = await geminiRes.json();
     const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -1887,6 +1889,7 @@ Score this candidate profile against the job description. Return ONLY valid JSON
           contents: [{ parts: [{ text: userText }] }],
           generationConfig: { maxOutputTokens: 600, temperature: 0.2 },
         }),
+        signal: AbortSignal.timeout(8000),
       });
       const geminiData = await geminiRes.json();
       const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -2057,6 +2060,7 @@ Return ONLY the JSON object, no markdown, no explanation.`;
           contents: [{ parts: [{ text: resumeText }] }],
           generationConfig: { maxOutputTokens: 800, temperature: 0.1 },
         }),
+        signal: AbortSignal.timeout(8000),
       });
       const geminiData = await geminiRes.json();
       const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';

@@ -76,10 +76,12 @@ function makeJob(fields) {
 // Public API — no auth required
 // https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true
 // ─────────────────────────────────────────────────────────────────────────────
+const ADAPTER_TIMEOUT_MS = 5000;
+
 export async function fetchGreenhouse(company) {
   const url = `https://boards-api.greenhouse.io/v1/boards/${company.token}/jobs?content=true`;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': UA } });
+    const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS) });
     if (!res.ok) return [];
     const data = await res.json();
     const jobs = data.jobs ?? [];
@@ -110,7 +112,7 @@ export async function fetchGreenhouse(company) {
 export async function fetchLever(company) {
   const url = `https://api.lever.co/v0/postings/${company.token}?mode=json&limit=250`;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': UA } });
+    const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS) });
     if (!res.ok) return [];
     const jobs = await res.json();
     if (!Array.isArray(jobs)) return [];
@@ -140,7 +142,7 @@ export async function fetchLever(company) {
 export async function fetchAshby(company) {
   const url = `https://api.ashbyhq.com/posting-api/job-board/${company.token}?includeCompensation=true`;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': UA } });
+    const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS) });
     if (!res.ok) return [];
     const data = await res.json();
     const jobs = data.jobs ?? [];
@@ -197,6 +199,7 @@ export async function fetchWorkday(company, env) {
           'Accept-Language': 'en-US,en;q=0.9',
         },
         redirect: 'follow',
+        signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
       });
       if (!res.ok) break;
       const html = await res.text();
@@ -296,6 +299,7 @@ export async function fetchICIMS(company) {
         'Cache-Control':   'no-cache',
       },
       redirect: 'follow',
+      signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
     });
 
     if (!res.ok) return [];
@@ -372,6 +376,7 @@ export async function fetchSuccessFactors(company) {
   try {
     const res = await fetch(company.url, {
       headers: { 'User-Agent': UA, 'Accept': 'text/xml,application/xml,*/*;q=0.9' },
+      signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
     });
     if (!res.ok) return [];
     const xml = await res.text();
@@ -534,6 +539,7 @@ export async function fetchTaleo(company, env) {
         const res = await fetch(detailUrl, {
           headers: { 'User-Agent': UA, 'Accept': 'text/html' },
           redirect: 'follow',
+          signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
         });
         if (!res.ok) continue;
         const html = await res.text();
@@ -718,6 +724,7 @@ async function fetchHcPage(keyword, workplaceType, page = 0) {
   const url = `https://hiring.cafe/?searchState=${encodeURIComponent(searchState)}`;
   const res = await fetch(url, {
     headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*' },
+    signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
   });
   if (!res.ok) return null;
   const html = await res.text();
@@ -782,6 +789,7 @@ export async function fetchOracleHcm(company) {
   try {
     const res = await fetch(company.url, {
       headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Accept-Language': 'en-US,en;q=0.9' },
+      signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
     });
     if (!res.ok) return [];
     const html = await res.text();
@@ -881,6 +889,7 @@ export async function fetchInforHcm(company) {
   try {
     const res = await fetch(company.url, {
       headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Accept-Language': 'en-US,en;q=0.9' },
+      signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
     });
     if (!res.ok) return [];
     const html = await res.text();
@@ -1018,6 +1027,7 @@ export async function fetchSelectMinds(company, selectmindsCursor = null) {
         const res = await fetch(`${base.replace(/\/utmb$/, '')}/jobs/${id}`, {
           headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*' },
           redirect: 'follow',
+          signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
         });
         if (res.status === 404) continue;
         if (!res.ok) continue;
