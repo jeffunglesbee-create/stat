@@ -99,7 +99,7 @@ assert('adapters: SF description cleaned via descRaw',
   read('adapters.js').includes('descRaw'));
 assert('index: maybeRunJobhiveScan defined', read('index.js').includes('function maybeRunJobhiveScan'));
 assert('index: maybeRunJobhiveScan called in cron', read('index.js').includes('await maybeRunJobhiveScan(env)'));
-assert('index: /jobhive-scan endpoint present', read('index.js').includes("pathname === '/jobhive-scan'"));
+assert('routes/operations: /jobhive-scan endpoint present', read('routes/operations.js').includes("pathname === '/jobhive-scan'"));
 assert('index: JOBHIVE_EPIC_TERMS defined with module names', read('index.js').includes('JOBHIVE_EPIC_TERMS') && read('index.js').includes('epic ambulatory'));
 assert('index: matchesEpicTerms searches title and description', read('index.js').includes('matchesEpicTerms(haystack)'));
 assert('index: splitCSVRows quote-aware parser defined', read('index.js').includes('function splitCSVRows'));
@@ -175,7 +175,7 @@ assert('index: HC uses searchState SSR — fetchHiringCafe called in cron', read
 assert('store: appendLog exported', read('store.js').includes('export async function appendLog'));
 assert('store: readLog exported', read('store.js').includes('export async function readLog'));
 assert('index: readLog imported', read('index.js').includes('readLog'));
-assert('index: /logs endpoint present', read('index.js').includes("pathname === '/logs'"));
+assert('routes/operations: /logs endpoint present', read('routes/operations.js').includes("pathname === '/logs'"));
 assert('index: /detect-ats endpoint present', read('index.js').includes("pathname === '/detect-ats'"));
 assert('notify: passesEnvFilter has geo gate', read('notify.js').includes('isNonUsLocation'));
 assert('notify: NON_US_COUNTRIES list defined', read('notify.js').includes('NON_US_COUNTRIES'));
