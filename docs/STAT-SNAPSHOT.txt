@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-16T17:59:18Z
-HEAD: 6af3704
+Generated: 2026-06-16T18:28:09Z
+HEAD: 092d0ba
 Smoke: 193/193
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  6af3704 ci: trigger deploy
+  092d0ba fix: remove shell comment from _utils.js (broke esbuild)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
