@@ -8,4 +8,3 @@ export function json(data, status = 200) {
     headers: { 'Content-Type': 'application/json' },
   });
 }
-# deploy trigger 2026-06-16T17:25:29Z
