@@ -75,6 +75,11 @@ assert('ui: Matches tab shows count badge',
 assert('ui: Browse filter label is dynamic (Rule 15)',
   !ui.includes("['remote/hybrid', 'no keyword match']"));
 
+assert('ui: Browse ATS dropdown covers all polled platforms',
+  ui.includes('<option value="oracle_hcm">')
+  && ui.includes('<option value="infor_hcm">')
+  && ui.includes('<option value="selectminds">'));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 
