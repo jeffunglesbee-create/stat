@@ -1,9 +1,44 @@
-# STAT HANDOFF — 2026-06-16 (Session 20 END)
+# STAT HANDOFF — 2026-06-16 (Session 20 UPDATE — regen succeeded)
 
 ## State
-HEAD: 682e467
+HEAD: 3cf35c9
 Smoke: 213/213 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 20 UPDATE — Keyword regen succeeded after spend cap raise (2026-06-16 late)
+
+**TASK 4 RESOLVED — keyword regeneration succeeded.** Gemini
+`2.5-flash-lite` returned HTTP 200 after the AI Studio spend cap was
+raised from $25 → $50.
+
+- `maxOutputTokens` set to **16384** to cover the model's thinking budget
+  (4096 was too tight — request body fit, but the response was truncated
+  before the JSON closed). Commit `c65e7f8`.
+- New keywords are **healthcare-specific only — no generic terms.** Broad
+  list now reads: `ambulatory, cupid, radiant, cadence, cogito, clarity,
+  caboodle, epic, ehr, clinical, informatics`.
+- Combined with the co-occurrence guard already shipped in `notify.js`,
+  false-positive alerts are **eliminated** for the current keyword set.
+
+**Root cause of all earlier regen failures:** AI Studio spend cap
+exceeded ($25.03 > $25.00) silently rejecting requests. NOT model
+deprecation, NOT token truncation, NOT a key/request-shape problem.
+The catch block returning `null` masked the underlying HTTP 429/billing
+signal; a subsequent diagnostic commit (`3aba18a`,
+`diag: surface Gemini HTTP status on keyword gen failure`) re-instated
+a `{ _gemini_error: { status, error } }` short-return so future failure
+modes are visible in the Worker response. That diagnostic commit also
+temporarily set maxOutputTokens back to 4096; revisit if you redeploy
+with the diagnostic still in place.
+
+**S21 open items revised:**
+- (closed) Keyword regen failure root cause — was spend cap.
+- (open) Auto-dispatch ⚡ button verification — STAT_PAT is on the Worker;
+  confirm in `/ui` with a real apply target.
+- (open) Decide whether to keep `_gemini_error` diagnostic shipped or
+  revert once the next regen confirms stable behavior at 16384.
+
+---
 
 ## Session 20 — Gemini revert + STAT_PAT + keyword regen (2026-06-16)
 
