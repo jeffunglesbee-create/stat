@@ -1,9 +1,35 @@
-# STAT HANDOFF — 2026-06-16 (Session 16 END)
+# STAT HANDOFF — 2026-06-16 (Session 17 END)
 
 ## State
-HEAD: 448f23e
-Smoke: 162/162 ✅
+HEAD: 960fae8
+Smoke: 184/184 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 17 — UI enhancements (mobile + desktop)
+
+12 commits executing `outbox/cc-prompt-ui-enhancements.md`:
+1. 1cf2afb — default tab → Matches (#1 daily friction)
+2. 8c348ec — match count badge on Matches tab
+3. 33e5ee2 — Browse filter label dynamic (Rule 15)
+4. 952099c — Oracle HCM, Infor HCM, SelectMinds added to Browse dropdown
+5. 6889c55 — loading state on Matches/Browse (mobile cellular UX)
+6. af030c1 — tab bar mobile: overflow scroll + abbreviated labels at ≤480px
+7. 2200552 — collapsible mobile operations drawer at ≤680px
+8. b060382 — browseScoreCard data-job attribute (fragile JSON fix)
+9. 2ae82d4 — review panel shows past-decision count
+10. 5ad1622 — AbortController on search debounce
+11. 68dc967 — Config tab: honest time-aware text replaces stale interval table
+12. 960fae8 — backfill button relabeled "Recovery: Rebuild Browse" (Rule 11)
+
+Items deferred per prompt: Browse Claude Review (depends on #8 wiring,
+follow-up session), Resume drag-and-drop (desktop-only). Items skipped:
+Activity Log server logs, confirm → inline, renderDoStatus heartbeat.
+
+Full execution notes: `outbox/cc-ui-results.md`.
+
+---
+
+## Previous: Session 16 — stripHtml consolidation + handleFetch router extraction
 
 ## Session 16 — stripHtml consolidation + handleFetch router extraction
 
