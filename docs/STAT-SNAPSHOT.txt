@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-16T19:43:55Z
-HEAD: 332175a
+Generated: 2026-06-16T19:46:24Z
+HEAD: db841c8
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  332175a diag: surface Gemini error detail in keyword regen response
+  db841c8 fix: bump Gemini maxOutputTokens to 4096 (3.1 thinking budget)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
