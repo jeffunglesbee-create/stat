@@ -300,18 +300,3 @@ if (failed.length > 0) {
   console.log('\nAll assertions passed.\n');
   process.exit(0);
 }
-// ── R2 salary + description architecture ──────────────────────────────────
-assert('wrangler: R2 bucket bound as STAT_R2', read('../wrangler.toml').includes('binding = "STAT_R2"'));
-assert('salary: R2 helper _r2Get defined', read('salary.js').includes('async _r2Get(key)'));
-assert('salary: R2 helper _r2Put defined', read('salary.js').includes('async _r2Put(key'));
-assert('salary: _queryLCAExact uses R2 L1 cache', read('salary.js').includes('this._r2Cache.lca_employer'));
-assert('salary: _queryBLS uses R2 L1 cache', read('salary.js').includes('this._r2Cache.bls'));
-assert('salary: _refreshLCA writes to R2', read('salary.js').includes("_r2Put('lca-by-employer.json'"));
-assert('salary: _refreshBLS writes to R2', read('salary.js').includes("_r2Put('bls-wages.json'"));
-assert('enrich: R2 description cache helper defined', read('enrich.js').includes('cacheDescriptionInR2'));
-assert('enrich: plain fetch writes to R2', read('enrich.js').includes('cacheDescriptionInR2(env, job.id, desc)'));
-assert('index: /description/:jobId endpoint present', read('index.js').includes("startsWith('/description/')"));
-assert('index: description served from R2', read('index.js').includes("STAT_R2.get(`desc/${jobId}`)"));
-assert('platform-do: matches strip description before store', read('platform-do.js').includes('description: undefined'));
-assert('store: RECENT_MATCHES_MAX = 4000', read('store.js').includes('RECENT_MATCHES_MAX = 4000'));
-
