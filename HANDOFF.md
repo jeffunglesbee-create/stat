@@ -1,83 +1,72 @@
-# STAT HANDOFF — 2026-06-08 (Session 12 END)
+# STAT HANDOFF — 2026-06-16 (Session 14 END)
 
 ## State
-HEAD (code): daf0bf0
-HEAD (repo): ccf237b (auto-snapshot [skip ci])
-Smoke: 113/113 ✅
-CI: green (deploy run #131+)
+HEAD: 313a445
+Smoke: 142/142 ✅
+Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
 
 ## This Session — Full Changelog
 
-### Performance Fixes (6 commits shipped)
+### iCIMS JSON-LD Enrichment (bc4b435)
+- fetchICIMSJsonLd() in enrich.js — PATH A (preferred)
+- Extracts title, description, location, salary, datePosted from Jibe wrapper
+- PATH B fallback: existing in_iframe body text extraction
+- Confirmed on Mercy Medical Center (careers.stellamaris.org) job 13529
+- Smoke: 134 → 137
 
-- `608f1ec` fix: appendLog outside unmatchedJobs block — logs every alarm cycle
-  - Was inside `if (unmatchedJobs.length > 0)` due to missing brace
-  - Zero-match alarm cycles now logged; /logs and CI log-check fully visible
+### Apply Agent Prototype (fcd9884)
+- scripts/apply-agent.py — browser-use + LLM agent for universal form filling
+- .github/workflows/apply-agent.yml — CI trigger via outbox/.apply-* or manual dispatch
+- No per-ATS selectors — agent navigates any career site dynamically
+- Based on ApplyPilot (1k stars) pattern
+- Smoke: 137 → 140
 
-- `bab609c` perf: parallel alarm-start reads + promoCtx eliminates per-match StateStoreDO hops
-  - Promise.all of 5 keys at alarm start (was 3 sequential)
-  - promoCtx preloads match_counts + do_registry + companies; dirty flush after loop
-  - maybeAddOrPromoteCompany: ctx param, falls back to individual loads (backward compat)
-  - Impact: 43→13 StateStoreDO hops per alarm at 5 matches (70% reduction)
+### Auto-Apply Dispatch (322ed8b)
+- ⚡ Auto button on match cards in UI
+- POST /dispatch-apply Worker endpoint → GitHub Actions API
+- Requires STAT_PAT Worker secret: `wrangler secret put STAT_PAT`
+- Smoke: 140 → 142
 
-- `52e0a38` perf: parallelize total_polled + total_matches reads and writes at alarm end
-  - 4 sequential DO-local ops → 2 parallel pairs. ~2ms/alarm saved.
+### Setup Automation (da2ed12)
+- scripts/setup-apply.sh — automated profile setup, Jeffrey Unglesbee defaults
+- Screening question guidance tuned for 3+ years Epic Ambulatory experience
+- data/ added to .gitignore (profile + resume are sensitive)
 
-- `4bdb9c8` perf: parallelize salary cache refresh + seen sweep in cron handler
-  - maybeRunSeenSweep (up to 80s) no longer blocks jobhive scan
-  - Promise.all([maybeRefreshSalaryCaches, maybeRunSeenSweep]) after HC scrape
+### Zero-Config API Key (313a445)
+- Routes through field-claude-proxy — no local ANTHROPIC_API_KEY needed
+- X-FIELD-Relay header auth + X-FIELD-Force-Claude for agent routing
+- Proxy v8 deployed (3fe9dc8 in field-relay-nba)
 
-- `78358e8` perf: CHUNK_SIZE to config + Workday chunk=25 interval=3min
-  - CHUNK_SIZES exported from config.js; platform-do reads CHUNK_SIZES[this.ats] ?? 15
-  - Workday: chunkSize=25, floor=180s → sweep 32.3min → 14.5min (55% faster)
-
-- `daf0bf0` perf: ETag caching on /ui — 304 Not Modified on repeat opens
-  - 32-bit hash computed at module load; If-None-Match → 304 + no body
-  - ETag rotates on every deploy
-
-### Analysis Work (no additional code)
-
-- Two-pass performance audit (code-only → full session context)
-  - Pass 2 corrected: renderDoStatus uses Promise.all (audit 1 wrong)
-  - Pass 2 corrected: AbortController exists in codebase (audit 1 wrong)
-  - Full comparison documented in S12 session doc
-
-- Storage wall research: 2MB limit confirmed (SQLite-backed, not 128KB KV limit)
-  - HC jobs in unmatched_jobs have no description (absent from ssrHits) — safe today
-  - ADR written: docs/STAT-ADR-SQL-STORE.txt (667de42, [skip ci])
-  - Decision gate documented — do not build until trigger conditions met
-
-- Two-pass UI/UX audit → 17-item enhancement list
-  - Drive: 1mrzi1SjZ90Q2kfr6l-9dhdEbedSrOjz5y0s1nwIfsSQ
-  - Tier 1 (5 items, ~35 min combined): start here next UI session
+### Claude Code Governance
+- CLAUDE.md — project config, rules, session protocol, adapter reference
+- .claude/settings.json — SessionStart hook config
+- .claude/hooks/session-start.sh — auto smoke check + state print
 
 ## Smoke Count
-97 (S11) → 113 (S12) | +16 assertions across 6 commits
+134 (S13) → 142 (S14) | +8 assertions
 
 ## Open Items
 
-**Carry-forward from S11:**
-- #7  Feedback loop — UI visibility piece now spec'd (item 5 in UI list)
+**Carry-forward:**
+- #7  Feedback loop UI visibility (item 5 in UI enhancement list)
 - #11 STAT_KV dead binding — wrangler.toml 3-line cleanup
-- Tenet Oracle HCM — html_probe: eodr.fa.us2.oraclecloud.com
-- Avature UCSF — html_probe
-- Taleo tbe.taleo.net (Mount Sinai) — html_probe
-- SelectMinds cursor — verify totalMatches > 0 (reached ~2000-3000 by now)
-- Infor HCM — 7/8 tenants unverified
-
-**New from S12:**
+- SelectMinds cursor verification
+- Workday URL audit (121 companies)
 - UI enhancement list (17 items) — Drive: 1mrzi1SjZ90Q2kfr6l-9dhdEbedSrOjz5y0s1nwIfsSQ
-- StateStoreDO SQL ADR — docs/STAT-ADR-SQL-STORE.txt (deferred, trigger-gated)
-- Workday URL verification audit — 121 companies, none verified post-deploy (HIGH)
+
+**New from S14:**
+- Apply agent dry-run test — pending: `bash scripts/setup-apply.sh` then run against Risant Health 9/10
+- STAT_PAT Worker secret — `wrangler secret put STAT_PAT` for ⚡ Auto button
+- iCIMS JSON-LD verification — confirm JSON-LD present on *.icims.com domain (not just branded wrappers)
+- Cookie domain question — still unresolved (needed only for Phase 2 apply)
+- Apply agent Phase 2 — automated form submission (deferred, complex multi-step flow)
+
+## Drive Documents
+Session 14: (this session, chat-only)
+iCIMS Cookie & Apply Spec: 1D5VC5m2ESjT-eX9qBE8QRTQjfRF0cLMwumzYFjWQQ8Y
+UI Enhancements: 1mrzi1SjZ90Q2kfr6l-9dhdEbedSrOjz5y0s1nwIfsSQ
 
 ## How to Check STAT Status
-probe_relay_route('/stat/')                            → overview
-probe_relay_route('/stat/platform/selectminds/status') → cursor + totalMatches
-probe_relay_route('/stat/logs?limit=5')                → recent alarm activity
-stat_status MCP tool (once tool cache refreshes in new session)
-
-## Drive Document IDs
-Session 11: 1rpnrtEOxCem_EbMQ0pJ_nZHXcsW4tnz-
-Session 12: 1mvdDa3vKIcY7ks8ppTnKaTkEYFi_XG6XqV6Fw2BK8u0
-UI Enhancements: 1mrzi1SjZ90Q2kfr6l-9dhdEbedSrOjz5y0s1nwIfsSQ
-HANDOFF'
+stat_status MCP tool → overview (active DOs, companies, seen IDs)
+probe_relay_route('/stat/') → full status
+probe_relay_route('/stat/jobs?limit=5') → recent matches

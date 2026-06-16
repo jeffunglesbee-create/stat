@@ -278,6 +278,11 @@ assert('apply-agent: workflow exists', (() => { try { fs.readFileSync(path.join(
 assert('apply-agent: uses browser-use', fs.readFileSync(path.join(__dirname, 'scripts/apply-agent.py'), 'utf8').includes('from browser_use import Agent'));
 assert('apply-agent: dispatch endpoint in Worker', read('index.js').includes('/dispatch-apply'));
 assert('apply-agent: UI dispatchApply function', read('ui.html').includes('async function dispatchApply'));
+// ── Claude Code governance ──────────────────────────────────────────────────
+assert('governance: CLAUDE.md exists', (() => { try { fs.readFileSync(path.join(__dirname, 'CLAUDE.md')); return true; } catch { return false; } })());
+assert('governance: .claude/settings.json exists', (() => { try { fs.readFileSync(path.join(__dirname, '.claude/settings.json')); return true; } catch { return false; } })());
+assert('governance: session-start hook exists', (() => { try { fs.readFileSync(path.join(__dirname, '.claude/hooks/session-start.sh')); return true; } catch { return false; } })());
+assert('governance: HANDOFF.md exists', (() => { try { fs.readFileSync(path.join(__dirname, 'HANDOFF.md')); return true; } catch { return false; } })());
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;
