@@ -494,10 +494,6 @@ export async function fetchJobDescription(job, env) {
     return fetchPlainDescription(job);
   }
 
-  if (NEEDS_BROWSER_FETCH.has(job.atsSource)) {
-    return fetchBrowserDescription(job, env);
-  }
-
   return ''; // SuccessFactors — description already in XML feed (fetched in adapters.js)
 }
 
@@ -505,16 +501,11 @@ export async function fetchJobDescription(job, env) {
 // enrichDescriptions — batch enrich new matches before MD scoring
 //
 // Plain fetches: 3 concurrent, 200ms between batches
-// Browser fetches: 1 at a time (session reuse reduces overhead but
-//   concurrent browser sessions consume concurrency limit faster)
-// Both: non-blocking — failure returns '', job still alerts
+// Non-blocking — failure returns '', job still alerts
 // ─────────────────────────────────────────────────────────────────────────────
 export async function enrichDescriptions(matches, env) {
   const plain   = matches.filter(({ job }) =>
     !job.description && NEEDS_PLAIN_FETCH.has(job.atsSource) && job.url
-  );
-  const browser = matches.filter(({ job }) =>
-    !job.description && NEEDS_BROWSER_FETCH.has(job.atsSource) && job.url
   );
 
   // Plain fetches — fast, run 3 concurrent
@@ -532,17 +523,6 @@ export async function enrichDescriptions(matches, env) {
     if (i + CONCURRENCY < plain.length) {
       await new Promise(r => setTimeout(r, 200));
     }
-  }
-
-  // Browser fetches — sequential to manage session concurrency
-  for (const { job } of browser) {
-    const desc = await fetchBrowserDescription(job, env);
-    if (desc) {
-      job.description = desc;
-      cacheDescriptionInR2(env, job.id, desc).catch(() => {});
-    }
-    // Small gap between browser fetches
-    await new Promise(r => setTimeout(r, 500));
   }
 }
 
