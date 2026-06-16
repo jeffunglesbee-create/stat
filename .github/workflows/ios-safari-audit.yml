@@ -27,6 +27,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
 
       - uses: actions/setup-node@v4
         with:
@@ -119,10 +121,11 @@ jobs:
           DEVICE_UDID: ${{ env.DEVICE_UDID }}
           IOS_VERSION: ${{ env.IOS_VERSION }}
         run: |
-          set -o pipefail
           mkdir -p outbox
-          node tests/stat-viewport.js 2>outbox/ios-${{ matrix.device.id }}-stderr.log \
-            | tee outbox/ios-${{ matrix.device.id }}-results.json
+          node tests/stat-viewport.js \
+            >outbox/ios-${{ matrix.device.id }}-results.json \
+            2>outbox/ios-${{ matrix.device.id }}-stderr.log \
+            || echo "TEST_EXIT_CODE=$?" >> outbox/ios-${{ matrix.device.id }}-stderr.log
 
       - name: Screenshot
         if: always()
@@ -133,7 +136,18 @@ jobs:
 
       - name: Appium log (on failure)
         if: failure()
-        run: cat /tmp/appium.log | tail -80
+        run: |
+          tail -80 /tmp/appium.log >> outbox/ios-${{ matrix.device.id }}-stderr.log 2>/dev/null || true
+
+      - name: Push results to repo
+        if: always()
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git pull --rebase origin main || true
+          git add outbox/ios-${{ matrix.device.id }}-* 2>/dev/null || true
+          git commit -m "ci: iOS ${{ matrix.device.id }} viewport results [skip ci]" || true
+          git push origin main || true
 
       - name: Shutdown simulator
         if: always()
