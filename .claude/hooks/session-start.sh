@@ -2,7 +2,19 @@
 # STAT SessionStart hook — runs automatically at the start of every Claude Code session.
 # Prints project state, runs smoke, and reminds about governance docs.
 
+# Guard: only run if we're in the repo root
+if [ ! -f "CLAUDE.md" ]; then
+  echo "⏭ Skipping SessionStart hook (not in repo root)"
+  exit 0
+fi
+
 echo "🔧 STAT SessionStart hook running..."
+
+# Install deps if package.json exists
+if [ -f "package.json" ]; then
+  echo "📦 npm install..."
+  npm install --silent 2>&1 | tail -3
+fi
 
 # Print HANDOFF.md state
 echo ""
