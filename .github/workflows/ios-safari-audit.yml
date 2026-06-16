@@ -171,3 +171,18 @@ jobs:
             TOTAL=$(cat "$f" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('total',0))" 2>/dev/null || echo "?")
             echo "$DEVICE: $PASSED/$TOTAL passed"
           done
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+
+      - name: Push results to outbox
+        run: |
+          mkdir -p outbox/ios-results
+          cp results/ios-safari-*/*.json outbox/ios-results/ 2>/dev/null || true
+          cp results/ios-safari-*/*.log outbox/ios-results/ 2>/dev/null || true
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git add outbox/ios-results/
+          git commit -m "ci: iOS Safari viewport results [skip ci]" || true
+          git push origin main || true
