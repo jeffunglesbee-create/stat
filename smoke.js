@@ -111,6 +111,10 @@ assert('ui: config tab uses honest time-aware description, not stale interval ta
   ui.includes('time-aware')
   && !ui.includes('Greenhouse · Lever · Ashby</td><td style="color:var(--p3)">30 s'));
 
+assert('ui: backfill button labeled as recovery tool (Rule 11)',
+  ui.includes('Recovery: Rebuild Browse')
+  && !ui.includes('>Backfill Browse tab<'));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 
