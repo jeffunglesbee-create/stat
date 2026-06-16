@@ -164,6 +164,24 @@ assert('cross-engine: ios workflow runs tests/stat-viewport.js',
     } catch { return false; }
   })());
 
+assert('cross-engine: android-chrome-audit workflow exists', (() => {
+  try { fs.readFileSync(path.join(__dirname, '.github/workflows/android-chrome-audit.yml')); return true; } catch { return false; }
+})());
+assert('cross-engine: android workflow is workflow_dispatch only',
+  (() => {
+    try {
+      const wf = fs.readFileSync(path.join(__dirname, '.github/workflows/android-chrome-audit.yml'), 'utf8');
+      return wf.includes('on: workflow_dispatch') && !wf.includes('on:\n  push');
+    } catch { return false; }
+  })());
+assert('cross-engine: android workflow uses KVM-accelerated emulator runner',
+  (() => {
+    try {
+      const wf = fs.readFileSync(path.join(__dirname, '.github/workflows/android-chrome-audit.yml'), 'utf8');
+      return wf.includes('reactivecircus/android-emulator-runner') && wf.includes('Enable KVM');
+    } catch { return false; }
+  })());
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 

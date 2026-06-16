@@ -1,0 +1,125 @@
+# .github/workflows/android-chrome-audit.yml
+#
+# Runs tests/stat-viewport.js against real Android Chrome (UiAutomator2 +
+# Appium + WebDriverIO) on two emulators via the KVM-accelerated runner.
+# Manual dispatch only — real-device CI minutes are expensive.
+name: Android Chrome Viewport Audit
+
+on: workflow_dispatch
+
+jobs:
+  android-chrome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        device:
+          - name: "Pixel 7"
+            id: P1
+            api: 34
+            profile: pixel_7
+          - name: "Pixel Tablet"
+            id: T1
+            api: 34
+            profile: pixel_tablet
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install Appium + UiAutomator2
+        run: |
+          npm install -g appium@latest
+          appium driver install uiautomator2
+          npm install webdriverio@latest
+
+      - name: Prepare test script
+        run: |
+          cat > /tmp/run-android-test.sh << 'TESTSCRIPT'
+          #!/bin/bash
+          set -eo pipefail
+          echo "=== Device info ==="
+          adb devices
+          ANDROID_VER=$(adb shell getprop ro.build.version.release)
+          echo "Android $ANDROID_VER"
+
+          adb shell pm list packages | grep chrome || echo "WARNING: No chrome package"
+
+          appium --relaxed-security --log-level warn &
+          APPIUM_PID=$!
+
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:4723/status > /dev/null 2>&1; then
+              echo "Appium ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+          curl -s http://localhost:4723/status || echo "WARNING: Appium not responding"
+
+          mkdir -p outbox
+          DEVICE_ID="${DEVICE_ID}" \
+            node tests/stat-viewport.js \
+            2>outbox/android-${DEVICE_ID}-stderr.log \
+            > outbox/android-${DEVICE_ID}-results.json
+          EXIT_CODE=$?
+          cat outbox/android-${DEVICE_ID}-results.json
+
+          adb exec-out screencap -p > outbox/android-${DEVICE_ID}-screenshot.png || echo "screencap failed"
+
+          kill $APPIUM_PID 2>/dev/null || true
+          exit $EXIT_CODE
+          TESTSCRIPT
+          chmod +x /tmp/run-android-test.sh
+
+      - name: Run emulator + assertions
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.device.api }}
+          target: google_apis
+          arch: x86_64
+          profile: ${{ matrix.device.profile }}
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          script: DEVICE_ID=${{ matrix.device.id }} bash /tmp/run-android-test.sh
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-chrome-${{ matrix.device.id }}
+          path: outbox/android-${{ matrix.device.id }}-*
+
+  summary:
+    needs: android-chrome
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: results
+
+      - name: Summarize results
+        run: |
+          echo "# Android Chrome Viewport Audit Results"
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo ""
+          for f in results/android-chrome-*/android-*-results.json; do
+            [ -f "$f" ] || continue
+            echo "---"
+            DEVICE=$(cat "$f" | python3 -c "import json,sys; d=json.load(sys.stdin); print(f\"{d.get('deviceId','?')} — {d.get('device','?')}\")" 2>/dev/null || echo "parse error")
+            PASSED=$(cat "$f" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('passed',0))" 2>/dev/null || echo "?")
+            TOTAL=$(cat "$f" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('total',0))" 2>/dev/null || echo "?")
+            echo "$DEVICE: $PASSED/$TOTAL passed"
+          done
