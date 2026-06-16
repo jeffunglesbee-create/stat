@@ -84,6 +84,15 @@ export class BatchPollerDO {
       seenIds = raw ? new Set(JSON.parse(raw)) : new Set();
     } catch (e) { console.warn('[STAT batch] seenIds load failed (dedup may be incomplete):', e.message); seenIds = new Set(); }
 
+    // Load profile-generated custom keywords (optional — static list is fallback)
+    // Mirrors platform-do.js:137-140. Without this, matchJob() throws ReferenceError
+    // on every job and the per-company try/catch swallows it silently.
+    let customKeywords = null;
+    try {
+      const ckRaw = await storeGet(getStatStore(this.env), 'custom_keywords').catch(() => null);
+      if (ckRaw) customKeywords = JSON.parse(ckRaw).keywords ?? null;
+    } catch { /* non-fatal */ }
+
     const list  = BATCH_WATCHLIST;
     const chunk = list.slice(cursor, cursor + BATCH_POLLER.companies_per_cycle);
     const newMatches    = [];
