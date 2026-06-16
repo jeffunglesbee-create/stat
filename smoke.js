@@ -48,17 +48,19 @@ assert('batch: saveUnmatchedJobs called after loop',
 // ─── index.js ────────────────────────────────────────────────────────────────
 const idx = read('index.js');
 
-assert("index: /browse endpoint present",
-  idx.includes("pathname === '/browse'"));
+const jobsRoutes = read('routes/jobs.js');
 
-assert('index: loadUnmatchedJobs imported',
-  idx.includes('loadUnmatchedJobs'));
+assert("routes/jobs: /browse endpoint present",
+  jobsRoutes.includes("pathname === '/browse'"));
 
-assert('index: loadUnmatchedJobs called in handler',
-  idx.includes('await loadUnmatchedJobs('));
+assert('routes/jobs: loadUnmatchedJobs imported',
+  jobsRoutes.includes('loadUnmatchedJobs'));
 
-assert("index: /backfill-browse endpoint present",
-  idx.includes("pathname === '/backfill-browse'"));
+assert('routes/jobs: loadUnmatchedJobs called in handler',
+  jobsRoutes.includes('await loadUnmatchedJobs('));
+
+assert("routes/jobs: /backfill-browse endpoint present",
+  jobsRoutes.includes("pathname === '/backfill-browse'"));
 
 // ─── ui.html ─────────────────────────────────────────────────────────────────
 const ui = read('ui.html');
@@ -176,7 +178,7 @@ assert('store: appendLog exported', read('store.js').includes('export async func
 assert('store: readLog exported', read('store.js').includes('export async function readLog'));
 assert('index: readLog imported', read('index.js').includes('readLog'));
 assert('routes/operations: /logs endpoint present', read('routes/operations.js').includes("pathname === '/logs'"));
-assert('index: /detect-ats endpoint present', read('index.js').includes("pathname === '/detect-ats'"));
+assert('routes/companies: /detect-ats endpoint present', read('routes/companies.js').includes("pathname === '/detect-ats'"));
 assert('notify: passesEnvFilter has geo gate', read('notify.js').includes('isNonUsLocation'));
 assert('notify: NON_US_COUNTRIES list defined', read('notify.js').includes('NON_US_COUNTRIES'));
 assert('notify: NON_US_ISO set defined', read('notify.js').includes('NON_US_ISO'));
@@ -227,7 +229,7 @@ assert('config: Workday chunkSize is 25', read('config.js').includes('workday:  
 assert('platform-do: CHUNK_SIZE read from CHUNK_SIZES config', read('platform-do.js').includes('CHUNK_SIZES[this.ats] ?? 15'));
 assert('enrich: selectminds in NEEDS_PLAIN_FETCH', read('enrich.js').includes("'selectminds'"));
 assert('index: bootstrapDOs merges SEED_COMPANIES into stored list', read('index.js').includes('newFromSeed'));
-assert('index: PLATFORM_MAP includes selectminds', read('index.js').includes("selectminds: 'SELECTMINDS_DO'"));
+assert('routes/companies: PLATFORM_MAP includes selectminds', read('routes/companies.js').includes("selectminds: 'SELECTMINDS_DO'"));
 assert('state: loadSeenIds returns Map', read('state.js').includes('return new Map()'));
 assert('state: addToSeen defined', read('state.js').includes('function addToSeen('));
 assert('state: checkSeenStatus defined', read('state.js').includes('function checkSeenStatus('));
@@ -256,8 +258,8 @@ assert('salary: _refreshBLS uses correct OEUN series prefix', read('salary.js').
 assert('salary: LCA uses full 4-digit year URLs', read('salary.js').includes('FY2025_Q4.xlsx'));
 assert('enrich: R2 description cache helper defined', read('enrich.js').includes('cacheDescriptionInR2'));
 assert('enrich: plain fetch writes to R2', read('enrich.js').includes('cacheDescriptionInR2(env, job.id, desc)'));
-assert('index: /description/:jobId endpoint present', read('index.js').includes("startsWith('/description/')"));
-assert('index: description served from R2', read('index.js').includes("STAT_R2.get(`desc/${jobId}`)"));
+assert('routes/jobs: /description/:jobId endpoint present', read('routes/jobs.js').includes("startsWith('/description/')"));
+assert('routes/jobs: description served from R2', read('routes/jobs.js').includes("STAT_R2.get(`desc/${jobId}`)"));
 assert('platform-do: matches strip description before store', read('platform-do.js').includes('description: undefined'));
 assert('store: RECENT_MATCHES_MAX = 4000', read('store.js').includes('RECENT_MATCHES_MAX = 4000'));
 // ── LCA CI refresh workflow ───────────────────────────────────────────────────
@@ -279,7 +281,7 @@ assert('enrich: stripHtml handles script/style/entities',
 assert('apply-agent: script exists', (() => { try { fs.readFileSync(path.join(__dirname, 'scripts/apply-agent.py')); return true; } catch { return false; } })());
 assert('apply-agent: workflow exists', (() => { try { fs.readFileSync(path.join(__dirname, '.github/workflows/apply-agent.yml')); return true; } catch { return false; } })());
 assert('apply-agent: uses browser-use', fs.readFileSync(path.join(__dirname, 'scripts/apply-agent.py'), 'utf8').includes('from browser_use import Agent'));
-assert('apply-agent: dispatch endpoint in Worker', read('index.js').includes('/dispatch-apply'));
+assert('apply-agent: dispatch endpoint in Worker', read('routes/jobs.js').includes('/dispatch-apply'));
 assert('apply-agent: UI dispatchApply function', read('ui.html').includes('async function dispatchApply'));
 // ── Claude Code governance ──────────────────────────────────────────────────
 assert('governance: CLAUDE.md exists', (() => { try { fs.readFileSync(path.join(__dirname, 'CLAUDE.md')); return true; } catch { return false; } })());
