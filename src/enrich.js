@@ -188,14 +188,7 @@ async function fetchPlainDescription(job) {
     // iCIMS: extract from body text — no og:description on detail pages
     if (job.atsSource === 'icims') {
       // Strip scripts/styles, extract visible text
-      const bodyText = html
-        .replace(/<style[\s\S]*?<\/style>/gi, '')
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-        .replace(/&nbsp;/g, ' ').replace(/&#\d+;/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      const bodyText = stripHtml(html);
 
       // Skip navigation header — content starts after "Welcome page" or job title
       const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
@@ -221,13 +214,7 @@ async function fetchPlainDescription(job) {
           const inf = jobObj.job_information ?? {};
           const desc = inf.description ?? inf.descriptionHtml ?? '';
           if (desc && desc.length > 20) {
-            return desc
-              .replace(/<style[\s\S]*?<\/style>/gi, '')
-              .replace(/<script[\s\S]*?<\/script>/gi, '')
-              .replace(/<[^>]+>/g, ' ')
-              .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-              .replace(/&nbsp;/g, ' ').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
-              .replace(/\s+/g, ' ').trim();
+            return stripHtml(desc);
           }
         }
       } catch {}
@@ -292,12 +279,7 @@ async function fetchPlainDescription(job) {
       }
       // PATH 2: full body text extraction starting from description region
       // Oracle pre-renders full page including Qualifications and Job Info
-      const bodyText = html
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[\s\S]*?<\/style>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ')
-        .replace(/\s+/g, ' ').trim();
+      const bodyText = stripHtml(html);
       // Find start of actual job content (skip header nav)
       const jobStart = bodyText.search(/(?:What will you be doing|Job Description|Overview|Position Summary|Responsibilities)/i);
       if (jobStart > 0) {
@@ -339,12 +321,7 @@ async function fetchPlainDescription(job) {
         }
       }
       // PATH 2: full body text — Angular pre-renders full content for SEO
-      const bodyText = html
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[\s\S]*?<\/style>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
-        .replace(/\s+/g, ' ').trim();
+      const bodyText = stripHtml(html);
       // Find description content (starts after salary/location header)
       const descStart = bodyText.search(/(?:Summary|Description|Responsibilities|Job Description|About this role)/i);
       if (descStart > 0) {
@@ -422,12 +399,7 @@ async function fetchPlainDescription(job) {
       }
 
       // Fallback: body text starting after "Beginning of the main content"
-      const bodyText = html
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[\s\S]*?<\/style>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
-        .replace(/\s+/g, ' ').trim();
+      const bodyText = stripHtml(html);
       const mainIdx = bodyText.indexOf('Beginning of the main content');
       if (mainIdx > 0) {
         const extracted = bodyText.slice(mainIdx + 40, mainIdx + 4000).trim();
@@ -440,16 +412,13 @@ async function fetchPlainDescription(job) {
     // Body text after the job title heading contains the full description.
     // og:description is available but truncated (~200 chars). Use body text.
     if (job.atsSource === 'selectminds') {
-      // Strip scripts/styles/nav, extract text after the requisition number line
-      const bodyText = html
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[\s\S]*?<\/style>/gi, '')
-        .replace(/<nav[\s\S]*?<\/nav>/gi, '')
-        .replace(/<header[\s\S]*?<\/header>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-        .replace(/\s+/g, ' ').trim();
+      // Pre-strip nav/header blocks (not part of shared stripHtml — page-specific
+      // noise to keep out of the description), then stripHtml does the rest.
+      const bodyText = stripHtml(
+        html
+          .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+          .replace(/<header[\s\S]*?<\/header>/gi, '')
+      );
 
       // Find the description body: starts after "Requisition #" line
       const reqIdx = bodyText.search(/Requisition\s*#/i);
