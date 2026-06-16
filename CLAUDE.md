@@ -53,6 +53,14 @@ Cron-flow helpers (`runHiringCafeScrape`, `bootstrapDOs`, `detectAts`, `generate
 - Pipeline: smoke.js → wrangler deploy
 - `[skip ci]` in commit message skips ALL workflows
 
+## Workflow Automation
+- **Terminal work should be automated, not left as manual steps.**
+- `workflow_dispatch` workflows are triggered via GitHub API, not the Actions UI or `gh` CLI.
+- Pattern: `curl -X POST .../actions/workflows/{name}/dispatches -d '{"ref":"main"}'`
+- Both chat sessions (via bash_tool) and Claude Code (via bash) can trigger workflows.
+- Cross-engine test workflows (`ios-safari-audit.yml`, `android-chrome-audit.yml`) are dispatched after UI changes land.
+- Apply agent workflow (`apply-agent.yml`) is dispatched via the ⚡ Auto button in /ui or the `/dispatch-apply` Worker endpoint.
+
 ## Git
 - Claude Code uses GitHub's built-in authentication (no PAT needed)
 - For claude.ai chat sessions: PAT stored in memory edits (not in repo)
