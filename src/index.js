@@ -182,7 +182,7 @@ Max 15 per category. All lowercase. Every term must be healthcare/Epic-specific.
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 600, temperature: 0.1 },
+          generationConfig: { maxOutputTokens: 1000, temperature: 0.1 },
         }),
         signal: AbortSignal.timeout(8000),
       }
