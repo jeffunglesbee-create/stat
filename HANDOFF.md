@@ -1,9 +1,42 @@
-# STAT HANDOFF — 2026-06-16 (Session 18 END)
+# STAT HANDOFF — 2026-06-16 (Session 19 END)
 
 ## State
-HEAD: 527a50b
+HEAD: 092d0ba
 Smoke: 192/192 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 19 — Deploy fix (chat, 2026-06-16)
+
+**Problem:** Deploy workflow (run 27637524998) failed twice on June 16.
+HANDOFF initially hypothesized expired CLOUDFLARE_API_TOKEN — investigation
+via CF dashboard confirmed all 5 API tokens active with no expiration.
+
+**Actual root cause:** The deploy-trigger mechanism appended a shell comment
+to a JavaScript source file:
+```
+src/routes/_utils.js:11:1:
+  11 │ # deploy trigger 2026-06-16T17:25:29Z
+```
+`#` is not valid JS. esbuild (via wrangler) failed at build stage — never
+reached CF API auth. The 3-second failure time was build rejection, not
+API rejection.
+
+**Fix:** Commit 092d0ba — removed the shell comment line from _utils.js.
+Deploy workflow triggered automatically on src/ change → completed successfully.
+
+**Prevention:** Deploy triggers must NOT write to src/ files. Use
+`outbox/.trigger-deploy` or equivalent inert path. The workflow's
+`paths:` filter should catch outbox changes without polluting source.
+
+**Diagnostic path (for future reference):**
+1. GitHub Actions API → jobs → steps → identified Step 8 failure
+2. Downloaded workflow logs zip → extracted step 8 log
+3. Found esbuild syntax error pointing to _utils.js:11
+4. Fetched file via Contents API → confirmed shell comment at EOF
+5. Pushed fix via Contents API → deploy auto-triggered → success
+
+---
+
 
 ## Session 18 — Cross-engine viewport tests (iOS Safari + Android Chrome)
 
