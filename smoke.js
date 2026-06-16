@@ -120,6 +120,32 @@ assert('ui: global error catcher present (cross-engine tests rely on it)',
   && ui.includes('window.onerror')
   && ui.includes('unhandledrejection'));
 
+assert('cross-engine: tests/stat-viewport.js exists', (() => {
+  try { fs.readFileSync(path.join(__dirname, 'tests/stat-viewport.js')); return true; } catch { return false; }
+})());
+assert('cross-engine: viewport test imports webdriverio',
+  (() => {
+    try {
+      return fs.readFileSync(path.join(__dirname, 'tests/stat-viewport.js'), 'utf8')
+        .includes("require('webdriverio')");
+    } catch { return false; }
+  })());
+assert('cross-engine: viewport test targets STAT live URL',
+  (() => {
+    try {
+      return fs.readFileSync(path.join(__dirname, 'tests/stat-viewport.js'), 'utf8')
+        .includes("https://stat-job-watcher.jeffunglesbee.workers.dev/ui");
+    } catch { return false; }
+  })());
+assert('package.json: test:ios + test:android scripts wired',
+  (() => {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      return !!pkg.scripts?.['test:ios'] && !!pkg.scripts?.['test:android']
+        && !!pkg.devDependencies?.webdriverio;
+    } catch { return false; }
+  })());
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 

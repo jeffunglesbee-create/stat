@@ -5,9 +5,12 @@
   "scripts": {
     "smoke": "node smoke.js",
     "deploy": "wrangler deploy",
-    "dev": "wrangler dev"
+    "dev": "wrangler dev",
+    "test:ios": "node tests/stat-viewport.js",
+    "test:android": "node tests/stat-viewport.js"
   },
   "devDependencies": {
+    "webdriverio": "^9.0.0",
     "wrangler": "^3.109.0"
   },
   "optionalDependencies": {
