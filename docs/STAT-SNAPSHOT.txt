@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-16T19:40:35Z
-HEAD: 66ba465
+Generated: 2026-06-16T19:43:55Z
+HEAD: 332175a
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  66ba465 fix: update Gemini model to 3.1-flash-lite (2.5 shut down June 1)
+  332175a diag: surface Gemini error detail in keyword regen response
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
