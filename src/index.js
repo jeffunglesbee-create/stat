@@ -532,6 +532,13 @@ async function bootstrapDOs(env) {
 // Catches employers not in the DO watchlist.
 // On a new company match, adds them to the watchlist and spawns a DO.
 // ─────────────────────────────────────────────────────────────────────────────
+// Pre-filtered Epic-relevant HC terms — hoisted from inside the env loop so we
+// don't recompute the same subset on every cron tick.
+const HC_EPIC_TERMS = HIRINGCAFE.search_terms.filter(t =>
+  t.startsWith('epic') || t.includes('ehr') || t.includes('clarity') ||
+  t.includes('informatics') || t.includes('him analyst')
+);
+
 async function runHiringCafeScrape(env) {
   // Load profile-generated custom keywords for contextual matching
   let hcCustomKeywords = null;
@@ -623,15 +630,10 @@ async function runHiringCafeScrape(env) {
   // ─────────────────────────────────────────────────────────────────────────
   for (const envType of HIRINGCAFE.environments) {
     let jobs = null;
-    // Rotate through Epic search terms — each term targets the HC index differently
+    // Rotate through Epic search terms — one per cron cycle via timestamp
     // searchState.searchQuery is processed against title + description + v5 fields
-    const hcTerms = HIRINGCAFE.search_terms.filter(t =>
-      t.startsWith('epic') || t.includes('ehr') || t.includes('clarity') ||
-      t.includes('informatics') || t.includes('him analyst')
-    );
-    // Use one term per cron cycle, rotating via timestamp — avoids redundant fetches
-    const termIdx = Math.floor(Date.now() / (60_000)) % hcTerms.length;
-    const activeTerm = hcTerms[termIdx] ?? 'epic analyst';
+    const termIdx = Math.floor(Date.now() / (60_000)) % HC_EPIC_TERMS.length;
+    const activeTerm = HC_EPIC_TERMS[termIdx] ?? 'epic analyst';
     try {
       jobs = await fetchHiringCafe(activeTerm, envType);
       if (jobs.length > 0) {
@@ -1114,10 +1116,13 @@ async function handleFetch(request, env) {
     if (accept.includes('text/html')) {
       return Response.redirect(new URL('/ui', request.url).toString(), 302);
     }
-    const registry = await loadDoRegistry(env);
-    const seenIds  = await loadSeenIds(env);
-    const companies = await loadCompanyList(env) ?? [];
-    const profile = await loadProfile(env);
+    const [registry, seenIds, companiesRaw, profile] = await Promise.all([
+      loadDoRegistry(env),
+      loadSeenIds(env),
+      loadCompanyList(env),
+      loadProfile(env),
+    ]);
+    const companies = companiesRaw ?? [];
 
     // Fetch salary cache status non-blocking (failure just means no salary data yet)
     let salaryStatus = { peerCount: 0, lcaCount: 0, blsDate: null, lcaDate: null };
