@@ -1,0 +1,28 @@
+# Regenerate profile-driven keywords from stored resume profile.
+# Single Gemini API call. Dispatch only — no automatic triggers.
+name: Regenerate keywords
+
+on:
+  workflow_dispatch:
+
+jobs:
+  regen:
+    name: Regenerate keywords
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /regenerate-keywords
+        run: |
+          WORKER="https://stat-job-watcher.jeffunglesbee.workers.dev"
+          echo "Calling POST /regenerate-keywords..."
+          RESPONSE=$(curl -s -w "\nHTTP:%{http_code}" -X POST \
+            "${WORKER}/regenerate-keywords" \
+            -H "Content-Type: application/json" \
+            --max-time 15)
+          echo "$RESPONSE"
+          HTTP=$(echo "$RESPONSE" | grep "HTTP:" | cut -d: -f2)
+          if [ "$HTTP" = "200" ]; then
+            echo "✅ Keywords regenerated"
+          else
+            echo "⚠️  HTTP $HTTP — check Worker logs"
+            exit 1
+          fi
