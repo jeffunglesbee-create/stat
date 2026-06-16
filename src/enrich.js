@@ -544,11 +544,19 @@ function decodeHtmlEntities(str) {
 
 function stripHtml(html) {
   return html
-    .replace(/\\r\\n/g, ' ')   // literal \r\n escape sequences (SF XML artifact)
-    .replace(/\\n/g, ' ')        // literal \n escape sequences
-    .replace(/\\r/g, ' ')        // literal \r escape sequences
-    .replace(/&#?[a-zA-Z0-9]+;/g, ' ')  // HTML entities
-    .replace(/<[^>]+>/g, ' ')     // HTML tags
+    .replace(/<script[\s\S]*?<\/script>/gi, '')   // remove script blocks
+    .replace(/<style[\s\S]*?<\/style>/gi, '')      // remove style blocks
+    .replace(/<[^>]+>/g, ' ')                      // strip remaining tags
+    .replace(/&nbsp;/g, ' ')                       // named entities
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))  // numeric entities
+    .replace(/&#?[a-zA-Z0-9]+;/g, ' ')            // remaining unknown entities
+    .replace(/\\r\\n/g, ' ')                       // literal escape sequences (SF XML)
+    .replace(/\\n/g, ' ')
+    .replace(/\\r/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
