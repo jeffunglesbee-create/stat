@@ -146,6 +146,24 @@ assert('package.json: test:ios + test:android scripts wired',
     } catch { return false; }
   })());
 
+assert('cross-engine: ios-safari-audit workflow exists', (() => {
+  try { fs.readFileSync(path.join(__dirname, '.github/workflows/ios-safari-audit.yml')); return true; } catch { return false; }
+})());
+assert('cross-engine: ios workflow is workflow_dispatch only',
+  (() => {
+    try {
+      const wf = fs.readFileSync(path.join(__dirname, '.github/workflows/ios-safari-audit.yml'), 'utf8');
+      return wf.includes('on: workflow_dispatch') && !wf.includes('on:\n  push');
+    } catch { return false; }
+  })());
+assert('cross-engine: ios workflow runs tests/stat-viewport.js',
+  (() => {
+    try {
+      return fs.readFileSync(path.join(__dirname, '.github/workflows/ios-safari-audit.yml'), 'utf8')
+        .includes('node tests/stat-viewport.js');
+    } catch { return false; }
+  })());
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 

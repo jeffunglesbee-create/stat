@@ -1,0 +1,173 @@
+# .github/workflows/ios-safari-audit.yml
+#
+# Runs tests/stat-viewport.js against real iOS Safari (XCUITest + Appium +
+# WebDriverIO) on three simulators. Manual dispatch only — real-device CI
+# minutes are expensive.
+name: iOS Safari Viewport Audit
+
+on: workflow_dispatch
+
+jobs:
+  ios-safari:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        device:
+          - name: "iPhone SE (3rd generation)"
+            id: P1
+            orientation: portrait
+          - name: "iPhone 16"
+            id: P2
+            orientation: portrait
+          - name: "iPad Air 11-inch (M2)"
+            id: T1
+            orientation: portrait
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Appium + XCUITest driver
+        run: |
+          # Enable macOS safaridriver (required for WebDriver protocol)
+          sudo safaridriver --enable
+          npm install -g appium@latest
+          appium driver install xcuitest
+          npm install webdriverio@latest
+
+      - name: List available simulators
+        run: |
+          echo "=== Xcode ==="
+          xcodebuild -version
+          echo ""
+          echo "=== Available iPhones/iPads ==="
+          xcrun simctl list devices available | grep -E "iPhone|iPad"
+
+      - name: Boot simulator
+        id: boot
+        run: |
+          DEVICE="${{ matrix.device.name }}"
+          echo "Looking for: $DEVICE"
+          UDID=$(xcrun simctl list devices available -j | \
+            python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for ver, devs in data['devices'].items():
+            if 'iOS' not in ver and 'iPadOS' not in ver: continue
+            for dev in devs:
+              if dev['name'] == '$DEVICE' and dev['isAvailable']:
+                print(dev['udid']); sys.exit(0)
+          print('NOT_FOUND'); sys.exit(1)
+          ")
+          echo "Booting $DEVICE ($UDID)"
+          xcrun simctl boot "$UDID" 2>&1 || true
+          echo "Waiting 30s for full boot..."
+          sleep 30
+          xcrun simctl list devices | grep "$UDID"
+          echo "DEVICE_UDID=$UDID" >> "$GITHUB_ENV"
+
+      - name: Start Appium
+        run: |
+          # Detect iOS version from booted simulator
+          IOS_VER=$(xcrun simctl list devices booted -j | \
+            python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for ver, devs in data['devices'].items():
+            for dev in devs:
+              if dev['state'] == 'Booted':
+                parts = ver.replace('com.apple.CoreSimulator.SimRuntime.', '').replace('iOS-', '').replace('iPadOS-', '').split('-')
+                print('.'.join(parts)); sys.exit(0)
+          print('18.1'); sys.exit(0)
+          ")
+          echo "Detected iOS version: $IOS_VER"
+          echo "IOS_VERSION=$IOS_VER" >> "$GITHUB_ENV"
+
+          appium --relaxed-security --log-level info > /tmp/appium.log 2>&1 &
+          APPIUM_PID=$!
+          echo "APPIUM_PID=$APPIUM_PID" >> "$GITHUB_ENV"
+
+          for i in $(seq 1 60); do
+            if ! kill -0 $APPIUM_PID 2>/dev/null; then
+              echo "ERROR: Appium process died"
+              cat /tmp/appium.log | tail -30
+              exit 1
+            fi
+            if curl -s http://localhost:4723/status > /dev/null 2>&1; then
+              echo "Appium ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+          if ! curl -s http://localhost:4723/status > /dev/null 2>&1; then
+            echo "ERROR: Appium not responding after 60s"
+            cat /tmp/appium.log | tail -50
+            exit 1
+          fi
+          curl -s http://localhost:4723/status
+
+      - name: Run viewport assertions
+        env:
+          IOS_DEVICE: ${{ matrix.device.name }}
+          DEVICE_ID: ${{ matrix.device.id }}
+          DEVICE_UDID: ${{ env.DEVICE_UDID }}
+          IOS_VERSION: ${{ env.IOS_VERSION }}
+        run: |
+          set -o pipefail
+          mkdir -p outbox
+          node tests/stat-viewport.js 2>outbox/ios-${{ matrix.device.id }}-stderr.log \
+            | tee outbox/ios-${{ matrix.device.id }}-results.json
+
+      - name: Screenshot
+        if: always()
+        run: |
+          mkdir -p outbox
+          xcrun simctl io "$DEVICE_UDID" screenshot \
+            "outbox/ios-${{ matrix.device.id }}-screenshot.png" 2>&1 || echo "Screenshot failed"
+
+      - name: Appium log (on failure)
+        if: failure()
+        run: cat /tmp/appium.log | tail -80
+
+      - name: Shutdown simulator
+        if: always()
+        run: |
+          xcrun simctl shutdown "$DEVICE_UDID" 2>/dev/null || true
+          kill "$APPIUM_PID" 2>/dev/null || true
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-safari-${{ matrix.device.id }}
+          path: outbox/ios-${{ matrix.device.id }}-*
+
+  summary:
+    needs: ios-safari
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: results
+
+      - name: Summarize results
+        run: |
+          echo "# iOS Safari Viewport Audit Results"
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo ""
+          for f in results/ios-safari-*/ios-*-results.json; do
+            [ -f "$f" ] || continue
+            echo "---"
+            DEVICE=$(cat "$f" | python3 -c "import json,sys; d=json.load(sys.stdin); print(f\"{d.get('deviceId','?')} — {d.get('device','?')}\")" 2>/dev/null || echo "parse error")
+            PASSED=$(cat "$f" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('passed',0))" 2>/dev/null || echo "?")
+            TOTAL=$(cat "$f" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('total',0))" 2>/dev/null || echo "?")
+            echo "$DEVICE: $PASSED/$TOTAL passed"
+          done
