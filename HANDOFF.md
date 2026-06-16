@@ -1,9 +1,35 @@
-# STAT HANDOFF — 2026-06-16 (Session 17 END)
+# STAT HANDOFF — 2026-06-16 (Session 18 END)
 
 ## State
-HEAD: 960fae8
-Smoke: 184/184 ✅
+HEAD: 527a50b
+Smoke: 192/192 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 18 — Cross-engine viewport tests (iOS Safari + Android Chrome)
+
+4 commits on main porting FIELD's Appium + WebDriverIO pattern to STAT:
+1. a632ec9 — global error catcher (window._statErrors) in ui.html
+2. 1d4e1e4 — tests/stat-viewport.js (322 lines, single-file runner with
+   platform detection via IOS_DEVICE env), package.json with test:ios /
+   test:android scripts + webdriverio devDep
+3. 1b8e035 — .github/workflows/ios-safari-audit.yml — 3-device matrix
+   (iPhone SE / iPhone 16 / iPad Air M2), macos-latest, manual dispatch
+4. 527a50b — .github/workflows/android-chrome-audit.yml — 2-device
+   matrix (Pixel 7 / Pixel Tablet), KVM-accelerated ubuntu, manual
+   dispatch
+
+10 assertions: 7 universal + 3 phone-only. Targets the deployed STAT
+URL. No Playwright — drives the real Safari + Chrome that ship on each
+device. Both workflows are workflow_dispatch only.
+
+Verification: trigger each workflow from Actions tab. Results land in
+outbox/{ios,android}-{id}-results.json plus screenshots.
+
+Full notes: `outbox/cc-crossengine-results.md`.
+
+---
+
+## Previous: Session 17 — UI enhancements (mobile + desktop)
 
 ## Session 17 — UI enhancements (mobile + desktop)
 
