@@ -72,6 +72,9 @@ assert('ui: default tab is Matches',
 assert('ui: Matches tab shows count badge',
   ui.includes('updateMatchesTabBadge') && ui.includes('Matches (${matches.length})'));
 
+assert('ui: Browse filter label is dynamic (Rule 15)',
+  !ui.includes("['remote/hybrid', 'no keyword match']"));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 

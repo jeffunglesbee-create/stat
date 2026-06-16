@@ -2022,10 +2022,16 @@ async function loadBrowse() {
   if (!ok) return;
 
   const totalEl = document.getElementById('browse-total');
-  const filterParts = ['remote/hybrid', 'no keyword match'];
-  if (atsFilter) filterParts.unshift(atsFilter);
+  // Rule 15: filter label must reflect actual active filters, not a
+  // hardcoded description. The Browse server already env-filters and
+  // captures non-matched jobs; the only user-controlled filters here
+  // are the ATS dropdown and the search query.
+  const filterParts = [];
+  if (atsFilter) filterParts.push(atsFilter);
   if (q) filterParts.push(`"${q}"`);
-  totalEl.textContent = data.count + ' jobs shown' + (data.total > data.count ? ' of ' + data.total + ' stored' : '') + ' — ' + filterParts.join(', ');
+  totalEl.textContent = data.count + ' jobs shown'
+    + (data.total > data.count ? ' of ' + data.total + ' stored' : '')
+    + (filterParts.length ? ' — ' + filterParts.join(', ') : '');
 
   const el = document.getElementById('browse-list');
   if (!data.jobs || !data.jobs.length) {
