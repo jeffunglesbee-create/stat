@@ -80,6 +80,11 @@ assert('ui: Browse ATS dropdown covers all polled platforms',
   && ui.includes('<option value="infor_hcm">')
   && ui.includes('<option value="selectminds">'));
 
+assert('ui: loading class defined + applied to Matches and Browse lists',
+  ui.includes('.loading {')
+  && ui.includes("classList.add('loading')")
+  && ui.includes("classList.remove('loading')"));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 

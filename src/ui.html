@@ -465,6 +465,9 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
 .toast.error { border-left-color: var(--p1); }
 .toast.success { border-left-color: var(--p3); }
 
+/* ── Loading indicator (shown during list fetches) ─────────────────────── */
+.loading { opacity: 0.4; transition: opacity 0.15s; pointer-events: none; }
+
 /* ── Match Cards ─────────────────────────────────────────────────────────── */
 .match-card {
   border: 1px solid var(--rule);
@@ -1395,11 +1398,17 @@ async function loadMatches() {
   if (q) params.set('q', q);
   params.set('limit', '100');
 
-  const { ok, data } = await api('/jobs?' + params.toString());
-  if (!ok) return;
-  matches = data.jobs ?? [];
-  renderMatches();
-  updateMatchesTabBadge();
+  const listEl = document.getElementById('match-list');
+  listEl?.classList.add('loading');
+  try {
+    const { ok, data } = await api('/jobs?' + params.toString());
+    if (!ok) return;
+    matches = data.jobs ?? [];
+    renderMatches();
+    updateMatchesTabBadge();
+  } finally {
+    listEl?.classList.remove('loading');
+  }
 }
 
 // Show "Matches (N)" on the tab when N > 0 — glanceable system health
@@ -2021,7 +2030,14 @@ async function loadBrowse() {
   if (atsFilter) params.set('ats', atsFilter);
   if (q) params.set('q', q);
 
-  const { ok, data } = await api('/browse?' + params.toString());
+  const listEl = document.getElementById('browse-list');
+  listEl?.classList.add('loading');
+  let data, ok;
+  try {
+    ({ ok, data } = await api('/browse?' + params.toString()));
+  } finally {
+    listEl?.classList.remove('loading');
+  }
   if (!ok) return;
 
   const totalEl = document.getElementById('browse-total');
