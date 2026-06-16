@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-16T23:13:00Z
-HEAD: 6461ec5
+Generated: 2026-06-16T23:47:07Z
+HEAD: c65e7f8
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  6461ec5 fix: keyword-gen maxOutputTokens 1000→4096, strip diagnostic _error return
+  c65e7f8 fix: bump keyword gen maxOutputTokens to 16384 (thinking budget)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
