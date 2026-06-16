@@ -107,6 +107,10 @@ assert('ui: review panel shows past-decision count footer',
 assert('ui: AbortController cancels stale search requests',
   ui.includes('_matchSearchAbort') && ui.includes('_browseSearchAbort'));
 
+assert('ui: config tab uses honest time-aware description, not stale interval table',
+  ui.includes('time-aware')
+  && !ui.includes('Greenhouse · Lever · Ashby</td><td style="color:var(--p3)">30 s'));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 

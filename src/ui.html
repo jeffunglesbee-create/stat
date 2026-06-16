@@ -1011,16 +1011,12 @@ body { min-height: 100dvh; display: flex; flex-direction: column; }
 
       <div class="cfg-block" style="border-left-color:var(--teal)">
         <div class="cfg-head">
-          <span class="cfg-label">Poll Intervals — DO Alarms</span>
+          <span class="cfg-label">Polling cadence</span>
         </div>
         <div class="cfg-body">
-          <table class="cfg-table">
-            <tr><td style="color:var(--muted)">Greenhouse · Lever · Ashby</td><td style="color:var(--p3)">30 s</td></tr>
-            <tr><td style="color:var(--muted)">Workday · iCIMS</td><td style="color:var(--teal)">60 s</td></tr>
-            <tr><td style="color:var(--muted)">SAP SuccessFactors</td><td style="color:var(--p2)">90 s</td></tr>
-            <tr><td style="color:var(--muted)">Oracle Taleo</td><td style="color:var(--dim)">120 s</td></tr>
-            <tr><td style="color:var(--muted)">HiringCafe (cron)</td><td style="color:var(--dim)">60 s</td></tr>
-          </table>
+          <p style="color:var(--muted);font-size:12px;line-height:1.5;margin:4px 0">
+            Polling is <strong style="color:var(--teal)">time-aware</strong>: peaks at 2-minute intervals Mon–Fri 6–10am ET (Tuesday morning is the highest-yield window), eases to 4–8 minutes during business hours, backs off to 10–20 minutes overnight and on Saturday. HiringCafe wide-net adapts on the same schedule with a 1–10 minute backoff depending on recent match volume.
+          </p>
         </div>
       </div>
 
