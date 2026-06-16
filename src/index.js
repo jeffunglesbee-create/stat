@@ -1131,10 +1131,6 @@ async function handleFetch(request, env) {
     }
   }
 
-      return json({ error: e.message }, 500);
-    }
-  }
-
   if (url.pathname === '/companies' && request.method === 'POST') {
     const company = await request.json();
     if (!company.name || !company.ats) {
