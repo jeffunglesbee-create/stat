@@ -61,6 +61,11 @@ Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
 - Cookie domain question — still unresolved (needed only for Phase 2 apply)
 - Apply agent Phase 2 — automated form submission (deferred, complex multi-step flow)
 
+**Audit (S15, 2026-06-16):**
+- Full codebase optimization audit written to `outbox/cc-optimization-audit.md`
+- 3 P1 latent bugs found: batch.js `customKeywords` ReferenceError (silently swallowed), enrich.js `NEEDS_BROWSER_FETCH` undefined references, smoke.js 12 duplicate assertions (lines 303-316 copy 249-261)
+- Chat session to review and dispatch fixes as TYPE B commits
+
 ## Drive Documents
 Session 14: (this session, chat-only)
 iCIMS Cookie & Apply Spec: 1D5VC5m2ESjT-eX9qBE8QRTQjfRF0cLMwumzYFjWQQ8Y
