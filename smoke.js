@@ -228,9 +228,9 @@ assert('platform-do: CHUNK_SIZE read from CHUNK_SIZES config', read('platform-do
 assert('enrich: selectminds in NEEDS_PLAIN_FETCH', read('enrich.js').includes("'selectminds'"));
 assert('index: bootstrapDOs merges SEED_COMPANIES into stored list', read('index.js').includes('newFromSeed'));
 assert('index: PLATFORM_MAP includes selectminds', read('index.js').includes("selectminds: 'SELECTMINDS_DO'"));
-assert('index: loadSeenIds returns Map', read('index.js').includes('return new Map()'));
-assert('index: addToSeen defined', read('index.js').includes('function addToSeen('));
-assert('index: checkSeenStatus defined', read('index.js').includes('function checkSeenStatus('));
+assert('state: loadSeenIds returns Map', read('state.js').includes('return new Map()'));
+assert('state: addToSeen defined', read('state.js').includes('function addToSeen('));
+assert('state: checkSeenStatus defined', read('state.js').includes('function checkSeenStatus('));
 assert('index: maybeRunSeenSweep defined', read('index.js').includes('async function maybeRunSeenSweep('));
 assert('index: maybeRunSeenSweep called in cron', read('index.js').includes('maybeRunSeenSweep(env)'));
 assert('index: cron salary + sweep parallelized', read('index.js').includes('Promise.all([\n    maybeRefreshSalaryCaches(env),\n    maybeRunSeenSweep(env),\n  ])'));

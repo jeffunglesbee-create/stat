@@ -36,6 +36,14 @@ export { StateStoreDO } from './store.js';
 import UI_HTML from './ui.html';
 import { json } from './routes/_utils.js';
 import { handleSalary } from './routes/salary.js';
+import {
+  SEEN_SWEEP_BATCH,
+  loadSeenIds, saveSeenIds, markSeenDead, checkSeenStatus, addToSeen,
+  loadCompanyList, saveCompanyList,
+  loadDoRegistry, saveDoRegistry,
+  loadProfile, saveProfile,
+  loadMatchCounts, saveMatchCounts,
+} from './state.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UI ETAG — computed once at Worker startup (module load), never at request time.
@@ -78,72 +86,9 @@ const UI_ETAG = (() => {
 // Backward compat: raw strings in stored array are treated as { id, seenAt: epoch0 }.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SEEN_TTL_MS      = 30 * 24 * 60 * 60 * 1000; // 30 days — prune dead entries
-const SEEN_LIVE_MAX_MS = 90 * 24 * 60 * 60 * 1000; // 90 days — hard cap on all entries
-const SEEN_SWEEP_BATCH = 20;                         // entries checked per cron tick
-
-function _parseSeenEntry(raw) {
-  if (typeof raw === 'string') return { id: raw, seenAt: new Date(0).toISOString() };
-  return raw;
-}
-
-async function loadSeenIds(env) {
-  try {
-    const raw = await storeGet(getStatStore(env), 'seen_ids');
-    if (!raw) return new Map();
-    const arr = JSON.parse(raw);
-    const map = new Map();
-    for (const item of arr) {
-      const entry = _parseSeenEntry(item);
-      map.set(entry.id, entry);
-    }
-    return map;
-  } catch { return new Map(); }
-}
-
-async function saveSeenIds(env, seenMap) {
-  let arr = Array.from(seenMap.values());
-  // Prune: dead entries older than TTL, live entries older than hard cap
-  const now = Date.now();
-  arr = arr.filter(e => {
-    if (e.diedAt && (now - new Date(e.diedAt).getTime()) > SEEN_TTL_MS) return false;
-    if (!e.diedAt && (now - new Date(e.seenAt).getTime()) > SEEN_LIVE_MAX_MS) return false;
-    return true;
-  });
-  if (arr.length > KV.max_seen) arr = arr.slice(-KV.max_seen);
-  await storeSet(getStatStore(env), 'seen_ids', JSON.stringify(arr));
-}
-
-// Mark a seen entry as dead (liveness check failed). URL stored for future re-check.
-async function markSeenDead(env, jobId, jobUrl) {
-  try {
-    const seenMap = await loadSeenIds(env);
-    const entry = seenMap.get(jobId);
-    if (!entry) return;
-    entry.diedAt = new Date().toISOString();
-    if (jobUrl && !entry.url) entry.url = jobUrl;
-    await saveSeenIds(env, seenMap);
-  } catch (e) {
-    console.warn('[STAT seen] markSeenDead failed:', e.message);
-  }
-}
-
-// Check if a job is seen: returns null (not seen), 'seen' (live), or 'dead' (diedAt set).
-function checkSeenStatus(seenMap, jobId) {
-  const entry = seenMap.get(jobId);
-  if (!entry) return null;
-  if (entry.diedAt) return 'dead';
-  return 'seen';
-}
-
-// Add a new job to the seen-set with optional URL.
-function addToSeen(seenMap, jobId, jobUrl) {
-  seenMap.set(jobId, {
-    id:     jobId,
-    seenAt: new Date().toISOString(),
-    ...(jobUrl ? { url: jobUrl } : {}),
-  });
-}
+// State helpers (loadSeenIds, saveSeenIds, markSeenDead, etc.) live in
+// src/state.js so the route files can import them without circularity.
+// Constants and helpers are imported below alongside other dependencies.
 
 // ── Cron sweep: re-check a batch of dead seen entries for ghost resurrection ──
 // 20 entries per cron tick. HEAD request on each. If live → clear diedAt (resurrect).
@@ -202,47 +147,8 @@ async function maybeRunSeenSweep(env) {
   }
 }
 
-async function loadCompanyList(env) {
-  try {
-    const raw = await storeGet(getStatStore(env), 'company_list');
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-async function saveCompanyList(env, list) {
-  await storeSet(getStatStore(env), 'company_list', JSON.stringify(list));
-}
-
-async function loadDoRegistry(env) {
-  try {
-    const raw = await storeGet(getStatStore(env), 'do_registry');
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
-}
-
-async function saveDoRegistry(env, registry) {
-  await storeSet(getStatStore(env), 'do_registry', JSON.stringify(registry));
-}
-
-async function loadProfile(env) {
-  try {
-    const raw = await storeGet(getStatStore(env), 'resume_profile');
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-async function saveProfile(env, p) {
-  await storeSet(getStatStore(env), 'resume_profile', JSON.stringify(p));
-}
-
-async function loadMatchCounts(env) {
-  try {
-    const raw = await storeGet(getStatStore(env), 'match_counts');
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
-}
-async function saveMatchCounts(env, c) {
-  await storeSet(getStatStore(env), 'match_counts', JSON.stringify(c));
-}
+// loadCompanyList/saveCompanyList/loadDoRegistry/saveDoRegistry/
+// loadProfile/saveProfile/loadMatchCounts/saveMatchCounts live in src/state.js.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROFILE-DRIVEN KEYWORD GENERATION
