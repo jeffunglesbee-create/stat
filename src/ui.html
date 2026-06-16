@@ -1066,11 +1066,18 @@ let resumeProfile = null;
 // ─── API ─────────────────────────────────────────────────────────────────────
 async function api(path, opts = {}) {
   if (!WORKER_URL) throw new Error('WORKER_URL not configured');
-  // 15s timeout — prevents UI from hanging if Worker is slow to respond
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  // 15s timeout — prevents UI from hanging if Worker is slow to respond.
+  // If the caller passes opts.signal, combine the two via AbortSignal.any
+  // so either the timeout OR the caller's cancellation aborts the request.
+  const timeoutController = new AbortController();
+  const timer = setTimeout(() => timeoutController.abort(), 15000);
+  const callerSignal = opts.signal;
+  const signal = callerSignal && typeof AbortSignal.any === 'function'
+    ? AbortSignal.any([timeoutController.signal, callerSignal])
+    : callerSignal || timeoutController.signal;
+  const finalOpts = { ...opts, signal };
   try {
-    const r = await fetch(WORKER_URL + path, { signal: controller.signal, ...opts });
+    const r = await fetch(WORKER_URL + path, finalOpts);
     clearTimeout(timer);
     return { ok: r.ok, status: r.status, data: await r.json() };
   } catch (e) {
@@ -1485,13 +1492,20 @@ async function loadMatches() {
 
   const listEl = document.getElementById('match-list');
   listEl?.classList.add('loading');
+  // Cancel any in-flight match search — fresh keystroke = fresh request.
+  window._matchSearchAbort?.abort();
+  const ctrl = new AbortController();
+  window._matchSearchAbort = ctrl;
   try {
-    const { ok, data } = await api('/jobs?' + params.toString());
+    const { ok, data } = await api('/jobs?' + params.toString(), { signal: ctrl.signal });
     if (!ok) return;
     matches = data.jobs ?? [];
     renderMatches();
     updateMatchesTabBadge();
+  } catch (e) {
+    if (e?.name !== 'AbortError') throw e;
   } finally {
+    if (window._matchSearchAbort === ctrl) window._matchSearchAbort = null;
     listEl?.classList.remove('loading');
   }
 }
@@ -2126,10 +2140,18 @@ async function loadBrowse() {
 
   const listEl = document.getElementById('browse-list');
   listEl?.classList.add('loading');
+  // Cancel any in-flight browse search — fresh keystroke = fresh request.
+  window._browseSearchAbort?.abort();
+  const ctrl = new AbortController();
+  window._browseSearchAbort = ctrl;
   let data, ok;
   try {
-    ({ ok, data } = await api('/browse?' + params.toString()));
+    ({ ok, data } = await api('/browse?' + params.toString(), { signal: ctrl.signal }));
+  } catch (e) {
+    if (e?.name === 'AbortError') return;
+    throw e;
   } finally {
+    if (window._browseSearchAbort === ctrl) window._browseSearchAbort = null;
     listEl?.classList.remove('loading');
   }
   if (!ok) return;

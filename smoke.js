@@ -104,6 +104,9 @@ assert('ui: browseScoreCard uses data-job attribute (no double JSON.stringify)',
 assert('ui: review panel shows past-decision count footer',
   ui.includes("api('/feedback/summary')") && ui.includes('past decision'));
 
+assert('ui: AbortController cancels stale search requests',
+  ui.includes('_matchSearchAbort') && ui.includes('_browseSearchAbort'));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 
