@@ -8,11 +8,6 @@ account_id = "b57e9af57ab46c52ca9215804e689c29"
 [triggers]
 crons = ["* * * * *"]
 
-# ── KV: seen job IDs + company watchlist + DO registry ───────────────────────
-[[kv_namespaces]]
-binding = "STAT_KV"
-id = "67b2f7113a7c4754a263f6f984e884ae"
-
 # ── Durable Objects ───────────────────────────────────────────────────────────
 # Platform-grouped architecture: one DO per ATS platform (not per company).
 # Each DO wakes on the time-aware schedule and polls ALL companies of that ATS.
