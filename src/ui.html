@@ -2159,7 +2159,7 @@ async function loadBrowse() {
   <div class="match-card-meta">${salary}${env}${ghost}</div>
   <div class="match-card-actions">
     <a href="${job.url}" target="_blank" class="apply-btn">View Job →</a>
-    <button class="btn-cancel-form" onclick="browseScoreCard(this, '${job.id.replace(/'/g,"\\'")}', ${JSON.stringify(JSON.stringify(job)).slice(1,-1)})" style="font-size:10px">Score against profile</button>
+    <button class="btn-cancel-form" data-job="${encodeURIComponent(JSON.stringify(job))}" onclick="browseScoreCard(this, '${job.id.replace(/'/g,"\\'")}')" style="font-size:10px">Score against profile</button>
     ${job.description ? `<button class="desc-btn" id="dbtn-${job.id}" data-desc="${encodeURIComponent(job.description || '')}" onclick="toggleDescBrowse('${job.id}', decodeURIComponent(this.dataset.desc))">\u25b8 Desc</button>` : ''}
   </div>
   ${job.description ? `<div class="desc-panel" id="desc-${job.id}"></div>` : ''}
@@ -2168,14 +2168,16 @@ async function loadBrowse() {
   }).join('');
 }
 
-async function browseScoreCard(btn, jobId, jobJson) {
+async function browseScoreCard(btn, jobId) {
   // Score inline on Browse card — no tab switch
   if (!resumeProfile) {
     toast('Extract your resume profile first (Resume tab)', 'error');
     return;
   }
   try {
-    const job = JSON.parse(jobJson);
+    // Job data lives on the button as a percent-encoded JSON attribute —
+    // avoids fragile escaping when descriptions contain quotes/HTML.
+    const job = JSON.parse(decodeURIComponent(btn.dataset.job));
     const resultEl = document.getElementById('bscore-' + jobId);
     if (!resultEl) return;
 

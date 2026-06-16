@@ -96,6 +96,11 @@ assert('ui: mobile operations panel — collapsible details element',
   && ui.includes('id="btn-trigger-mobile"')
   && ui.includes('min-height: 44px'));
 
+assert('ui: browseScoreCard uses data-job attribute (no double JSON.stringify)',
+  ui.includes('data-job="${encodeURIComponent(JSON.stringify(job))}"')
+  && ui.includes('decodeURIComponent(btn.dataset.job)')
+  && !ui.includes('JSON.stringify(JSON.stringify(job))'));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 
