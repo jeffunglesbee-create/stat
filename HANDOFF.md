@@ -1,9 +1,32 @@
-# STAT HANDOFF — 2026-06-16 (Session 15 END)
+# STAT HANDOFF — 2026-06-16 (Session 16 END)
 
 ## State
-HEAD: 5d4216c
-Smoke: 142/142 ✅
+HEAD: 448f23e
+Smoke: 162/162 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 16 — stripHtml consolidation + handleFetch router extraction
+
+11 commits on main implementing the structure-only refactor specified by
+`outbox/cc-prompt-refactor.md`.
+
+**stripHtml** — upgraded the shared helper to handle script/style block
+removal + named/numeric entity decoding, then replaced 5 inline strippers
+in enrich.js with calls to it. SelectMinds site kept inline because it
+pre-strips page-specific `<nav>`/`<header>` blocks.
+
+**Router extraction** — moved all 38 routes out of handleFetch into
+`src/routes/{ui,salary,operations,companies,jobs,profile,diagnostics}.js`.
+index.js: 2,785 → 1,107 lines. Created `src/state.js` (state helpers
+shared by cron + routes) and `src/routes/_utils.js` (json() helper).
+
+Cron-flow helpers (bootstrapDOs, runHiringCafeScrape, detectAts,
+generateAndStoreKeywords, fetchResumeFromOneDrive, plus the jobhive CSV
+helpers) stay in index.js but are exported so route files import them
+circularly — safe because they're only referenced inside async handlers.
+
+Full execution notes + commit-by-commit smoke progression:
+`outbox/cc-refactor-results.md`.
 
 ## Session 15 — Optimization Audit + Execute
 
