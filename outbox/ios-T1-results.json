@@ -1,0 +1,64 @@
+{
+  "device": "iPad Air 11-inch (M2)",
+  "deviceId": "T1",
+  "platform": "ios-safari",
+  "tier": "tablet",
+  "timestamp": "2026-06-16T18:39:47.073Z",
+  "dataReady": true,
+  "total": 7,
+  "passed": 6,
+  "failed": 1,
+  "assertions": [
+    {
+      "id": "#1",
+      "name": "no uncaught JS errors",
+      "pass": true,
+      "actual": "clean"
+    },
+    {
+      "id": "#2",
+      "name": "Matches tab is default active",
+      "pass": true,
+      "actual": "matches"
+    },
+    {
+      "id": "#3",
+      "name": "Match cards render (or empty state shown)",
+      "pass": true,
+      "actual": "100 cards"
+    },
+    {
+      "id": "#4",
+      "name": "Tab bar horizontally scrollable or fits",
+      "pass": true,
+      "actual": {
+        "overflowX": "auto",
+        "scrollWidth": 697,
+        "clientWidth": 580
+      }
+    },
+    {
+      "id": "#5",
+      "name": "Loading class applies during fetch",
+      "pass": false,
+      "actual": {}
+    },
+    {
+      "id": "#6",
+      "name": "Browse card data-job attribute present in source",
+      "pass": true,
+      "actual": "source uses data-job pattern"
+    },
+    {
+      "id": "#7",
+      "name": "Search input exists and is interactive",
+      "pass": true,
+      "actual": {
+        "exists": true,
+        "visible": true,
+        "disabled": false,
+        "width": 168
+      }
+    }
+  ]
+}
