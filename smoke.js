@@ -91,6 +91,11 @@ assert('ui: tab bar mobile — overflow-x scroll + abbreviated labels',
   && ui.includes("content: 'Config'")
   && ui.includes("content: 'Log'"));
 
+assert('ui: mobile operations panel — collapsible details element',
+  ui.includes('class="mobile-ops"')
+  && ui.includes('id="btn-trigger-mobile"')
+  && ui.includes('min-height: 44px'));
+
 assert('ui: loadBrowse function defined',
   ui.includes('async function loadBrowse('));
 
