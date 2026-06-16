@@ -1,9 +1,56 @@
-# STAT HANDOFF — 2026-06-16 (Session 19 END)
+# STAT HANDOFF — 2026-06-16 (Session 20 END)
 
 ## State
-HEAD: 9613e35
+HEAD: 682e467
 Smoke: 213/213 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 20 — Gemini revert + STAT_PAT + keyword regen (2026-06-16)
+
+**TASK 1 — Gemini revert in `src/index.js` (commit 6461ec5):**
+- Both Gemini sites already on `gemini-2.5-flash-lite` (active until 2026-07-22).
+  No `3.1` references existed. No `thinking_config` present.
+- `generateAndStoreKeywords` (~line 178): `maxOutputTokens` bumped 1000 → 4096
+  so the JSON payload isn't truncated.
+- catch block simplified to `console.warn(...); return null;` (stripped the
+  diagnostic `{ _error: e.message }` return and the `e.stack?.slice(...)`
+  log tail).
+- Fit-scoring call left at `maxOutputTokens: 800`.
+- Smoke 213/213 ✅.
+
+**TASK 2 — Deploy via workflow_dispatch (run 27654335848):**
+- Triggered via GitHub MCP `actions_run_trigger` (sandbox has no `gh` CLI,
+  no `GITHUB_TOKEN`). NO `src/` trigger comment.
+- Result: ✅ success, run #167, 57s. Worker live at HEAD `c0df1cc`
+  (auto-snapshot of `6461ec5`).
+- Deploy result outbox: `outbox/deploy-result-20260616T231401Z.txt`.
+
+**TASK 3 — STAT_PAT Worker secret: ✅ already set externally.**
+- Chat session used PyNaCl to set it as a GitHub Actions secret, then
+  dispatched `sync-secret-to-worker.yml` which PUT it to the CF API.
+  Response confirmed: `{"name":"STAT_PAT","type":"secret_text","success":true}`.
+- Auto dispatch button in `/ui` should now activate.
+- Not attempted from this session (sandbox has no Cloudflare API token).
+
+**TASK 4 — Keyword regen (run 27654660459): ❌ failed, moved on (no retry).**
+- Triggered `regen-keywords.yml` via GitHub MCP. Worker returned HTTP 500
+  with body `{ "error": "Keyword generation failed" }`.
+- Per prompt: log error, do NOT retry. Co-occurrence guard in `notify.js`
+  is blocking false positives, so this is not urgent.
+- The catch block now returns null silently — to recover the underlying
+  Gemini error a future session would need to either re-instate a
+  diagnostic detail (against this session's prompt) or hook the Worker
+  to a logging sink (Pushover, Resend, or `appendLog`).
+
+**Open items into S21:**
+- Keyword regen failure root cause — Gemini API rejected the request
+  (likely model availability, key invalid, or request shape). One-shot
+  diagnostic call from `wrangler tail` or `/regen-keywords` with a small
+  test profile would isolate it.
+- Auto dispatch button live verification — test the ⚡ Auto button in `/ui`
+  and confirm it dispatches via STAT_PAT.
+
+---
 
 ## Session 19 — Deploy fix (chat, 2026-06-16)
 
