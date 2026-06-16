@@ -182,12 +182,13 @@ Max 15 per category. All lowercase. Every term must be healthcare/Epic-specific.
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 16384, temperature: 0.1 },
+          generationConfig: { maxOutputTokens: 4096, temperature: 0.1 },
         }),
         signal: AbortSignal.timeout(8000),
       }
     );
     const data = await res.json();
+    if (!res.ok) return { _gemini_error: { status: res.status, error: data?.error?.message || JSON.stringify(data).slice(0, 200) } };
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const cleaned = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
     const keywords = JSON.parse(cleaned);
