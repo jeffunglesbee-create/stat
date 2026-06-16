@@ -7,6 +7,7 @@
 
 const fs   = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const SRC = path.join(__dirname, 'src');
 
@@ -425,6 +426,28 @@ assert('routes/_utils.js: json() exported',
   read('routes/_utils.js').includes('export function json('));
 assert('state.js: exists with seen-id helpers',
   read('state.js').includes('export async function loadSeenIds'));
+
+// ── Build integrity (syntax check all src/*.js) ────────────────────────────
+// Catches non-JS content (shell comments, stray text) that would break esbuild.
+// Uses node --check (syntax-only, no execution) — fast and zero-dependency.
+const srcFiles = [];
+function collectJs(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) collectJs(full);
+    else if (entry.name.endsWith('.js')) srcFiles.push(full);
+  }
+}
+collectJs(SRC);
+for (const file of srcFiles) {
+  const rel = path.relative(__dirname, file);
+  try {
+    execSync(`node --check "${file}"`, { stdio: 'pipe' });
+    assert(`build-integrity: ${rel} syntax valid`, true);
+  } catch (e) {
+    assert(`build-integrity: ${rel} syntax valid`, false);
+  }
+}
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 const passed = results.filter(r => r.ok).length;

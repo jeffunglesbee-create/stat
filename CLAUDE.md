@@ -46,12 +46,14 @@ Cron-flow helpers (`runHiringCafeScrape`, `bootstrapDOs`, `detectAts`, `generate
 8. **Diagnosis before fix** — for adapter bugs or ATS changes, probe the source first (`html_probe` or `curl`). Never guess at selectors or page structure.
 9. **Prompt architecture** — for hardware-dependent fixes (mobile viewport, Safari quirks), follow the diagnosis-first pattern from `docs/CLAUDE-CODE-PROMPT-RULES.md`. Never repeat a failed approach.
 10. **Rule 59 — Trusted-but-unverified (CC-AUDIT)** — Claude Code commits are trusted but lack session context. Chat sessions that find Claude Code commits since the last HANDOFF must verify: smoke delta, feature wiring, no invented patterns, no unauthorized changes.
+11. **Deploy trigger hygiene** — Never write to `src/` solely to trigger a deploy. Use `workflow_dispatch` (via GitHub API) or `outbox/.trigger-deploy`. The deploy workflow has `workflow_dispatch:` as a trigger — use it. Writing non-JS content to JS files breaks esbuild and is invisible to smoke.
 
 ## Deploy
 - Sole deploy path: `.github/workflows/deploy.yml`
-- Trigger: push to `src/**` on main
+- Triggers: push to `src/**` on main, OR `workflow_dispatch` (manual/API)
 - Pipeline: smoke.js → wrangler deploy
 - `[skip ci]` in commit message skips ALL workflows
+- **NEVER write to src/ just to trigger deploy** — use workflow_dispatch instead
 
 ## Workflow Automation
 - **Terminal work should be automated, not left as manual steps.**

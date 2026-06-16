@@ -2,7 +2,7 @@
 #
 # STAT - Deploy Gate
 #
-# Triggers on pushes to src/ or wrangler.toml.
+# Triggers on pushes to src/ or wrangler.toml, or manual workflow_dispatch.
 # Deploys to Cloudflare Workers via CLOUDFLARE_API_TOKEN secret.
 #
 # CLOUDFLARE_API_TOKEN must be set as a GitHub Actions secret.
@@ -33,6 +33,7 @@
 name: Deploy STAT worker
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
