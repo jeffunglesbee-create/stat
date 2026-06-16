@@ -1,8 +1,8 @@
 # STAT HANDOFF — 2026-06-16 (Session 19 END)
 
 ## State
-HEAD: 092d0ba
-Smoke: 192/192 ✅
+HEAD: 9613e35
+Smoke: 213/213 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
 
 ## Session 19 — Deploy fix (chat, 2026-06-16)
@@ -34,6 +34,20 @@ Deploy workflow triggered automatically on src/ change → completed successfull
 3. Found esbuild syntax error pointing to _utils.js:11
 4. Fetched file via Contents API → confirmed shell comment at EOF
 5. Pushed fix via Contents API → deploy auto-triggered → success
+
+**Governance hardening (93b2713 + 9613e35):**
+Root cause analysis: deploy.yml had no workflow_dispatch trigger, CLAUDE.md
+had no rule against writing to src/ for deploys, smoke didn't test build
+integrity. Three fixes shipped as atomic commit:
+1. deploy.yml: added `workflow_dispatch:` trigger (safe manual deploy via API)
+2. CLAUDE.md: added Rule 11 — never write to src/ solely to trigger deploy
+3. smoke.js: added build-integrity section — `node --check` on all 21 src/**/*.js
+   files. Would have caught the # shell comment that caused the outage.
+Smoke: 192 → 213 (+21 build-integrity assertions)
+
+**Cross-engine viewport tests (dispatched this session):**
+- iOS Safari: 3/3 ✅ (iPad Air M2, iPhone SE 3rd gen, iPhone 16)
+- Android Chrome: 1/2 (Pixel Tablet ✅, Pixel 7 ❌ — infra flake, corrupt SDK zip)
 
 ---
 
