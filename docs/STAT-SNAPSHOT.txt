@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-17T01:41:04Z
-HEAD: b80291f
+Generated: 2026-06-17T01:43:48Z
+HEAD: f5a680c
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  b80291f diag: same single-tag Accept-Language fix in /raw-fetch and /workday-probe
+  f5a680c fix: fetchWorkday cluster blocklist for wd5/wd3 (CF-IP CXS blocked)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
