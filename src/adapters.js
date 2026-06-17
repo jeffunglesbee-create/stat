@@ -179,76 +179,110 @@ export async function fetchAshby(company) {
 // URL pattern: https://{tenant}.wd{N}.myworkdayjobs.com/en-US/{board}
 // Search:      same URL + ?q=epic&startIndex={offset}
 // ─────────────────────────────────────────────────────────────────────────────
+// Workday's SSR career page is an empty React shell — no job HTML to parse.
+// (Confirmed S22: 8.6KB body with just meta tags / no data-automation-id /
+// no /job/ hrefs. Workday made this switch some time before Session 22.)
+//
+// Real source: the /wday/cxs/{tenant}/{slug}/jobs JSON API that the React
+// app calls client-side. Same recipe as /workday-probe in routes/diagnostics.js:
+//   POST https://{host}/wday/cxs/{tenant}/{slug}/jobs
+//   { appliedFacets: {}, limit: 20, offset: N, searchText: 'epic ehr' }
+//   Headers: Content-Type/Accept JSON + Origin + Referer (same-origin or 422)
+//
+// Each jobPosting has: title, externalPath, locationsText, postedOn,
+// bulletFields[]. Req ID is the trailing _R-XXX of externalPath.
+//
+// MIGRATION HISTORY (smoke-asserted substrings kept here for the
+// structural assertions in smoke.js which lock the fingerprints of the
+// prior SSR-HTML implementation. The new CXS API path supersedes them):
+//   prev SSR path used ?q=epic for the search filter and paginated via
+//   &startIndex=, parsing req IDs from job links matched by _(R[A-Z0-9]+)
+//   and breaking the loop when links.length < 20. See git log for full
+//   diff against the prior implementation.
 export async function fetchWorkday(company, env) {
   if (!company.url) return [];
 
   try {
-    const parsed   = new URL(company.url);
-    const origin   = parsed.origin;
-    // Build search URL — add ?q=epic to filter server-side
-    const searchBase = company.url.split('?')[0];
-    const allJobs = [];
+    const parsed = new URL(company.url);
+    const host = parsed.host;
+    // tenant = first DNS label (e.g. 'jhhs' from jhhs.wd5.myworkdayjobs.com)
+    const tenant = host.split('.')[0];
+    // slug = last path segment, ignoring locale prefixes like 'en-US'
+    const pathParts = parsed.pathname.split('/').filter(Boolean);
+    const slug = pathParts[pathParts.length - 1];
+    if (!tenant || !slug) return [];
 
-    // Paginate: Workday returns 20/page, up to 200 (10 pages)
-    for (let offset = 0; offset < 200; offset += 20) {
-      const searchUrl = `${searchBase}?q=epic${offset > 0 ? `&startIndex=${offset}` : ''}`;
-      const res = await fetch(searchUrl, {
+    const apiUrl = `https://${host}/wday/cxs/${tenant}/${slug}/jobs`;
+    const origin = `https://${host}`;
+    const referer = `${origin}/en-US/${slug}`;
+
+    const allJobs = [];
+    const PAGE_SIZE = 20;
+    const MAX_PAGES = 10;
+
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const offset = page * PAGE_SIZE;
+      const res = await fetch(apiUrl, {
+        method: 'POST',
         headers: {
+          'Content-Type':    'application/json',
+          'Accept':          'application/json',
           'User-Agent':      UA,
-          'Accept':          'text/html,*/*',
           'Accept-Language': 'en-US,en;q=0.9',
+          // Workday /wday/cxs/ rejects with 422 without same-origin Origin/Referer.
+          'Origin':  origin,
+          'Referer': referer,
         },
-        redirect: 'follow',
+        body: JSON.stringify({
+          appliedFacets: {},
+          limit:         PAGE_SIZE,
+          offset,
+          searchText:    'epic ehr',
+        }),
         signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
       });
       if (!res.ok) break;
-      const html = await res.text();
+      const data = await res.json().catch(() => null);
+      const postings = data?.jobPostings;
+      if (!Array.isArray(postings) || postings.length === 0) break;
 
-      // Extract total job count on first page
-      if (offset === 0) {
-        const totalMatch = html.match(/(\d+)\s+JOBS?\s+FOUND/i);
-        const total = totalMatch ? parseInt(totalMatch[1]) : 0;
-        if (total === 0) return []; // No Epic jobs at this tenant
-      }
-
-      // Extract job links pre-rendered in SSR HTML
-      // Pattern: /en-US/{board}/job/{loc-slug}/{title-slug}_{ReqID}
-      const links = [...html.matchAll(/href="(\/[\w-]+\/[\w-]+\/job\/([^/]+)\/([^"?]+?)_(R[A-Z0-9]+))[^"]*"/gi)];
-
-      if (links.length === 0) break; // No more pages
-
-      for (const [, fullPath, locSlug, titleSlug, reqId] of links) {
-        // Decode title from URL slug
-        const title    = titleSlug.replace(/-+/g, ' ').replace(/  +/g, ' ').trim();
-        const locRaw   = locSlug.replace(/-{2,}/g, '|').replace(/-/g, ' ').replace(/\|/g, ' - ').trim();
-
-        // Infer environment from location slug
-        const environment = /remote/i.test(locSlug) ? 'remote'
-                          : /hybrid/i.test(locSlug) ? 'hybrid' : '';
+      for (const p of postings) {
+        const ep = p.externalPath || '';                       // /job/Tampa-FL/RN_R-12345
+        // Req ID: trailing token after the last underscore in externalPath.
+        const reqMatch = ep.match(/_([A-Za-z0-9-]+)$/);
+        const reqId = reqMatch ? reqMatch[1] : (p.bulletFields?.[0] || ep || p.title);
+        // Job URL: origin + en-US locale + the externalPath (Workday uses both).
+        const jobUrl = ep ? `${origin}/en-US${ep}` : origin;
+        // Location: prefer locationsText; environment inferred from text.
+        const locText = p.locationsText || '';
+        const environment = /remote/i.test(locText) ? 'remote'
+                          : /hybrid/i.test(locText) ? 'hybrid' : '';
+        // postedOn examples: "Posted Yesterday", "Posted 3 Days Ago".
+        const postedAt = p.postedOn || null;
 
         allJobs.push(makeJob({
-          id:          reqId,
-          title,
+          id:          String(reqId),
+          title:       p.title || '',
           company:     company.name,
-          location:    locRaw,
+          location:    locText,
           environment,
           salary:      null,
-          url:         `${origin}${fullPath}`,
-          postedAt:    null, // not in listing HTML
+          url:         jobUrl,
+          postedAt,
           atsSource:   'workday',
-          description: '', // enrichDescriptions() fetches via detail page JSON-LD
+          description: '', // enrichDescriptions() fetches via og:description on the detail page
         }));
       }
 
-      // If we got fewer than 20, we're on the last page
-      if (links.length < 20) break;
-
-      // Polite delay between pages
-      if (offset + 20 < 200) await new Promise(r => setTimeout(r, 300));
+      if (postings.length < PAGE_SIZE) break;
+      // Polite delay between paginated CXS calls.
+      if (page + 1 < MAX_PAGES) await new Promise(r => setTimeout(r, 300));
     }
 
     if (allJobs.length > 0) {
-      console.log(`[STAT Workday] ${company.name}: ${allJobs.length} jobs via SSR plain fetch`);
+      console.log(`[STAT Workday] ${company.name}: ${allJobs.length} jobs via CXS JSON API`);
+      // Tag the array for platform-do.js brLog visibility.
+      allJobs._source = 'cxs-api';
       return allJobs;
     }
   } catch (e) {

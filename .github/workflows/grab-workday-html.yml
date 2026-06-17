@@ -30,8 +30,9 @@ jobs:
           mkdir -p outbox
           TARGET="${{ inputs.target_url }}"
           OUT="outbox/${{ inputs.filename }}"
+          ENC=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$TARGET")
           curl -sS --max-time 30 -D outbox/grab-headers.txt \
-            "https://stat-job-watcher.jeffunglesbee.workers.dev/raw-fetch?url=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$TARGET")" \
+            "https://stat-job-watcher.jeffunglesbee.workers.dev/raw-fetch?url=${ENC}" \
             > "$OUT"
           wc -c "$OUT"
           head -200 "$OUT"
