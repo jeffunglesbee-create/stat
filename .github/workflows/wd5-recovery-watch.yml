@@ -1,11 +1,12 @@
 # .github/workflows/wd5-recovery-watch.yml
 #
-# Polls JHBMC every 10 minutes. The moment wd5 exits maintenance
-# (HTTP 200 + bytes > 10KB), auto-fires the S27 recovery sequence:
-#   1. wd5-ssr-probe.yml      — A/B which bypass approach works
-#   2. wd5-cxs-poll.yml limit=3  — session-cookie CXS smoke test
-#   3. wd5-playwright-poll.yml limit=3 — Playwright XHR-intercept smoke test
-# No human intervention needed.
+# Polls JHBMC every 10 minutes via TWO paths:
+# 1. CF Worker IP (plain-fetch-test) — detects real maintenance ending
+# 2. DataImpulse residential proxy — detects WAF block vs maintenance
+#    If residential succeeds but CF fails = permanent WAF block.
+#    In that case, wd5-playwright-poll.yml (which uses DataImpulse) works NOW.
+#
+# Fires S27 sequence the moment either path returns HTTP 200 + bytes > 10KB.
 
 name: wd5 Recovery Watch
 
@@ -18,50 +19,61 @@ jobs:
   watch:
     runs-on: ubuntu-latest
     steps:
-      - name: Check wd5 recovery
-        id: check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check wd5 via CF Worker IP
+        id: cf_check
         run: |
           RESULT=$(curl -s -w "\n%{http_code}:%{size_download}" \
             "https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https://jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions" \
             --max-time 10 2>/dev/null)
           HTTP=$(echo "$RESULT" | tail -1 | cut -d: -f1)
           BYTES=$(echo "$RESULT" | tail -1 | cut -d: -f2)
-          echo "HTTP: $HTTP, Bytes: $BYTES"
+          echo "CF IP — HTTP: $HTTP, Bytes: $BYTES"
           if [ "$HTTP" = "200" ] && [ "${BYTES:-0}" -gt 10000 ]; then
-            echo "wd5 RECOVERED — firing S27 sequence"
             echo "recovered=true" >> $GITHUB_OUTPUT
           else
-            echo "wd5 still in maintenance (HTTP: $HTTP, bytes: ${BYTES:-0})"
             echo "recovered=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Fire S27 sequence
-        if: steps.check.outputs.recovered == 'true'
+      - name: Check wd5 via DataImpulse residential proxy
+        id: di_check
+        env:
+          DI_USER: ${{ secrets.DATAIMPULSE_USER }}
+          DI_PASS: ${{ secrets.DATAIMPULSE_PASS }}
+        run: |
+          RESULT=$(curl -s -w "\n%{http_code}:%{size_download}" \
+            -x "http://${DI_USER}:${DI_PASS}@gw.dataimpulse.com:823" \
+            "https://jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions" \
+            -L --max-time 15 2>/dev/null)
+          HTTP=$(echo "$RESULT" | tail -1 | cut -d: -f1)
+          BYTES=$(echo "$RESULT" | tail -1 | cut -d: -f2)
+          echo "DataImpulse — HTTP: $HTTP, Bytes: $BYTES"
+          if [ "$HTTP" = "200" ] && [ "${BYTES:-0}" -gt 10000 ]; then
+            echo "recovered=true" >> $GITHUB_OUTPUT
+            echo "VERDICT: wd5 is UP via residential — WAF blocks CF IPs permanently"
+          elif [ "${BYTES:-0}" = "238" ]; then
+            echo "recovered=false" >> $GITHUB_OUTPUT
+            echo "VERDICT: wd5 genuinely in maintenance (238-byte page from residential too)"
+          else
+            echo "recovered=false" >> $GITHUB_OUTPUT
+            echo "VERDICT: Inconclusive (HTTP: $HTTP, Bytes: $BYTES)"
+          fi
+
+      - name: Fire S27 sequence if either path recovered
+        if: steps.cf_check.outputs.recovered == 'true' || steps.di_check.outputs.recovered == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           REPO="jeffunglesbee-create/stat"
           BASE="https://api.github.com/repos/$REPO/actions/workflows"
           AUTH="Authorization: token $GH_TOKEN"
-
-          echo "Step 1: Dispatch wd5-ssr-probe.yml"
+          echo "wd5 RECOVERED — firing S27 sequence"
           curl -s -X POST -H "$AUTH" -H "Accept: application/vnd.github.v3+json" \
-            "$BASE/wd5-ssr-probe.yml/dispatches" -d '{"ref":"main"}' && echo "✅" || echo "❌"
-
+            "$BASE/wd5-ssr-probe.yml/dispatches" -d '{"ref":"main"}' && echo "SSR probe ✅"
           sleep 5
-
-          echo "Step 2: Dispatch wd5-cxs-poll.yml with limit=3"
           curl -s -X POST -H "$AUTH" -H "Accept: application/vnd.github.v3+json" \
             "$BASE/wd5-cxs-poll.yml/dispatches" \
-            -d '{"ref":"main","inputs":{"limit":"3"}}' && echo "✅" || echo "❌"
-
+            -d '{"ref":"main","inputs":{"limit":"3"}}' && echo "CXS poll ✅"
           sleep 5
-
-          echo "Step 3: Dispatch wd5-playwright-poll.yml with limit=3"
           curl -s -X POST -H "$AUTH" -H "Accept: application/vnd.github.v3+json" \
             "$BASE/wd5-playwright-poll.yml/dispatches" \
-            -d '{"ref":"main","inputs":{"limit":"3"}}' && echo "✅" || echo "❌"
-
-          echo "S27 sequence fired. Check Actions for results."
+            -d '{"ref":"main","inputs":{"limit":"3"}}' && echo "Playwright poll ✅"
