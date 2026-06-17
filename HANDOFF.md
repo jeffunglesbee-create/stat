@@ -1,3 +1,90 @@
+# STAT HANDOFF — 2026-06-17 (Session 23 END — Workday URL audit + cluster corrections)
+
+## State
+HEAD: 055a636 — Worker last deployed 055a636 (deploy 188 ✅)
+Smoke: 213/213 ✅
+Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 23 — Workday URL audit + cluster corrections (2026-06-17)
+
+**Tasks completed:**
+
+**Task 1 — Inventory.** All 121 Workday entries extracted from `src/config.js`
+(SEED_COMPANIES + BATCH_WATCHLIST) and grouped by cluster.
+
+**Task 2 — Verification via CI.** `.github/workflows/verify-workday-urls.yml`
+dispatched (run 27692487120). Probed via the deployed Worker's `/raw-fetch`
+POST mode:
+- `bannerhealth.wd108` CXS → HTTP 200, `total: 0` jobs (CXS endpoint reachable)
+- `bannerhealth.wd5` CXS → HTTP 422 (CF-blocked, as expected)
+- `stanfordmedicine.wd115` CXS → HTTP 200, **6 jobs** (confirmed active)
+- `stanfordhealthcare.wd5` CXS → HTTP 422 (CF-blocked)
+- `stanfordhealthcare.wd5` GET → HTTP 500 (CF-blocked)
+- `bsmhealth.wd5` + `bonsecours.wd5` GET → HTTP 500 each (CF-blocked, both valid)
+
+**Task 3 — Deduplication (commits `05b0ba8` + `055a636`):**
+- Removed `CHRISTUS Health` duplicate from BATCH_WATCHLIST: exact same URL
+  (`christus.wd5.myworkdayjobs.com/en-US/CHRISTUS`) as SEED_COMPANIES entry.
+  SEED wins; BATCH comment added explaining removal.
+- No Atrium Health `atriumhealth.wd5` duplicate found — only one entry
+  (`aah.wd5.myworkdayjobs.com/External` as "Advocate Health (Atrium)").
+
+**Task 4 — Config corrections (commit `055a636`):**
+1. **Banner Health**: `bannerhealth.wd5.myworkdayjobs.com/Careers` →
+   `bannerhealth.wd108.myworkdayjobs.com/Careers` (CXS confirmed reachable;
+   wd5 returns 422 from CF IPs).
+2. **Stanford Health Care (`stanfordhealthcare.wd5`)**: marked `inactive: true`
+   with reason "wd5 CF-blocked; stanfordmedicine.wd115 confirmed active (6 jobs)".
+
+**Also shipped:** `fetchCompanyJobs` inactive guard — `if (company.inactive) return []`
+in `src/adapters.js`. Stops 18 inactive entries from consuming alarm cycles.
+Carried forward from S21/S22 open items.
+
+**Task 5 — Cluster map (post-corrections, 120 total):**
+
+| cluster | active | inactive | total | CXS from CF |
+|---------|-------:|--------:|------:|-------------|
+| wd5     |     82 |      15 |    97 | ❌ blocked  |
+| wd1     |     11 |       2 |    13 | ✅ direct   |
+| wd12    |      3 |       0 |     3 | ✅ direct   |
+| wd108   |      2 |       0 |     2 | ✅ direct   |
+| wd115   |      1 |       0 |     1 | ✅ direct   |
+| wd3     |      3 |       0 |     3 | ❌ blocked  |
+| custom  |      0 |       1 |     1 | n/a         |
+| **total** | **102** | **18** | **120** | |
+
+**CXS-direct (active)**: 17 = 11(wd1) + 3(wd12) + 2(wd108) + 1(wd115)
+**HC-dependent (active)**: 85 = 82(wd5) + 3(wd3)
+**Inactive**: 18
+
+Change vs S22: +1 CXS-direct (Banner Health moved wd5→wd108), -1 HC-dependent
+(CHRISTUS dup removed), -1 HC-dependent (Banner moved out), total 121→120.
+
+**Task 6 — CXS test on newly-reachable company:**
+Banner Health wd108 returns HTTP 200 from CI CXS probe. The `fetchWorkday`
+code will poll it on the next alarm cycle. `WORKDAY_CF_BLOCKED_CLUSTERS`
+is `['wd5', 'wd3']` — wd108 is NOT in the blocklist, so CXS calls will proceed.
+Zero "epic ehr" jobs returned currently (not an error — just no matching postings).
+
+**Task 7 — Deploy:** run 188 ✅ (commit `055a636`), 50s.
+
+**Open items into S24:**
+1. **DataImpulse residential-proxy for wd5** — still future-session. Credentials
+   in Worker secrets but no code. Would unblock 82 active wd5 companies.
+2. **wd1 slug verification** — 11 active wd1 companies may have wrong slugs.
+   S22 cluster probe returned 404 for MGB sample ("not found: Job_Posting_Si…").
+   Need to probe each tenant individually: `GET /workday-probe?tenant=X&host=X.wd1…&slug=Y`.
+   Priority: AdventHealth, Ascension, CVS Health (3 high-value companies).
+3. **Bon Secours two tenants** — `bsmhealth.wd5` (SEED) and `bonsecours.wd5`
+   (BATCH) — both return 500 from CF IPs. Cannot distinguish if one is dead
+   from CF probes. Leave as-is (both HC-dependent anyway).
+4. **Northwell Health iCIMS** — listed as `northwell.icims.com`, comment says to
+   verify; actual jobs at `jobs.northwell.edu`. The iCIMS adapter handles
+   custom domains via `in_iframe=1` endpoint — verify `careers-northwell.icims.com`
+   is the correct backing URL.
+
+---
+
 # STAT HANDOFF — 2026-06-17 (Session 22 END — Workday parser fix + cluster routing)
 
 ## State
