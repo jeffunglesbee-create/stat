@@ -70,12 +70,20 @@ jobs:
               'keyword': 'epic',
           })
           probe_url = f'{WORKER}/cxs-get-probe?{q}'
+          # Use curl_cffi (Chrome impersonation) for the Worker call too —
+          # default Python-urllib UA tripped CF edge rules with 403.
+          UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
           print(f'=== PHASE 1: wd108 IMH via Worker ===')
           print(f'GET {probe_url}')
           try:
-              req = urllib.request.Request(probe_url)
-              with urllib.request.urlopen(req, timeout=120) as r:
-                  body = r.read().decode()
+              if CFFI_OK:
+                  rr = cf_requests.get(probe_url, impersonate='chrome120',
+                                       headers={'User-Agent': UA}, timeout=120)
+                  body = rr.text
+              else:
+                  req = urllib.request.Request(probe_url, headers={'User-Agent': UA})
+                  with urllib.request.urlopen(req, timeout=120) as r:
+                      body = r.read().decode()
               data = json.loads(body)
               summary['phases'].append({'phase': 'wd108_imh_worker', 'response': data})
               print(f'anyOk={data["anyOk"]} winners={data["winners"]}')
@@ -104,9 +112,14 @@ jobs:
           print(f'\n=== PHASE 2: wd5 JHBMC via Worker ===')
           print(f'GET {probe_url}')
           try:
-              req = urllib.request.Request(probe_url)
-              with urllib.request.urlopen(req, timeout=120) as r:
-                  body = r.read().decode()
+              if CFFI_OK:
+                  rr = cf_requests.get(probe_url, impersonate='chrome120',
+                                       headers={'User-Agent': UA}, timeout=120)
+                  body = rr.text
+              else:
+                  req = urllib.request.Request(probe_url, headers={'User-Agent': UA})
+                  with urllib.request.urlopen(req, timeout=120) as r:
+                      body = r.read().decode()
               data2 = json.loads(body)
               summary['phases'].append({'phase': 'wd5_jhbmc_worker', 'response': data2})
               print(f'anyOk={data2["anyOk"]} winners={data2["winners"]}')
