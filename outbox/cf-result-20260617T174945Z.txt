@@ -1,0 +1,6 @@
+=== CF API Probe [20260617T174945Z] ===
+Request: GET https://stat-job-watcher.jeffunglesbee.workers.dev/workday-probe?company=imh&cluster=wd108&slug=imh&method=GET
+
+{
+    "error": "tenant, host, slug required"
+}
