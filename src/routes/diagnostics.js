@@ -92,7 +92,7 @@ export async function handleDiagnostics(request, url, env) {
       const upstreamHeaders = {
         'User-Agent':      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept':          isPost ? 'application/json' : 'text/html,*/*',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Language': 'en-US',
       };
       if (isPost) {
         upstreamHeaders['Content-Type'] = request.headers.get('content-type') || 'application/json';
@@ -199,7 +199,7 @@ export async function handleDiagnostics(request, url, env) {
         headers: {
           'User-Agent':      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Language': 'en-US',
           'Cache-Control':   'no-cache',
         },
         redirect: 'follow',
@@ -403,7 +403,7 @@ export async function handleDiagnostics(request, url, env) {
         headers: {
           'User-Agent': UA,
           'Accept': 'text/html,application/xhtml+xml,*/*;q=0.9',
-          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Language': 'en-US',
           'Cache-Control': 'no-cache',
         },
         redirect: 'follow',
@@ -520,7 +520,7 @@ export async function handleDiagnostics(request, url, env) {
         headers: {
           'User-Agent': UA,
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Language': 'en-US',
         },
       });
       const httpStatus = res.status;
