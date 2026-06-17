@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-17T14:16:53Z
-HEAD: 3c54757
+Generated: 2026-06-17T17:55:38Z
+HEAD: c619744
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  3c54757 feat: S24 Phase 2 — wd5 CXS polling via DataImpulse proxy + /ingest endpoint
+  c619744 feat: S27a /cxs-get-probe — does Workday CXS accept GET?
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
