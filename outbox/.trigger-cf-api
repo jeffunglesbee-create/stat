@@ -1,2 +1,2 @@
 method=GET
-url=https://stat-job-watcher.jeffunglesbee.workers.dev/workday-probe?company=imh&cluster=wd108&slug=imh&method=GET
+url=https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https://community.workday.com/maintenance-page
