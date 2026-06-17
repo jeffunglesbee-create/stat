@@ -1,0 +1,44 @@
+# .github/workflows/grab-workday-html.yml
+# Fetches one Workday SSR page via the Worker's /raw-fetch and commits the
+# HTML to outbox/ for offline inspection. Dispatch with `target_url` input.
+name: Grab Workday HTML
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Workday URL to grab (default: JHBMC)"
+        required: false
+        default: "https://jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions?q=epic"
+      filename:
+        description: "Output filename (default: workday-jhbmc.html)"
+        required: false
+        default: "workday-jhbmc.html"
+
+permissions:
+  contents: write
+
+jobs:
+  grab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+      - name: Fetch via Worker /raw-fetch
+        run: |
+          mkdir -p outbox
+          TARGET="${{ inputs.target_url }}"
+          OUT="outbox/${{ inputs.filename }}"
+          curl -sS --max-time 30 -D outbox/grab-headers.txt \
+            "https://stat-job-watcher.jeffunglesbee.workers.dev/raw-fetch?url=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$TARGET")" \
+            > "$OUT"
+          wc -c "$OUT"
+          head -200 "$OUT"
+      - name: Commit
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git add outbox/grab-headers.txt "outbox/${{ inputs.filename }}"
+          git commit -m "ci: grabbed Workday HTML — ${{ inputs.filename }} [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"

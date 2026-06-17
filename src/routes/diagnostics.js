@@ -72,6 +72,43 @@ export async function handleDiagnostics(request, url, env) {
     });
   }
 
+  // GET /raw-fetch?url=… — return the full body of a URL fetched from the
+  // Worker IP. Used by the S21b/S22 Workday SSR investigation: /plain-fetch-test
+  // only returns a 300-char excerpt, which isn't enough to inspect Workday's
+  // real link patterns. Same headers as fetchWorkday in adapters.js so the
+  // response matches what the adapter actually sees.
+  //
+  // Returns raw HTML (Content-Type: text/plain) with X-Status / X-Bytes
+  // headers carrying the upstream status + length. Up to 250KB.
+  if (url.pathname === '/raw-fetch' && request.method === 'GET') {
+    const targetUrl = url.searchParams.get('url');
+    if (!targetUrl) return new Response('url param required', { status: 400 });
+    try {
+      const res = await fetch(targetUrl, {
+        headers: {
+          'User-Agent':      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept':          'text/html,*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(20000),
+      });
+      const body = await res.text();
+      const truncated = body.slice(0, 250000);
+      return new Response(truncated, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'X-Upstream-Status': String(res.status),
+          'X-Upstream-Bytes':  String(body.length),
+          'X-Truncated':       truncated.length < body.length ? '1' : '0',
+        },
+      });
+    } catch (e) {
+      return new Response('error: ' + e.message, { status: 500 });
+    }
+  }
+
   // GET /workday-probe — rate limit floor probe for Workday API
   // Tests a single tenant at decreasing intervals and returns results as JSON.
   // Usage: GET /workday-probe?tenant=jhhs&host=jhhs.wd5.myworkdayjobs.com&slug=JHH_External_Positions
