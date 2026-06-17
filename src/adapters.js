@@ -1160,6 +1160,7 @@ export async function fetchSelectMinds(company, selectmindsCursor = null) {
 // Dispatcher — routes to the right adapter by ATS type
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchCompanyJobs(company, env) {
+  if (company.inactive) return [];
   switch (company.ats) {
     case 'greenhouse':     return fetchGreenhouse(company);
     case 'lever':          return fetchLever(company);
