@@ -1,0 +1,13 @@
+{
+  "ok": false,
+  "url": "https://dukehealth.wd5.myworkdayjobs.com/wday/cxs/dukehealth/Duke/feed",
+  "http_status": 422,
+  "elapsed_ms": 830,
+  "body_bytes": 121,
+  "is_blocked": false,
+  "title": "",
+  "og_description": "",
+  "job_ids": [],
+  "job_hrefs": [],
+  "body_text_excerpt": "{\"errorCode\":\"HTTP_422\",\"errorCaseId\":\"84BCEBMQI5G91M\",\"httpStatus\":422,\"locale\":\"en-US\",\"message\":\"\",\"messageParams\":{}}"
+}

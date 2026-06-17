@@ -1,0 +1,13 @@
+{
+  "ok": false,
+  "url": "https://rwjbarnabas.wd5.myworkdayjobs.com/wday/cxs/rwjbarnabas/external_career_site/feed",
+  "http_status": 422,
+  "elapsed_ms": 721,
+  "body_bytes": 121,
+  "is_blocked": false,
+  "title": "",
+  "og_description": "",
+  "job_ids": [],
+  "job_hrefs": [],
+  "body_text_excerpt": "{\"errorCode\":\"HTTP_422\",\"errorCaseId\":\"75BAB1MQI5G4G6\",\"httpStatus\":422,\"locale\":\"en-US\",\"message\":\"\",\"messageParams\":{}}"
+}
