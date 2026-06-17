@@ -32,9 +32,9 @@ on:
         required: false
         default: '0'
       max_pages:
-        description: 'Max listing pages per tenant (20 jobs/page).'
+        description: 'Max listing pages per tenant (20 jobs/page; startIndex stride).'
         required: false
-        default: '3'
+        default: '10'
 
 permissions:
   contents: write
@@ -108,10 +108,11 @@ jobs:
             HTTP_LAST="-"; BYTES_TOTAL=0; PAGES_FETCHED=0; UA_USED="bot"
 
             for PAGE in $(seq 1 "$MAX_PAGES"); do
-              if [ "$PAGE" = "1" ]; then
+              START_INDEX=$(( (PAGE - 1) * 20 ))
+              if [ "$START_INDEX" = "0" ]; then
                 URL="https://${HOST}/en-US/${SLUG}?q=epic"
               else
-                URL="https://${HOST}/en-US/${SLUG}?q=epic&page=${PAGE}"
+                URL="https://${HOST}/en-US/${SLUG}?q=epic&startIndex=${START_INDEX}"
               fi
               HTML_FILE="outbox/wd5-html-${TENANT}-${CLUSTER}-p${PAGE}.html"
 
@@ -143,9 +144,10 @@ jobs:
               BYTES_TOTAL=$((BYTES_TOTAL + BYTES))
               PAGES_FETCHED=$PAGE
 
-              # Parse this page's HTML for job links and append to the
-              # per-tenant cumulative JSON file. Stop pagination if zero new.
-              NEW_COUNT=$(SLUG_RE="$SLUG" HTML_FILE="$HTML_FILE" ALL_JOBS_FILE="$ALL_JOBS_FILE" python3 << 'PYEOF'
+              # Parse this page's HTML for job links + total-count header.
+              # Output two lines: NEW_COUNT and TOTAL_REPORTED (or -1 unknown).
+              # Stop pagination when total reached or fewer than 20 new links.
+              PARSE_OUT=$(SLUG_RE="$SLUG" HTML_FILE="$HTML_FILE" ALL_JOBS_FILE="$ALL_JOBS_FILE" python3 << 'PYEOF'
           import json, os, re, sys
           slug = os.environ['SLUG_RE']
           html_path = os.environ['HTML_FILE']
@@ -153,12 +155,10 @@ jobs:
           try:
               html = open(html_path, 'r', encoding='utf-8', errors='replace').read()
           except Exception:
-              print(0); sys.exit(0)
+              print('0'); print('-1'); sys.exit(0)
 
           # Match Workday job links:
           #   /en-US/{slug}/job/{Location}/{Title-with-dashes}_{ReqId}
-          # ReqId pattern is typically R12345 but tenants vary — accept any
-          # alnum-with-dashes after the final underscore.
           pat = re.compile(
               r'href="(/en-US/' + re.escape(slug) + r'/job/([^/"]+)/([^"]+?)_([A-Za-z0-9-]+))"',
               re.IGNORECASE,
@@ -180,14 +180,35 @@ jobs:
           if new_rows:
               existing.extend(new_rows)
               json.dump(existing, open(all_path, 'w'))
+
+          # Extract total reported by Workday: "1 - 20 of 137 jobs" pattern.
+          # Workday SSR text may include HTML escapes; strip tags first.
+          stripped = re.sub(r'<[^>]+>', ' ', html)
+          mtot = re.search(r'\b(\d+)\s*-\s*(\d+)\s*of\s*(\d+)\s*jobs?\b', stripped, re.IGNORECASE)
+          total = int(mtot.group(3)) if mtot else -1
           print(len(new_rows))
+          print(total)
           PYEOF
               )
-              echo "  page $PAGE: parsed $NEW_COUNT new job links"
+              NEW_COUNT=$(echo "$PARSE_OUT" | sed -n '1p')
+              TOTAL_REPORTED=$(echo "$PARSE_OUT" | sed -n '2p')
+              echo "  page $PAGE: parsed $NEW_COUNT new job links (total reported by tenant: $TOTAL_REPORTED)"
 
-              # Stop if this page added no new jobs (end of results)
+              # Pagination stop conditions:
+              #   1. Page returned zero new links (end of unique results)
+              #   2. Page returned fewer than 20 links (last page)
+              #   3. Cumulative parsed count ≥ tenant-reported total
               if [ "$NEW_COUNT" = "0" ]; then
-                echo "  page $PAGE: no new jobs — stopping pagination"
+                echo "  page $PAGE: zero new — stopping pagination"
+                break
+              fi
+              if [ "$NEW_COUNT" -lt 20 ]; then
+                echo "  page $PAGE: <20 new — last page, stopping pagination"
+                break
+              fi
+              PARSED_SO_FAR=$(python3 -c "import json; print(len(json.load(open('$ALL_JOBS_FILE'))))")
+              if [ "$TOTAL_REPORTED" -gt 0 ] && [ "$PARSED_SO_FAR" -ge "$TOTAL_REPORTED" ]; then
+                echo "  page $PAGE: parsed $PARSED_SO_FAR ≥ reported total $TOTAL_REPORTED — stopping"
                 break
               fi
               # Polite delay between pagination requests
