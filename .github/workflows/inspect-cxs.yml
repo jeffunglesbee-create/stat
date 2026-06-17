@@ -1,0 +1,58 @@
+# .github/workflows/inspect-cxs.yml
+# POSTs to a Workday CXS endpoint via the Worker's /raw-fetch and commits
+# the 422 / 200 body so we can read the error detail.
+name: Inspect Workday CXS
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+      - name: POST to CXS via /raw-fetch
+        run: |
+          mkdir -p outbox
+          W="https://stat-job-watcher.jeffunglesbee.workers.dev"
+          probe() {
+            local label="$1" target="$2" referer="$3" body="$4"
+            local enc=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$target")
+            echo "=== $label ==="
+            echo "target:  $target"
+            echo "referer: $referer"
+            echo "body:    $body"
+            curl -sS --max-time 30 -D "outbox/cxs-${label}-headers.txt" \
+              -X POST -H "Content-Type: application/json" \
+              -H "X-Wanted-Referer: ${referer}" \
+              --data "$body" \
+              "$W/raw-fetch?url=${enc}" \
+              > "outbox/cxs-${label}-body.txt"
+            echo "--- response (first 1200 bytes) ---"
+            head -c 1200 "outbox/cxs-${label}-body.txt"
+            echo
+            grep -i "^x-upstream" "outbox/cxs-${label}-headers.txt"
+            echo
+          }
+          # JHHS wd5 — was returning 422
+          probe jhhs \
+            "https://jhhs.wd5.myworkdayjobs.com/wday/cxs/jhhs/JHH_External_Positions/jobs" \
+            "https://jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions" \
+            '{"appliedFacets":{},"limit":20,"offset":0,"searchText":"epic ehr"}'
+          # IMH wd108 — was returning 200 OK
+          probe imh \
+            "https://imh.wd108.myworkdayjobs.com/wday/cxs/imh/IntermountainCareers/jobs" \
+            "https://imh.wd108.myworkdayjobs.com/IntermountainCareers" \
+            '{"appliedFacets":{},"limit":20,"offset":0,"searchText":"epic ehr"}'
+      - name: Commit
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git pull --rebase origin main || true
+          git add outbox/cxs-*.txt
+          git commit -m "ci: CXS inspect bodies [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"

@@ -80,16 +80,31 @@ export async function handleDiagnostics(request, url, env) {
   //
   // Returns raw HTML (Content-Type: text/plain) with X-Status / X-Bytes
   // headers carrying the upstream status + length. Up to 250KB.
-  if (url.pathname === '/raw-fetch' && request.method === 'GET') {
+  if (url.pathname === '/raw-fetch' && (request.method === 'GET' || request.method === 'POST')) {
     const targetUrl = url.searchParams.get('url');
     if (!targetUrl) return new Response('url param required', { status: 400 });
     try {
+      // POST mode: caller supplies body + headers via the request itself.
+      // Useful for hitting Workday CXS endpoints with the right Origin/Referer.
+      const isPost = request.method === 'POST';
+      const targetHost = new URL(targetUrl).host;
+      const targetOrigin = `https://${targetHost}`;
+      const upstreamHeaders = {
+        'User-Agent':      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept':          isPost ? 'application/json' : 'text/html,*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+      };
+      if (isPost) {
+        upstreamHeaders['Content-Type'] = request.headers.get('content-type') || 'application/json';
+        upstreamHeaders['Origin'] = targetOrigin;
+        // Caller can override referer via X-Wanted-Referer header.
+        upstreamHeaders['Referer'] = request.headers.get('x-wanted-referer') || `${targetOrigin}/`;
+      }
+      const upstreamBody = isPost ? await request.text() : undefined;
       const res = await fetch(targetUrl, {
-        headers: {
-          'User-Agent':      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Accept':          'text/html,*/*',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
+        method: isPost ? 'POST' : 'GET',
+        headers: upstreamHeaders,
+        body: upstreamBody,
         redirect: 'follow',
         signal: AbortSignal.timeout(20000),
       });
