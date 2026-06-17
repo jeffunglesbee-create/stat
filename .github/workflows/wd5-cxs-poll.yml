@@ -1,23 +1,24 @@
 # .github/workflows/wd5-cxs-poll.yml
-# S24 Phase 2: poll Workday wd5/wd3 CXS endpoints via DataImpulse residential
-# proxy (CF Worker IPs are 422-blocked at the cluster level — DataImpulse exit
-# IPs are residential and not blocked).
+# S25: poll Workday wd5/wd3 listing pages via DataImpulse residential proxy.
 #
-# Required secrets (set with `gh secret set` or PyNaCl from chat):
+# S24 history: this workflow originally POSTed the CXS JSON API (/wday/cxs/...).
+# Even through DataImpulse all 3 test companies returned 422 — CXS requires
+# CSRF session cookies (PLAY_SESSION, CALYPSO_CSRF_TOKEN, __cf_bm) set during a
+# browser page load that a bare curl will never have.
+#
+# S25 fix: GET the SEO listing page with ?q=epic appended. Server-rendered for
+# crawlers, no CSRF, no JS, no cookies required. Parse <a href="/en-US/.../job/
+# .../title_R12345"> patterns out of the HTML.
+#
+# Required secrets:
 #   DATAIMPULSE_USER  — gw.dataimpulse.com:823 username
 #   DATAIMPULSE_PASS  — gw.dataimpulse.com:823 password
 #   STAT_INGEST_TOKEN — shared secret matching env.STAT_INGEST_TOKEN on Worker
 #
-# Cost (DataImpulse residential proxy, ~$0.50/GB at ingest plan):
-#   Per request: CXS POST = ~3KB request + ~10KB response (5 jobs) = ~13KB
-#   85 cos × 12 cycles/day (every 2h) = 1,020 requests/day
-#   1,020 × 13KB = 13.3MB/day = 400MB/month = ~$0.20/month
-#   Conservative (every 4h, 6 cycles/day): 510 reqs/day = 200MB/month = ~$0.10/mo
-#
-# Starts as workflow_dispatch ONLY. Add `schedule:` block after a manual test
-# round confirms the proxy path and ingest endpoint work.
+# Cost: GET listing = ~50KB HTML × 85 cos × cycles/day. Every 4h = 510 GETs/day
+# = 25MB/day = 750MB/month ≈ $0.40/month at DataImpulse residential rates.
 
-name: Poll wd5 Workday CXS via proxy (S24)
+name: Poll wd5 Workday HTML listings via proxy (S25)
 
 on:
   workflow_dispatch:
@@ -30,6 +31,10 @@ on:
         description: 'Skip first N companies (rotate test set).'
         required: false
         default: '0'
+      max_pages:
+        description: 'Max listing pages per tenant (20 jobs/page).'
+        required: false
+        default: '3'
 
 permissions:
   contents: write
@@ -54,25 +59,23 @@ jobs:
           if [ ${#missing[@]} -gt 0 ]; then
             echo "::error::Missing required secrets: ${missing[*]}"
             echo "Set via: gh secret set <NAME> --body <VALUE> --repo jeffunglesbee-create/stat"
-            echo "Or via PyNaCl from chat session."
             exit 1
           fi
           echo "All required secrets present."
 
-      - name: Poll wd5/wd3 tenants via DataImpulse proxy
+      - name: Poll wd5/wd3 listing pages via DataImpulse proxy
         env:
           DI_USER:      ${{ secrets.DATAIMPULSE_USER }}
           DI_PASS:      ${{ secrets.DATAIMPULSE_PASS }}
           INGEST_TOKEN: ${{ secrets.STAT_INGEST_TOKEN }}
           LIMIT:        ${{ github.event.inputs.limit || '3' }}
           OFFSET:       ${{ github.event.inputs.offset || '0' }}
+          MAX_PAGES:    ${{ github.event.inputs.max_pages || '3' }}
         run: |
+          set -u
           mkdir -p outbox
           INV="outbox/wd5-companies.json"
-          if [ ! -f "$INV" ]; then
-            echo "::error::$INV not found. Run scripts/extract-workday-urls.js first."
-            exit 1
-          fi
+          [ -f "$INV" ] || { echo "::error::$INV missing"; exit 1; }
 
           PROXY="http://${DI_USER}:${DI_PASS}@gw.dataimpulse.com:823"
           POLL_LOG="outbox/wd5-poll-$(date -u +%Y%m%dT%H%M%SZ).json"
@@ -80,88 +83,156 @@ jobs:
           echo "[" >> "$POLL_LOG"
           FIRST=1
 
-          # Slice the company inventory: skip OFFSET, take LIMIT
-          COMPANY_COUNT=$(python3 -c "import json; print(len(json.load(open('$INV'))['companies']))")
-          echo "Inventory: $COMPANY_COUNT total. Slicing [offset=$OFFSET, limit=$LIMIT]"
+          UA_BOT="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+          UA_BROWSER="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
-          # Iterate slice
+          COMPANY_COUNT=$(python3 -c "import json; print(len(json.load(open('$INV'))['companies']))")
+          echo "Inventory: $COMPANY_COUNT total. Slicing [offset=$OFFSET, limit=$LIMIT, max_pages=$MAX_PAGES]"
+
           for idx in $(seq "$OFFSET" $((OFFSET + LIMIT - 1))); do
             [ "$idx" -ge "$COMPANY_COUNT" ] && break
-            ROW=$(python3 -c "import json,sys; d=json.load(open('$INV'))['companies']; i=int(sys.argv[1]); print(json.dumps(d[i]))" "$idx")
-            NAME=$(echo "$ROW" | python3 -c "import json,sys; print(json.load(sys.stdin)['name'])")
+            ROW=$(python3 -c "import json,sys; d=json.load(open('$INV'))['companies']; print(json.dumps(d[int(sys.argv[1])]))" "$idx")
+            NAME=$(echo "$ROW"   | python3 -c "import json,sys; print(json.load(sys.stdin)['name'])")
             TENANT=$(echo "$ROW" | python3 -c "import json,sys; print(json.load(sys.stdin)['tenant'])")
-            CLUSTER=$(echo "$ROW" | python3 -c "import json,sys; print(json.load(sys.stdin)['cluster'])")
-            SLUG=$(echo "$ROW" | python3 -c "import json,sys; print(json.load(sys.stdin)['slug'])")
+            CLUSTER=$(echo "$ROW"| python3 -c "import json,sys; print(json.load(sys.stdin)['cluster'])")
+            SLUG=$(echo "$ROW"   | python3 -c "import json,sys; print(json.load(sys.stdin)['slug'])")
             HOST="${TENANT}.${CLUSTER}.myworkdayjobs.com"
-            CXS_URL="https://${HOST}/wday/cxs/${TENANT}/${SLUG}/jobs"
-            REF="https://${HOST}/en-US/${SLUG}"
 
             echo "=== [$idx] $NAME ($TENANT.$CLUSTER, slug=$SLUG) ==="
 
-            BODY='{"appliedFacets":{},"limit":20,"offset":0,"searchText":"epic"}'
+            # Fetch pages 1..MAX_PAGES (or until empty), trying Googlebot UA
+            # first then standard browser UA on 403/422/tiny response.
+            ALL_JOBS_FILE="outbox/wd5-jobs-${TENANT}-${CLUSTER}.json"
+            echo "[]" > "$ALL_JOBS_FILE"
 
-            # Curl via DataImpulse proxy with 45s timeout
-            RESP_FILE="outbox/wd5-resp-${TENANT}-${CLUSTER}.json"
-            HTTP=$(curl -sS --max-time 45 \
-              -x "$PROXY" \
-              -o "$RESP_FILE" \
-              -w "%{http_code}" \
-              -X POST "$CXS_URL" \
-              -H "Content-Type: application/json" \
-              -H "Accept: application/json" \
-              -H "Accept-Language: en-US" \
-              -H "Origin: https://${HOST}" \
-              -H "Referer: $REF" \
-              -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" \
-              -d "$BODY" 2>&1 || echo "000")
+            HTTP_LAST="-"; BYTES_TOTAL=0; PAGES_FETCHED=0; UA_USED="bot"
 
-            BYTES=$(wc -c < "$RESP_FILE" 2>/dev/null || echo 0)
-            echo "  http=$HTTP bytes=$BYTES"
+            for PAGE in $(seq 1 "$MAX_PAGES"); do
+              if [ "$PAGE" = "1" ]; then
+                URL="https://${HOST}/en-US/${SLUG}?q=epic"
+              else
+                URL="https://${HOST}/en-US/${SLUG}?q=epic&page=${PAGE}"
+              fi
+              HTML_FILE="outbox/wd5-html-${TENANT}-${CLUSTER}-p${PAGE}.html"
 
-            TOTAL="-"; POSTINGS="-"
-            if [ "$HTTP" = "200" ]; then
-              TOTAL=$(python3 -c "import json; d=json.load(open('$RESP_FILE')); print(d.get('total','-'))" 2>/dev/null || echo "-")
-              POSTINGS=$(python3 -c "import json; d=json.load(open('$RESP_FILE')); print(len(d.get('jobPostings',[])))" 2>/dev/null || echo "-")
-              echo "  total=$TOTAL  postings_returned=$POSTINGS"
+              # First try Googlebot UA
+              HTTP=$(curl -sS --max-time 45 -L -x "$PROXY" \
+                -o "$HTML_FILE" -w "%{http_code}" \
+                -H "User-Agent: ${UA_BOT}" \
+                -H "Accept: text/html,application/xhtml+xml" \
+                -H "Accept-Language: en-US" \
+                "$URL" 2>&1 || echo "000")
+              BYTES=$(wc -c < "$HTML_FILE" 2>/dev/null || echo 0)
+              UA_USED="bot"
 
-              # Transform CXS jobPostings into STAT ingest shape and POST to Worker
-              python3 << PYEOF
-          import json, urllib.request, urllib.error, os, sys
-          with open('$RESP_FILE') as f:
-              d = json.load(f)
-          postings = d.get('jobPostings', [])
-          host = '${HOST}'
-          origin = 'https://' + host
+              # Fallback to standard browser UA on blocked / tiny response
+              if [ "$HTTP" != "200" ] || [ "$BYTES" -lt 2000 ]; then
+                echo "  page $PAGE: bot UA HTTP=$HTTP bytes=$BYTES → retry with browser UA"
+                HTTP=$(curl -sS --max-time 45 -L -x "$PROXY" \
+                  -o "$HTML_FILE" -w "%{http_code}" \
+                  -H "User-Agent: ${UA_BROWSER}" \
+                  -H "Accept: text/html,application/xhtml+xml" \
+                  -H "Accept-Language: en-US" \
+                  "$URL" 2>&1 || echo "000")
+                BYTES=$(wc -c < "$HTML_FILE" 2>/dev/null || echo 0)
+                UA_USED="browser"
+              fi
+
+              echo "  page $PAGE: HTTP=$HTTP bytes=$BYTES UA=$UA_USED"
+              HTTP_LAST="$HTTP"
+              BYTES_TOTAL=$((BYTES_TOTAL + BYTES))
+              PAGES_FETCHED=$PAGE
+
+              # Parse this page's HTML for job links and append to the
+              # per-tenant cumulative JSON file. Stop pagination if zero new.
+              NEW_COUNT=$(SLUG_RE="$SLUG" python3 << 'PYEOF'
+          import json, os, re, sys
+          slug = os.environ['SLUG_RE']
+          html_path = os.environ['HTML_FILE']
+          all_path  = os.environ['ALL_JOBS_FILE']
+          try:
+              html = open(html_path, 'r', encoding='utf-8', errors='replace').read()
+          except Exception:
+              print(0); sys.exit(0)
+
+          # Match Workday job links:
+          #   /en-US/{slug}/job/{Location}/{Title-with-dashes}_{ReqId}
+          # ReqId pattern is typically R12345 but tenants vary — accept any
+          # alnum-with-dashes after the final underscore.
+          pat = re.compile(
+              r'href="(/en-US/' + re.escape(slug) + r'/job/([^/"]+)/([^"]+?)_([A-Za-z0-9-]+))"',
+              re.IGNORECASE,
+          )
+          existing = json.load(open(all_path))
+          seen_ids = {j['req_id'] for j in existing}
+          new_rows = []
+          for m in pat.finditer(html):
+              path, location, title_slug, req_id = m.group(1), m.group(2), m.group(3), m.group(4)
+              if req_id in seen_ids:
+                  continue
+              seen_ids.add(req_id)
+              new_rows.append({
+                  'path':     path,
+                  'location': location.replace('-', ' '),
+                  'title':    title_slug.replace('-', ' '),
+                  'req_id':   req_id,
+              })
+          if new_rows:
+              existing.extend(new_rows)
+              json.dump(existing, open(all_path, 'w'))
+          print(len(new_rows))
+          PYEOF
+              )
+              echo "  page $PAGE: parsed $NEW_COUNT new job links"
+
+              # Stop if this page added no new jobs (end of results)
+              if [ "$NEW_COUNT" = "0" ]; then
+                echo "  page $PAGE: no new jobs — stopping pagination"
+                break
+              fi
+              # Polite delay between pagination requests
+              sleep 1
+            done
+
+            TOTAL=$(python3 -c "import json; print(len(json.load(open('$ALL_JOBS_FILE'))))")
+            echo "  TOTAL: $TOTAL unique Epic-keyword jobs across $PAGES_FETCHED pages"
+
+            # Transform parsed jobs → STAT /ingest shape and POST
+            INGEST_HTTP="-"; INGEST_MATCHES="-"
+            if [ "$TOTAL" -gt 0 ]; then
+              ALL_JOBS_FILE="$ALL_JOBS_FILE" HOST="$HOST" NAME="$NAME" \
+              WORKER_URL="$WORKER_URL" INGEST_TOKEN="$INGEST_TOKEN" \
+              TENANT="$TENANT" CLUSTER="$CLUSTER" \
+              python3 << 'PYEOF'
+          import json, os, urllib.request, urllib.error, datetime
+          rows = json.load(open(os.environ['ALL_JOBS_FILE']))
+          host = os.environ['HOST']
+          name = os.environ['NAME']
+          tenant = os.environ['TENANT']
+          cluster = os.environ['CLUSTER']
           jobs = []
-          for p in postings:
-              ep = p.get('externalPath', '') or ''
-              # Req ID from trailing underscore segment, fallback to bulletFields[0] or externalPath
-              req_id = None
-              if ep:
-                  import re
-                  m = re.search(r'_([A-Za-z0-9-]+)$', ep)
-                  if m: req_id = m.group(1)
-              if not req_id:
-                  bf = p.get('bulletFields') or []
-                  req_id = (bf[0] if bf else None) or ep or p.get('title') or ''
-              job_url = (origin + '/en-US' + ep) if ep else origin
-              loc = p.get('locationsText', '') or ''
+          for r in rows:
+              # Stable global ID: tenant_reqid — survives across pages and cycles.
+              # If req_id starts with 'R', use it directly to match S22 platform-DO
+              # ingest dedup keys; otherwise prefix with tenant.
+              gid = r['req_id'] if r['req_id'].startswith('R') else f"{tenant}_{r['req_id']}"
+              loc = r['location']
               env = 'remote' if 'remote' in loc.lower() else ('hybrid' if 'hybrid' in loc.lower() else '')
               jobs.append({
-                  'id':         str(req_id),
-                  'title':      p.get('title', '') or '',
-                  'company':    '''${NAME}'''.replace("'''", "'"),
-                  'location':   loc,
+                  'id':          gid,
+                  'title':       r['title'],
+                  'company':     name,
+                  'location':    loc,
                   'environment': env,
-                  'url':        job_url,
-                  'postedAt':   p.get('postedOn'),
-                  'atsSource':  'workday',
+                  'url':         'https://' + host + r['path'],
+                  'postedAt':    None,
+                  'atsSource':   'workday',
                   'description': '',
               })
-          if not jobs:
-              print('  no jobs to ingest')
-              sys.exit(0)
-          payload = json.dumps({'source': 'wd5-cron:${TENANT}.${CLUSTER}', 'jobs': jobs}).encode()
+          payload = json.dumps({
+              'source': f'wd5-proxy:{tenant}.{cluster}',
+              'jobs':   jobs,
+          }).encode()
           req = urllib.request.Request(
               os.environ['WORKER_URL'] + '/ingest',
               data=payload,
@@ -173,34 +244,31 @@ jobs:
           )
           try:
               with urllib.request.urlopen(req, timeout=20) as r:
-                  print('  ingest http=' + str(r.status) + ' body=' + r.read(500).decode())
+                  body = r.read(800).decode()
+                  print(f'  ingest http={r.status} body={body}')
           except urllib.error.HTTPError as e:
-              print('  ingest FAILED http=' + str(e.code) + ' body=' + e.read(500).decode())
-              sys.exit(1)
+              print(f'  ingest FAILED http={e.code} body={e.read(500).decode()}')
           except Exception as e:
-              print('  ingest ERROR: ' + str(e))
-              sys.exit(1)
+              print(f'  ingest ERROR: {e}')
           PYEOF
-            else
-              echo "  (skipping ingest — non-200)"
-              # First 200 bytes for diagnostics
-              head -c 200 "$RESP_FILE" 2>/dev/null | tr '\n' ' '
-              echo
             fi
 
-            # Append to poll log
+            # Append summary row to poll log
             [ $FIRST -eq 0 ] && echo "," >> "$POLL_LOG"
             FIRST=0
-            python3 -c "
+            ROW_OUT=$(python3 -c "
           import json
-          row = {
-              'idx': $idx, 'name': '''${NAME}'''.replace(\"'''\", \"'\"),
+          print(json.dumps({
+              'idx': $idx,
+              'name': '''${NAME}'''.replace(\"'''\", \"'\"),
               'tenant': '${TENANT}', 'cluster': '${CLUSTER}', 'slug': '${SLUG}',
-              'http': '$HTTP', 'bytes': $BYTES, 'total': '$TOTAL', 'postings_returned': '$POSTINGS',
-          }
-          print(json.dumps(row))" >> "$POLL_LOG"
+              'http_last': '$HTTP_LAST', 'bytes_total': $BYTES_TOTAL,
+              'pages_fetched': $PAGES_FETCHED, 'ua_used': '$UA_USED',
+              'jobs_parsed': $TOTAL,
+          }))")
+            echo "$ROW_OUT" >> "$POLL_LOG"
 
-            # Rate limit: 2s between requests (DataImpulse politeness)
+            # Rate limit between tenants
             sleep 2
           done
 
@@ -214,6 +282,13 @@ jobs:
           git config user.email "ci@stat"
           git config user.name "STAT CI"
           git pull --rebase origin main || true
-          git add outbox/wd5-poll-*.json outbox/wd5-resp-*.json 2>/dev/null || true
-          git commit -m "ci: wd5 CXS poll results [skip ci]" || echo "no changes"
+          # Commit summary + small HTML samples (truncate huge ones)
+          git add outbox/wd5-poll-*.json outbox/wd5-jobs-*.json 2>/dev/null || true
+          # Skip raw HTML — too noisy for repo; keep first one for diagnostics
+          for f in outbox/wd5-html-*.html; do
+            [ -f "$f" ] || continue
+            head -c 8192 "$f" > "${f}.head8k" && rm "$f"
+          done
+          git add outbox/wd5-html-*.head8k 2>/dev/null || true
+          git commit -m "ci: S25 wd5 listing-page poll results [skip ci]" || echo "no changes"
           git push origin main || echo "push skipped"
