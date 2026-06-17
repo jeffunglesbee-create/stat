@@ -1,0 +1,68 @@
+# .github/workflows/probe-clusters.yml
+# Tests one Workday CXS endpoint per cluster (wd1, wd3, wd5, wd12, wd108,
+# wd115) via the Worker's /raw-fetch POST mode. The HTTP status tells us
+# which clusters allow CXS from CF Worker IPs.
+#
+# Used once during S22 to build the cluster blocklist for fetchWorkday.
+name: Probe clusters
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+      - name: POST to one tenant per cluster
+        run: |
+          mkdir -p outbox
+          W="https://stat-job-watcher.jeffunglesbee.workers.dev"
+          # tenant|cluster|slug — one per cluster
+          targets=(
+            "jhhs|wd5|JHH_External_Positions"
+            "massgeneralbrigham|wd1|MGB_External"
+            "houstonmethodist|wd12|GTI"
+            "teleperformance|wd3|TPglobal"
+            "imh|wd108|IntermountainCareers"
+            "stanfordmedicine|wd115|shc_external"
+          )
+          : > outbox/cluster-probe.tsv
+          echo -e "cluster\thttp_status\tjobs_total\tbody_first120" >> outbox/cluster-probe.tsv
+          for t in "${targets[@]}"; do
+            IFS='|' read tenant cluster slug <<< "$t"
+            host="${tenant}.${cluster}.myworkdayjobs.com"
+            url="https://${host}/wday/cxs/${tenant}/${slug}/jobs"
+            ref="https://${host}/en-US/${slug}"
+            enc=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$url")
+            body='{"appliedFacets":{},"limit":5,"offset":0,"searchText":"epic"}'
+            echo "=== $cluster ($tenant) ==="
+            echo "  url: $url"
+            curl -sS --max-time 25 \
+              -D "outbox/cluster-${cluster}-headers.txt" \
+              -X POST -H "Content-Type: application/json" \
+              -H "X-Wanted-Referer: ${ref}" \
+              --data "$body" \
+              "$W/raw-fetch?url=${enc}" \
+              > "outbox/cluster-${cluster}-body.txt"
+            status=$(grep -i "^x-upstream-status:" "outbox/cluster-${cluster}-headers.txt" | awk '{print $2}' | tr -d '\r')
+            jobs=$(python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('total','-'))" < "outbox/cluster-${cluster}-body.txt" 2>/dev/null || echo "-")
+            head120=$(head -c 120 "outbox/cluster-${cluster}-body.txt" | tr '\n' ' ')
+            echo "  status=$status  jobsTotal=$jobs"
+            echo -e "${cluster}\t${status}\t${jobs}\t${head120}" >> outbox/cluster-probe.tsv
+          done
+          echo
+          echo "=== SUMMARY ==="
+          column -t -s $'\t' < outbox/cluster-probe.tsv
+      - name: Commit
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git pull --rebase origin main || true
+          git add outbox/cluster-*.txt outbox/cluster-probe.tsv
+          git commit -m "ci: cluster-probe results [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"
