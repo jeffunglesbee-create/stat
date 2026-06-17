@@ -1,0 +1,16 @@
+=== CF API Probe [20260617T184335Z] ===
+Request: GET https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https://community.workday.com/maintenance-page
+
+{
+    "ok": true,
+    "url": "https://community.workday.com/maintenance-page",
+    "http_status": 200,
+    "elapsed_ms": 100,
+    "body_bytes": 34628,
+    "is_blocked": false,
+    "title": "Workday is currently unavailable.",
+    "og_description": "",
+    "job_ids": [],
+    "job_hrefs": [],
+    "body_text_excerpt": "Workday is currently unavailable. English English \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u7b80\u4f53\u4e2d\u6587 \u7e41\u9ad4\u4e2d\u6587 \u010ce\u0161tina Nederlands Suomi Fran\u00e7ais du Canada French Espa\u00f1ol German \u05e2\u05d1\u05e8\u05d9\u05ea Magyar Bahasa Indonesia Italiano Japanese \ud55c\uad6d\uc5b4 Norsk, bokm\u00e5l Polski Portugu\u00eas, Portugal Rom\u00e2n\u0103 \u0420\u0443\u0441\u0441\u043a\u0438\u0439 Svenska \u0e20\u0e32\u0e29\u0e32\u0e44\u0e17\u0e22 T\u00fcrk\u00e7e Ti\u1ebfng Vi\u1ec7t Workday is currently una"
+}
