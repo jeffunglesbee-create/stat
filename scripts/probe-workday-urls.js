@@ -67,21 +67,30 @@ function probeViaWorker(url) {
   let data;
   try { data = JSON.parse(r.stdout); }
   catch { return { error: `non-JSON response from Worker (first 120 chars): ${r.stdout.slice(0, 120)}` }; }
-  // /plain-fetch-test returns: { status, bodyLen, title, ogDesc, ... }
+  // /plain-fetch-test response shape (src/routes/diagnostics.js):
+  //   { ok, url, http_status, elapsed_ms, body_bytes, is_blocked,
+  //     title, og_description, job_ids, job_hrefs, body_text_excerpt }
+  // Worker follows redirects internally and does NOT surface finalUrl,
+  // so we treat the requested URL as both original and effective. Dead/
+  // active classification still works from http_status + body shape.
+  if (data.error) return { error: `worker error: ${data.error}` };
   return {
-    httpCode: data.status || 0,
-    effectiveUrl: data.finalUrl || url,
-    redirected: !!data.redirected || (data.finalUrl && data.finalUrl !== url),
-    contentLength: data.bodyLen || 0,
-    body: (data.title || '') + ' ' + (data.ogDesc || '') + ' ' + (data.bodyText || ''),
+    httpCode: data.http_status || 0,
+    effectiveUrl: data.url || url,
+    redirected: false,
+    contentLength: data.body_bytes || 0,
+    body: [data.title || '', data.og_description || '', data.body_text_excerpt || ''].join(' '),
+    isBlocked: !!data.is_blocked,
   };
 }
 
 function classify(orig, p) {
   if (p.error) return { status: 'error', note: p.error, isWorkdayResponse: false };
   const isWdHost = /workdayjobs\.com/.test(p.effectiveUrl || '');
-  const bodyHasWorkday = /workday|wd[1-9]\.|cxs|JobPosting/i.test(p.body || '');
+  const bodyHasWorkday = /workday|wd[1-9]\.|cxs|JobPosting|jobReq|jobs?Found|Job Listing/i.test(p.body || '');
   const isWorkdayResponse = isWdHost && bodyHasWorkday;
+
+  if (p.isBlocked) return { status: 'error', note: `HTTP ${p.httpCode} bot-blocked`, isWorkdayResponse };
 
   if (p.httpCode === 200) {
     if (!isWdHost) return { status: 'redirect', note: `migrated off Workday → ${p.effectiveUrl}`, isWorkdayResponse };
@@ -91,10 +100,7 @@ function classify(orig, p) {
   }
   if (p.httpCode === 404) return { status: 'dead', note: 'HTTP 404', isWorkdayResponse };
   if (p.httpCode === 410) return { status: 'dead', note: 'HTTP 410 (gone)', isWorkdayResponse };
-  if (p.httpCode === 403 && /Access Denied|deny|forbidden/i.test(p.body || '')) {
-    return { status: 'error', note: 'HTTP 403 — possibly bot block, not necessarily dead', isWorkdayResponse };
-  }
-  if (p.httpCode === 403) return { status: 'error', note: 'HTTP 403', isWorkdayResponse };
+  if (p.httpCode === 403) return { status: 'error', note: 'HTTP 403 — possibly bot block', isWorkdayResponse };
   if (p.httpCode >= 400 && p.httpCode < 500) return { status: 'dead', note: `HTTP ${p.httpCode}`, isWorkdayResponse };
   if (p.httpCode === 0) return { status: 'error', note: 'no response', isWorkdayResponse };
   return { status: 'error', note: `HTTP ${p.httpCode}`, isWorkdayResponse };
