@@ -100,21 +100,26 @@ jobs:
 
             echo "=== [$idx] $NAME ($TENANT.$CLUSTER, slug=$SLUG) ==="
 
-            # Fetch pages 1..MAX_PAGES (or until empty), trying Googlebot UA
-            # first then standard browser UA on 403/422/tiny response.
+            # Multi-keyword expansion (deduped by req_id via cumulative
+            # ALL_JOBS_FILE — parser tracks seen_ids across all passes).
+            # Each keyword has its own startIndex pagination loop.
             ALL_JOBS_FILE="outbox/wd5-jobs-${TENANT}-${CLUSTER}.json"
             echo "[]" > "$ALL_JOBS_FILE"
 
             HTTP_LAST="-"; BYTES_TOTAL=0; PAGES_FETCHED=0; UA_USED="bot"
+            KEYWORDS=("epic" "ehr" "ambulatory" "cadence" "cogito" "clarity" "willow" "radiant")
+
+            for KW in "${KEYWORDS[@]}"; do
+              echo "--- keyword: ?q=$KW ---"
 
             for PAGE in $(seq 1 "$MAX_PAGES"); do
               START_INDEX=$(( (PAGE - 1) * 20 ))
               if [ "$START_INDEX" = "0" ]; then
-                URL="https://${HOST}/en-US/${SLUG}?q=epic"
+                URL="https://${HOST}/en-US/${SLUG}?q=${KW}"
               else
-                URL="https://${HOST}/en-US/${SLUG}?q=epic&startIndex=${START_INDEX}"
+                URL="https://${HOST}/en-US/${SLUG}?q=${KW}&startIndex=${START_INDEX}"
               fi
-              HTML_FILE="outbox/wd5-html-${TENANT}-${CLUSTER}-p${PAGE}.html"
+              HTML_FILE="outbox/wd5-html-${TENANT}-${CLUSTER}-${KW}-p${PAGE}.html"
 
               # First try Googlebot UA
               HTTP=$(curl -sS --max-time 45 -L -x "$PROXY" \
@@ -214,9 +219,12 @@ jobs:
               # Polite delay between pagination requests
               sleep 1
             done
+              # Brief pause between keyword passes
+              sleep 1
+            done
 
             TOTAL=$(python3 -c "import json; print(len(json.load(open('$ALL_JOBS_FILE'))))")
-            echo "  TOTAL: $TOTAL unique Epic-keyword jobs across $PAGES_FETCHED pages"
+            echo "  TOTAL: $TOTAL unique jobs across all keyword passes (last page=$PAGES_FETCHED)"
 
             # Transform parsed jobs → STAT /ingest shape and POST
             INGEST_HTTP="-"; INGEST_MATCHES="-"
