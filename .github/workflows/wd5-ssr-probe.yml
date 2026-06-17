@@ -111,32 +111,38 @@ jobs:
               host = f'{tenant}.wd5.myworkdayjobs.com'
               print(f'\n=== {company} ({tenant}.wd5, slug={slug}) ===')
 
-              # ── Approach A — sitemap.xml ────────────────────────────
-              t0 = time.time()
-              try:
-                  url = f'https://{host}/sitemap.xml'
-                  if CFFI_OK:
-                      r = cffi_get(url, proxy=PROXY)
-                      status, body = r.status_code, r.content
-                  else:
-                      raise RuntimeError('curl_cffi not installed')
-                  job_count = len(re.findall(r'<loc>[^<]+/job/[^<]+</loc>', body.decode(errors='replace'), re.IGNORECASE))
-                  success = (status == 200 and b'<loc>' in body and job_count > 0)
-                  results.append({
-                      'company': company, 'tenant': tenant, 'approach': 'A_sitemap',
-                      'status': str(status), 'bytes': len(body), 'job_count': job_count,
-                      'body_excerpt': excerpt(body),
-                      'elapsed_ms': int((time.time()-t0)*1000), 'success': success,
-                  })
-                  print(f'  A_sitemap: status={status} bytes={len(body)} jobs={job_count} success={success}')
-              except Exception as e:
-                  results.append({
-                      'company': company, 'tenant': tenant, 'approach': 'A_sitemap',
-                      'status': 'ERR', 'bytes': 0, 'job_count': 0,
-                      'body_excerpt': f'ERROR: {e!r}'[:500],
-                      'elapsed_ms': int((time.time()-t0)*1000), 'success': False,
-                  })
-                  print(f'  A_sitemap: ERROR {e!r}')
+              # ── Approach A — siteMap.xml (capital S, scoped to slug) ──
+              # Correct URL is /en-US/{slug}/siteMap.xml, not /sitemap.xml.
+              # Test unproxied first — Workday generates these for Google
+              # indexing and WAFs rarely block /siteMap.xml. Fall back to
+              # DataImpulse if the unproxied attempt fails.
+              for di_label, di_proxy in [('noproxy', None), ('di', PROXY)]:
+                  t0 = time.time()
+                  try:
+                      url = f'https://{host}/en-US/{slug}/siteMap.xml'
+                      if CFFI_OK:
+                          r = cffi_get(url, proxy=di_proxy)
+                          status, body = r.status_code, r.content
+                      else:
+                          raise RuntimeError('curl_cffi not installed')
+                      job_count = len(re.findall(r'<loc>[^<]+/job/[^<]+</loc>', body.decode(errors='replace'), re.IGNORECASE))
+                      success = (status == 200 and b'<loc>' in body and job_count > 0)
+                      results.append({
+                          'company': company, 'tenant': tenant, 'approach': f'A_sitemap_{di_label}',
+                          'status': str(status), 'bytes': len(body), 'job_count': job_count,
+                          'body_excerpt': excerpt(body),
+                          'elapsed_ms': int((time.time()-t0)*1000), 'success': success,
+                      })
+                      print(f'  A_sitemap_{di_label}: status={status} bytes={len(body)} jobs={job_count} success={success}')
+                      if success: break  # noproxy worked — skip the DataImpulse retry
+                  except Exception as e:
+                      results.append({
+                          'company': company, 'tenant': tenant, 'approach': f'A_sitemap_{di_label}',
+                          'status': 'ERR', 'bytes': 0, 'job_count': 0,
+                          'body_excerpt': f'ERROR: {e!r}'[:500],
+                          'elapsed_ms': int((time.time()-t0)*1000), 'success': False,
+                      })
+                      print(f'  A_sitemap_{di_label}: ERROR {e!r}')
 
               # ── Approach B — Google Cache (via proxy) ───────────────
               t0 = time.time()

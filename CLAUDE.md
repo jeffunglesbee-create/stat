@@ -163,3 +163,45 @@ retry later — do not burn proxy bandwidth.
 - `STAT_INGEST_TOKEN` — shared secret matching Worker `env.STAT_INGEST_TOKEN`.
 - `STAT_PAT` — for the workflow to push outbox results back to main.
 
+**Alternate path — Playwright XHR intercept (S27b,
+`.github/workflows/wd5-playwright-poll.yml`):**
+
+The Workday listing page is a **client-rendered React shell** — the HTML
+contains zero `/job/` hrefs, zero `data-automation-id`. The job data only
+appears after the React app fires a CXS POST XHR. Bash-curl approaches
+parse an empty shell and get nothing.
+
+Playwright executes the JS so the XHR fires; we hook `page.on('response')`
+to read the CXS JSON directly. The browser handles all CSRF cookies
+transparently — no manual two-request flow.
+
+```python
+page.on('response', lambda r:
+    capture(r.json()) if '/wday/cxs/' in r.url and '/jobs' in r.url else None)
+page.goto(f'{base}?q={keyword}&startIndex={offset}')
+```
+
+Chromium launches through DataImpulse residential proxy so the initial
+listing GET originates from a residential IP. Pagination is per-page
+(separate `page.goto()` per startIndex offset). Multi-keyword sweep is
+per-keyword (separate `page.goto()` per keyword); deduplication is by
+`req_id` extracted from `externalPath`.
+
+**JHBMC ground-truth guard:** if the JHBMC slice returns 0 jobs across
+all keywords (and isn't in maintenance), the workflow blocks ingest and
+exits with an error — protects against silent regressions in the
+extraction path.
+
+**Sitemap URL** — correct path is `/en-US/{slug}/siteMap.xml` (capital S,
+scoped to slug). The bare `/sitemap.xml` returns 404. Workday generates
+the sitemap for Google indexing; WAFs rarely block it, so it's worth
+trying unproxied first in `wd5-ssr-probe.yml` (Approach A).
+
+**Playwright proxy format** — Chromium needs the credentials split out,
+not embedded in the URL:
+```python
+browser = p.chromium.launch(
+    proxy={'server': 'http://gw.dataimpulse.com:823',
+           'username': DI_USER, 'password': DI_PASS})
+```
+
