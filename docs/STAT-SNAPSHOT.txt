@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-17T13:28:31Z
-HEAD: dda11c2
+Generated: 2026-06-17T13:32:28Z
+HEAD: 055a636
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  dda11c2 fix: remove CHRISTUS Health URL duplicate from BATCH_WATCHLIST (S23)
+  055a636 fix: S23 Workday URL corrections + inactive guard
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
