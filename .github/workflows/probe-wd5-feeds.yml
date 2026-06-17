@@ -1,0 +1,93 @@
+# .github/workflows/probe-wd5-feeds.yml
+# S24 Phase 1: probe wd5 Workday tenants for RSS/Atom feed endpoints.
+# Workday's CXS JSON API is blocked from CF Worker IPs on wd5/wd3, but feed
+# endpoints may use a different code path that isn't IP-blocked.
+# If any feed returns 200 + XML, we can poll it directly from the Worker
+# instead of building a DataImpulse cron pipeline.
+name: Probe wd5 RSS feeds (S24)
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+
+      - name: Probe feed endpoints via Worker
+        run: |
+          mkdir -p outbox
+          W="https://stat-job-watcher.jeffunglesbee.workers.dev"
+          # tenant|cluster|slug — pick 5 wd5 tenants (incl JHBMC anchor)
+          targets=(
+            "jhhs|wd5|JHH_External_Positions"
+            "kp|wd5|KP_External_Career_Site"
+            "vanderbilt|wd5|ext-vumc"
+            "rwjbarnabas|wd5|external_career_site"
+            "dukehealth|wd5|Duke"
+          )
+
+          # Feed URL patterns to try for each tenant
+          probe_feed() {
+            local label="$1" url="$2"
+            local enc=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$url")
+            echo "--- $label ---"
+            echo "url: $url"
+            curl -sS --max-time 25 \
+              -D "outbox/wd5-feed-${label}-headers.txt" \
+              "$W/plain-fetch-test?url=${enc}" \
+              > "outbox/wd5-feed-${label}.json"
+            python3 -c "
+          import json, sys
+          with open(sys.argv[1]) as f: d = json.load(f)
+          print(f\"  http={d.get('http_status','?')} bytes={d.get('body_bytes','?')} title={d.get('title','?')[:60]!r}\")
+          excerpt = d.get('body_text_excerpt','')
+          if excerpt: print(f\"  excerpt: {excerpt[:200]}\")
+          " "outbox/wd5-feed-${label}.json" || echo "  (parse error)"
+          }
+
+          : > outbox/wd5-feed-summary.tsv
+          echo -e "tenant\tpattern\thttp\tbytes\ttitle\tlooks_like_xml" >> outbox/wd5-feed-summary.tsv
+
+          for t in "${targets[@]}"; do
+            IFS='|' read tenant cluster slug <<< "$t"
+            echo "=== $tenant ($cluster) slug=$slug ==="
+            host="${tenant}.${cluster}.myworkdayjobs.com"
+
+            # Try three feed-URL patterns
+            for pattern_idx in 1 2 3; do
+              case $pattern_idx in
+                1) url="https://${host}/wday/cxs/${tenant}/${slug}/feed" ;;
+                2) url="https://${host}/${slug}/rss.xml" ;;
+                3) url="https://${host}/en-US/${slug}/rss.xml" ;;
+              esac
+              probe_feed "${tenant}-p${pattern_idx}" "$url"
+              # Extract summary fields
+              http=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('http_status','?'))" "outbox/wd5-feed-${tenant}-p${pattern_idx}.json" 2>/dev/null || echo "?")
+              bytes=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('body_bytes','?'))" "outbox/wd5-feed-${tenant}-p${pattern_idx}.json" 2>/dev/null || echo "?")
+              title=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('title','')[:60])" "outbox/wd5-feed-${tenant}-p${pattern_idx}.json" 2>/dev/null || echo "")
+              excerpt=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('body_text_excerpt',''))" "outbox/wd5-feed-${tenant}-p${pattern_idx}.json" 2>/dev/null || echo "")
+              looks_xml="no"
+              echo "$excerpt" | head -c 50 | grep -qE "<\?xml|<rss|<feed" && looks_xml="YES"
+              echo -e "${tenant}\tp${pattern_idx}\t${http}\t${bytes}\t${title}\t${looks_xml}" >> outbox/wd5-feed-summary.tsv
+              sleep 1
+            done
+            echo ""
+          done
+
+          echo "=== SUMMARY ==="
+          column -t -s $'\t' < outbox/wd5-feed-summary.tsv
+
+      - name: Commit results
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git pull --rebase origin main || true
+          git add outbox/wd5-feed-*
+          git commit -m "ci: S24 wd5 RSS feed probe results [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"
