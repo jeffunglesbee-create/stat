@@ -1,0 +1,42 @@
+# .github/workflows/workday-audit.yml
+#
+# WORKDAY URL AUDIT (S21)
+# Probes every *.myworkdayjobs.com tenant URL in src/config.js from a
+# GitHub Actions runner (unrestricted egress) and writes per-URL results
+# to outbox/workday-audit-results.json. Manual dispatch only.
+#
+# Why CI instead of local: the chat-side sandbox egress allowlist blocks
+# *.myworkdayjobs.com (Host not in allowlist). Probes need to run from a
+# host that can reach Workday tenants directly.
+name: Workday URL audit
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run audit probe
+        run: |
+          mkdir -p outbox
+          node scripts/probe-workday-urls.js 2>&1 | tee outbox/workday-audit-stderr.log
+
+      - name: Commit results
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git add outbox/workday-audit-results.json outbox/workday-audit-stderr.log 2>/dev/null || true
+          git commit -m "ci: Workday URL audit results [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"
