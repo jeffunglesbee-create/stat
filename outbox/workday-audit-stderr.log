@@ -1,125 +1,125 @@
-probing 121 Workday URLs...
-  1/121 error    500 Johns Hopkins
-  2/121 error    500 Mayo Clinic
-  3/121 error    500 Kaiser Permanente
-  4/121 redirect 200 Cleveland Clinic
-  5/121 dead     404 Mass General Brigham
-  6/121 error    500 Penn Medicine
-  7/121 error    500 Vanderbilt Health
-  8/121 error    500 AdventHealth
-  9/121 error    500 Ascension
-  10/121 error    500 CommonSpirit Health
-  11/121 active   200 Intermountain Health
-  12/121 active   200 Advocate Health (Atrium)
-  13/121 dead     404 Geisinger
-  14/121 error    500 Sanford Health
-  15/121 active   200 Houston Methodist
-  16/121 active   200 WashU Medicine
-  17/121 active   200 Boston Medical Center
-  18/121 active   200 CVS Health
-  19/121 active   200 Enloe Health
-  20/121 active   200 Jupiter Medical Center
-  21/121 active   200 OU Health
-  22/121 error    500 Banner Health
-  23/121 active   200 Methodist Health System
-  24/121 active   200 VHC Health
-  25/121 active   200 MultiCare Health
-  26/121 active   200 St. Luke\
-  27/121 active   200 Brown University Health
-  28/121 error    500 WellStar Health
-  29/121 error    500 NYU Langone Health
-  30/121 error    500 Ochsner Health
-  31/121 dead     404 Prisma Health
-  32/121 error    500 Piedmont Healthcare
-  33/121 error    500 Spectrum Health / Corewell
-  34/121 error    500 Henry Ford Health
-  35/121 error    500 Cedars-Sinai
-  36/121 error    500 Christus Health
-  37/121 error    500 Hackensack Meridian
-  38/121 error    500 RWJBarnabas Health
-  39/121 error    500 Duke Health
-  40/121 error    500 UNC Health
-  41/121 error    500 OSF HealthCare
-  42/121 error    500 Adventist Health
-  43/121 error    500 Mercy Health
-  44/121 error    500 Trinity Health
-  45/121 error    500 Sutter Health
-  46/121 error    500 Children\
-  47/121 dead     404 Seattle Children\
-  48/121 error    500 Children\
-  49/121 error    500 Stanford Health Care
-  50/121 error    500 OHSU
-  51/121 error    500 UW Medicine
-  52/121 error    500 University of Michigan Health
-  53/121 error    500 UChicago Medicine
-  54/121 error    500 Rush University Medical
-  55/121 active   200 Stanford Health Care
-  56/121 error    500 Concentrix
-  57/121 error    500 TTEC
-  58/121 error    500 Teleperformance
-  59/121 error    500 Foundever (Sitel)
-  60/121 error    500 Conduent
-  61/121 error    500 Alorica
-  62/121 error    500 Sutherland Global
-  63/121 error    500 Maximus
-  64/121 error    500 Sykes (Sitel)
-  65/121 error    500 XPO Logistics
-  66/121 dead     404 ArcBest
-  67/121 dead     404 Sagility
-  68/121 error    500 Atos Health
-  69/121 error    500 Maximus Federal
-  70/121 active   200 Medline Industries
-  71/121 error    500 WellSpan Health
-  72/121 error    500 Bon Secours Mercy Health
-  73/121 error    500 Ballad Health
-  74/121 error    500 Parkview Health
-  75/121 dead     404 CoxHealth
-  76/121 error    500 Kettering Health
-  77/121 error    500 Baptist Health South Florida
-  78/121 error    500 Sentara Health
-  79/121 dead     404 OhioHealth
-  80/121 error    500 Luminis Health
-  81/121 error    500 Summa Health
-  82/121 error    500 UnityPoint Health
-  83/121 error    500 Aultman Health
-  84/121 error    500 Guthrie Health
-  85/121 error    500 Aspirus Health
-  86/121 error    500 Parallon
-  87/121 error    500 ResultsCX
-  88/121 error    500 Startek
-  89/121 error    500 iQor
-  90/121 error    500 Webhelp
-  91/121 error    500 Novant Health
-  92/121 error    500 Franciscan Health
-  93/121 dead     404 Memorial Hermann
-  94/121 error    500 Tufts Medicine
-  95/121 error    500 SSM Health
-  96/121 error    500 Bon Secours Mercy
-  97/121 error    500 Centura Health
-  98/121 dead     404 Avera Health
-  99/121 error    500 Essentia Health
-  100/121 error    500 CHRISTUS Health
-  101/121 error    500 WVU Medicine
-  102/121 error    500 UCHealth
-  103/121 error    500 Stormont Vail
-  104/121 error    500 Cone Health
-  105/121 error    500 Virtua Health
-  106/121 error    500 Valley Health System
-  107/121 error    500 Billings Clinic
-  108/121 error    500 DISH / EchoStar
-  109/121 dead     404 Humana
-  110/121 dead     404 Cigna
-  111/121 error    500 Aetna / CVS
-  112/121 error    500 Anthem / Elevance
-  113/121 error    500 UnitedHealth Group
-  114/121 error    500 Molina Healthcare
-  115/121 dead     404 Centene
-  116/121 dead     404 Magellan Health
-  117/121 dead     404 Asurion
-  118/121 error    500 Blue Yonder
-  119/121 error    500 E2open
-  120/121 dead     404 Manhattan Associates
-  121/121 error    500 Infor
+probing 121 Workday URLs (mode=via-worker)...
+  1/121 error    ERR Johns Hopkins
+  2/121 error    ERR Mayo Clinic
+  3/121 error    ERR Kaiser Permanente
+  4/121 error    ERR Cleveland Clinic
+  5/121 error    ERR Mass General Brigham
+  6/121 error    ERR Penn Medicine
+  7/121 error    ERR Vanderbilt Health
+  8/121 error    ERR AdventHealth
+  9/121 error    ERR Ascension
+  10/121 error    ERR CommonSpirit Health
+  11/121 error    ERR Intermountain Health
+  12/121 error    ERR Advocate Health (Atrium)
+  13/121 error    ERR Geisinger
+  14/121 error    ERR Sanford Health
+  15/121 error    ERR Houston Methodist
+  16/121 error    ERR WashU Medicine
+  17/121 error    ERR Boston Medical Center
+  18/121 error    ERR CVS Health
+  19/121 error    ERR Enloe Health
+  20/121 error    ERR Jupiter Medical Center
+  21/121 error    ERR OU Health
+  22/121 error    ERR Banner Health
+  23/121 error    ERR Methodist Health System
+  24/121 error    ERR VHC Health
+  25/121 error    ERR MultiCare Health
+  26/121 error    ERR St. Luke\
+  27/121 error    ERR Brown University Health
+  28/121 error    ERR WellStar Health
+  29/121 error    ERR NYU Langone Health
+  30/121 error    ERR Ochsner Health
+  31/121 error    ERR Prisma Health
+  32/121 error    ERR Piedmont Healthcare
+  33/121 error    ERR Spectrum Health / Corewell
+  34/121 error    ERR Henry Ford Health
+  35/121 error    ERR Cedars-Sinai
+  36/121 error    ERR Christus Health
+  37/121 error    ERR Hackensack Meridian
+  38/121 error    ERR RWJBarnabas Health
+  39/121 error    ERR Duke Health
+  40/121 error    ERR UNC Health
+  41/121 error    ERR OSF HealthCare
+  42/121 error    ERR Adventist Health
+  43/121 error    ERR Mercy Health
+  44/121 error    ERR Trinity Health
+  45/121 error    ERR Sutter Health
+  46/121 error    ERR Children\
+  47/121 error    ERR Seattle Children\
+  48/121 error    ERR Children\
+  49/121 error    ERR Stanford Health Care
+  50/121 error    ERR OHSU
+  51/121 error    ERR UW Medicine
+  52/121 error    ERR University of Michigan Health
+  53/121 error    ERR UChicago Medicine
+  54/121 error    ERR Rush University Medical
+  55/121 error    ERR Stanford Health Care
+  56/121 error    ERR Concentrix
+  57/121 error    ERR TTEC
+  58/121 error    ERR Teleperformance
+  59/121 error    ERR Foundever (Sitel)
+  60/121 error    ERR Conduent
+  61/121 error    ERR Alorica
+  62/121 error    ERR Sutherland Global
+  63/121 error    ERR Maximus
+  64/121 error    ERR Sykes (Sitel)
+  65/121 error    ERR XPO Logistics
+  66/121 error    ERR ArcBest
+  67/121 error    ERR Sagility
+  68/121 error    ERR Atos Health
+  69/121 error    ERR Maximus Federal
+  70/121 error    ERR Medline Industries
+  71/121 error    ERR WellSpan Health
+  72/121 error    ERR Bon Secours Mercy Health
+  73/121 error    ERR Ballad Health
+  74/121 error    ERR Parkview Health
+  75/121 error    ERR CoxHealth
+  76/121 error    ERR Kettering Health
+  77/121 error    ERR Baptist Health South Florida
+  78/121 error    ERR Sentara Health
+  79/121 error    ERR OhioHealth
+  80/121 error    ERR Luminis Health
+  81/121 error    ERR Summa Health
+  82/121 error    ERR UnityPoint Health
+  83/121 error    ERR Aultman Health
+  84/121 error    ERR Guthrie Health
+  85/121 error    ERR Aspirus Health
+  86/121 error    ERR Parallon
+  87/121 error    ERR ResultsCX
+  88/121 error    ERR Startek
+  89/121 error    ERR iQor
+  90/121 error    ERR Webhelp
+  91/121 error    ERR Novant Health
+  92/121 error    ERR Franciscan Health
+  93/121 error    ERR Memorial Hermann
+  94/121 error    ERR Tufts Medicine
+  95/121 error    ERR SSM Health
+  96/121 error    ERR Bon Secours Mercy
+  97/121 error    ERR Centura Health
+  98/121 error    ERR Avera Health
+  99/121 error    ERR Essentia Health
+  100/121 error    ERR CHRISTUS Health
+  101/121 error    ERR WVU Medicine
+  102/121 error    ERR UCHealth
+  103/121 error    ERR Stormont Vail
+  104/121 error    ERR Cone Health
+  105/121 error    ERR Virtua Health
+  106/121 error    ERR Valley Health System
+  107/121 error    ERR Billings Clinic
+  108/121 error    ERR DISH / EchoStar
+  109/121 error    ERR Humana
+  110/121 error    ERR Cigna
+  111/121 error    ERR Aetna / CVS
+  112/121 error    ERR Anthem / Elevance
+  113/121 error    ERR UnitedHealth Group
+  114/121 error    ERR Molina Healthcare
+  115/121 error    ERR Centene
+  116/121 error    ERR Magellan Health
+  117/121 error    ERR Asurion
+  118/121 error    ERR Blue Yonder
+  119/121 error    ERR E2open
+  120/121 error    ERR Manhattan Associates
+  121/121 error    ERR Infor
 
-Summary: {"error":88,"redirect":1,"dead":16,"active":16}
+Summary (mode=via-worker): {"error":121}
 Wrote outbox/workday-audit-results.json (121 entries)
