@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-16T23:50:34Z
-HEAD: 3aba18a
+Generated: 2026-06-17T00:36:54Z
+HEAD: 7d48e28
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  3aba18a diag: surface Gemini HTTP status on keyword gen failure
+  7d48e28 audit S21: mark 17 dead Workday tenants inactive
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
