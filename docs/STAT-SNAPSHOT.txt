@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-17T00:36:54Z
-HEAD: 7d48e28
+Generated: 2026-06-17T00:52:10Z
+HEAD: 1503cd2
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  7d48e28 audit S21: mark 17 dead Workday tenants inactive
+  1503cd2 feat: /workday-health diagnostic — per-company DO telemetry (S21b)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
