@@ -9,7 +9,15 @@
     "effectiveUrl": "https://jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-16T23:48:31.630Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Mayo Clinic",
@@ -21,7 +29,15 @@
     "effectiveUrl": "https://mayoclinic.wd5.myworkdayjobs.com/en-US/mayoclinic",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-16T23:48:31.630Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Kaiser Permanente",
@@ -33,7 +49,15 @@
     "effectiveUrl": "https://kp.wd5.myworkdayjobs.com/en-US/KP_External_Career_Site",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-16T23:48:31.630Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 1,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Cleveland Clinic",
@@ -41,7 +65,7 @@
     "mode": "via-worker",
     "status": "redirect",
     "httpCode": 200,
-    "note": "migrated off Workday → https://jobs.clevelandclinic.org",
+    "note": "migrated off Workday \u2192 https://jobs.clevelandclinic.org",
     "effectiveUrl": "https://jobs.clevelandclinic.org",
     "redirected": false,
     "isWorkdayResponse": false,
@@ -69,7 +93,15 @@
     "effectiveUrl": "https://uphs.wd5.myworkdayjobs.com/en-US/UPHS",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-16T23:48:31.630Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Vanderbilt Health",
@@ -81,7 +113,15 @@
     "effectiveUrl": "https://vanderbilt.wd5.myworkdayjobs.com/en-US/ext-vumc",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-16T23:48:31.630Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "AdventHealth",
@@ -93,7 +133,15 @@
     "effectiveUrl": "https://adventhealth.wd1.myworkdayjobs.com/en-US/AdventHealthCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 6,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-16T23:48:31.630Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Ascension",
@@ -105,7 +153,15 @@
     "effectiveUrl": "https://ascension.wd1.myworkdayjobs.com/en-US/Ascension_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-16T23:48:31.630Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "CommonSpirit Health",
@@ -117,7 +173,15 @@
     "effectiveUrl": "https://commonspirit.wd5.myworkdayjobs.com/en-US/CommonSpiritHealthExternal",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-16T23:48:31.630Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Intermountain Health",
@@ -165,7 +229,15 @@
     "effectiveUrl": "https://sanfordhealth.wd5.myworkdayjobs.com/en-US/SanfordCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 6,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-16T23:48:31.630Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Houston Methodist",
@@ -261,7 +333,15 @@
     "effectiveUrl": "https://bannerhealth.wd5.myworkdayjobs.com/Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Methodist Health System",
@@ -333,7 +413,15 @@
     "effectiveUrl": "https://wellstar.wd5.myworkdayjobs.com/en-US/WellStarCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "NYU Langone Health",
@@ -345,7 +433,15 @@
     "effectiveUrl": "https://nyulangone.wd5.myworkdayjobs.com/en-US/Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Ochsner Health",
@@ -357,7 +453,15 @@
     "effectiveUrl": "https://ochsner.wd5.myworkdayjobs.com/en-US/Ochsner",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 5,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 5x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Prisma Health",
@@ -381,7 +485,15 @@
     "effectiveUrl": "https://piedmont.wd5.myworkdayjobs.com/en-US/PiedmontCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Spectrum Health / Corewell",
@@ -393,7 +505,15 @@
     "effectiveUrl": "https://corewellhealth.wd5.myworkdayjobs.com/en-US/corewellexternal",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Henry Ford Health",
@@ -405,7 +525,15 @@
     "effectiveUrl": "https://henryfordhealth.wd5.myworkdayjobs.com/en-US/Henry_Ford_Health",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Cedars-Sinai",
@@ -417,7 +545,15 @@
     "effectiveUrl": "https://cedars-sinai.wd5.myworkdayjobs.com/en-US/CS_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Christus Health",
@@ -429,7 +565,15 @@
     "effectiveUrl": "https://christus.wd5.myworkdayjobs.com/en-US/CHRISTUS",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Hackensack Meridian",
@@ -441,7 +585,15 @@
     "effectiveUrl": "https://hackensackmeridian.wd5.myworkdayjobs.com/en-US/HMH",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "RWJBarnabas Health",
@@ -453,7 +605,15 @@
     "effectiveUrl": "https://rwjbarnabas.wd5.myworkdayjobs.com/en-US/external_career_site",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Duke Health",
@@ -465,7 +625,15 @@
     "effectiveUrl": "https://dukehealth.wd5.myworkdayjobs.com/en-US/Duke",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "UNC Health",
@@ -477,7 +645,15 @@
     "effectiveUrl": "https://unchealth.wd5.myworkdayjobs.com/en-US/UNC_Health",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "OSF HealthCare",
@@ -489,7 +665,15 @@
     "effectiveUrl": "https://osf.wd5.myworkdayjobs.com/en-US/OSF",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Adventist Health",
@@ -501,7 +685,15 @@
     "effectiveUrl": "https://adventisthealth.wd5.myworkdayjobs.com/en-US/AdventistHealthCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Mercy Health",
@@ -513,7 +705,15 @@
     "effectiveUrl": "https://mercy.wd5.myworkdayjobs.com/en-US/MercyCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 6,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Trinity Health",
@@ -525,7 +725,15 @@
     "effectiveUrl": "https://trinity.wd5.myworkdayjobs.com/en-US/TrinityHealthCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 5,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 5x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Sutter Health",
@@ -537,7 +745,15 @@
     "effectiveUrl": "https://sutterhealth.wd5.myworkdayjobs.com/en-US/SutterHealthCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 6,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 2,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Children\\",
@@ -549,7 +765,15 @@
     "effectiveUrl": "https://chop.wd5.myworkdayjobs.com/en-US/CHOP_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Seattle Children\\",
@@ -573,7 +797,15 @@
     "effectiveUrl": "https://childrensnational.wd5.myworkdayjobs.com/en-US/CNH",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Stanford Health Care",
@@ -585,7 +817,15 @@
     "effectiveUrl": "https://stanfordhealthcare.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 8,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 8x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "OHSU",
@@ -597,7 +837,15 @@
     "effectiveUrl": "https://ohsu.wd5.myworkdayjobs.com/en-US/Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "UW Medicine",
@@ -609,7 +857,15 @@
     "effectiveUrl": "https://uwmedicine.wd5.myworkdayjobs.com/en-US/UWMed_External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "University of Michigan Health",
@@ -621,7 +877,15 @@
     "effectiveUrl": "https://uofmhealth.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "UChicago Medicine",
@@ -633,7 +897,15 @@
     "effectiveUrl": "https://uchicagomed.wd5.myworkdayjobs.com/en-US/UChicagoMedCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Rush University Medical",
@@ -645,7 +917,15 @@
     "effectiveUrl": "https://rush.wd5.myworkdayjobs.com/en-US/RushCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Stanford Health Care",
@@ -669,7 +949,15 @@
     "effectiveUrl": "https://concentrix.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "TTEC",
@@ -681,7 +969,15 @@
     "effectiveUrl": "https://ttec.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Teleperformance",
@@ -693,7 +989,15 @@
     "effectiveUrl": "https://teleperformance.wd3.myworkdayjobs.com/en-US/TPglobal",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Foundever (Sitel)",
@@ -705,7 +1009,15 @@
     "effectiveUrl": "https://foundever.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Conduent",
@@ -717,7 +1029,15 @@
     "effectiveUrl": "https://conduent.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Alorica",
@@ -729,7 +1049,15 @@
     "effectiveUrl": "https://alorica.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Sutherland Global",
@@ -741,7 +1069,15 @@
     "effectiveUrl": "https://sutherland.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Maximus",
@@ -753,7 +1089,15 @@
     "effectiveUrl": "https://maximus.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Sykes (Sitel)",
@@ -765,7 +1109,15 @@
     "effectiveUrl": "https://sykes.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "XPO Logistics",
@@ -777,7 +1129,15 @@
     "effectiveUrl": "https://xpo.wd5.myworkdayjobs.com/en-US/xpocareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "ArcBest",
@@ -813,7 +1173,15 @@
     "effectiveUrl": "https://atos.wd3.myworkdayjobs.com/Atos_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Maximus Federal",
@@ -825,7 +1193,15 @@
     "effectiveUrl": "https://maximus.wd1.myworkdayjobs.com/Maximus_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:30:36.242Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Medline Industries",
@@ -849,7 +1225,15 @@
     "effectiveUrl": "https://wellspan.wd5.myworkdayjobs.com/WellSpan",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Bon Secours Mercy Health",
@@ -861,7 +1245,15 @@
     "effectiveUrl": "https://bsmhealth.wd5.myworkdayjobs.com/BSMHCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Ballad Health",
@@ -873,7 +1265,15 @@
     "effectiveUrl": "https://balladhealth.wd5.myworkdayjobs.com/Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Parkview Health",
@@ -885,7 +1285,15 @@
     "effectiveUrl": "https://parkview.wd5.myworkdayjobs.com/Parkview_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "CoxHealth",
@@ -909,7 +1317,15 @@
     "effectiveUrl": "https://ketteringhealth.wd5.myworkdayjobs.com/KetteringHealth",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Baptist Health South Florida",
@@ -921,7 +1337,15 @@
     "effectiveUrl": "https://baptisthealth.wd5.myworkdayjobs.com/Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Sentara Health",
@@ -933,7 +1357,15 @@
     "effectiveUrl": "https://sentara.wd5.myworkdayjobs.com/Sentara",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 6,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "OhioHealth",
@@ -957,7 +1389,15 @@
     "effectiveUrl": "https://luminishealth.wd5.myworkdayjobs.com/LuminisHealth",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Summa Health",
@@ -969,7 +1409,15 @@
     "effectiveUrl": "https://summahealth.wd5.myworkdayjobs.com/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "UnityPoint Health",
@@ -981,7 +1429,15 @@
     "effectiveUrl": "https://unitypoint.wd5.myworkdayjobs.com/UnityPoint_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Aultman Health",
@@ -993,7 +1449,15 @@
     "effectiveUrl": "https://aultman.wd5.myworkdayjobs.com/Aultman",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Guthrie Health",
@@ -1005,7 +1469,15 @@
     "effectiveUrl": "https://guthrie.wd5.myworkdayjobs.com/GuthrieHealth",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Aspirus Health",
@@ -1017,7 +1489,15 @@
     "effectiveUrl": "https://aspirus.wd5.myworkdayjobs.com/Aspirus",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Parallon",
@@ -1029,7 +1509,15 @@
     "effectiveUrl": "https://hca.wd5.myworkdayjobs.com/HCAhealthcare",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "ResultsCX",
@@ -1041,7 +1529,15 @@
     "effectiveUrl": "https://resultscx.wd5.myworkdayjobs.com/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Startek",
@@ -1053,7 +1549,15 @@
     "effectiveUrl": "https://startek.wd5.myworkdayjobs.com/StarTek",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "iQor",
@@ -1065,7 +1569,15 @@
     "effectiveUrl": "https://iqor.wd5.myworkdayjobs.com/iQor",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Webhelp",
@@ -1077,7 +1589,15 @@
     "effectiveUrl": "https://webhelp.wd3.myworkdayjobs.com/Webhelp",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:51:22.740Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "Novant Health",
@@ -1089,7 +1609,9 @@
     "effectiveUrl": "https://novant.wd5.myworkdayjobs.com/en-US/Novant_Health_External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Franciscan Health",
@@ -1101,7 +1623,9 @@
     "effectiveUrl": "https://franciscanhealth.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Memorial Hermann",
@@ -1125,7 +1649,9 @@
     "effectiveUrl": "https://tuftsmedicine.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "SSM Health",
@@ -1137,7 +1663,9 @@
     "effectiveUrl": "https://ssmhealth.wd5.myworkdayjobs.com/en-US/careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Bon Secours Mercy",
@@ -1149,7 +1677,9 @@
     "effectiveUrl": "https://bonsecours.wd5.myworkdayjobs.com/en-US/BSMH",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Centura Health",
@@ -1161,7 +1691,9 @@
     "effectiveUrl": "https://centura.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Avera Health",
@@ -1185,7 +1717,9 @@
     "effectiveUrl": "https://essentia.wd5.myworkdayjobs.com/en-US/EssentiaHealthCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "CHRISTUS Health",
@@ -1197,7 +1731,15 @@
     "effectiveUrl": "https://christus.wd5.myworkdayjobs.com/en-US/CHRISTUS",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "totalPolls": 3,
+    "totalJobs": 0,
+    "lastPollTs": "2026-06-17T00:09:21.887Z",
+    "lastJobsSeenTs": null,
+    "jobsInLastPoll": 0,
+    "matchCount": 0,
+    "s21bClass": "ACTIVE",
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
   },
   {
     "name": "WVU Medicine",
@@ -1209,7 +1751,9 @@
     "effectiveUrl": "https://wvumedicine.wd5.myworkdayjobs.com/en-US/external",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "UCHealth",
@@ -1221,7 +1765,9 @@
     "effectiveUrl": "https://uchealth.wd5.myworkdayjobs.com/en-US/UCHealth",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Stormont Vail",
@@ -1233,7 +1779,9 @@
     "effectiveUrl": "https://stormontvail.wd5.myworkdayjobs.com/en-US/Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Cone Health",
@@ -1245,7 +1793,9 @@
     "effectiveUrl": "https://conehealth.wd5.myworkdayjobs.com/en-US/ConeHealthCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Virtua Health",
@@ -1257,7 +1807,9 @@
     "effectiveUrl": "https://virtua.wd5.myworkdayjobs.com/en-US/Virtua",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Valley Health System",
@@ -1269,7 +1821,9 @@
     "effectiveUrl": "https://valleyhealthnj.wd5.myworkdayjobs.com/en-US/careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Billings Clinic",
@@ -1281,7 +1835,9 @@
     "effectiveUrl": "https://billingsclinic.wd5.myworkdayjobs.com/en-US/careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "DISH / EchoStar",
@@ -1293,7 +1849,9 @@
     "effectiveUrl": "https://dish.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Humana",
@@ -1329,7 +1887,9 @@
     "effectiveUrl": "https://aetna.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Anthem / Elevance",
@@ -1341,7 +1901,9 @@
     "effectiveUrl": "https://elevancehealth.wd5.myworkdayjobs.com/en-US/careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "UnitedHealth Group",
@@ -1353,7 +1915,9 @@
     "effectiveUrl": "https://uhg.wd5.myworkdayjobs.com/en-US/UHG",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Molina Healthcare",
@@ -1365,7 +1929,9 @@
     "effectiveUrl": "https://molina.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Centene",
@@ -1413,7 +1979,9 @@
     "effectiveUrl": "https://blueyonder.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "E2open",
@@ -1425,7 +1993,9 @@
     "effectiveUrl": "https://e2open.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   },
   {
     "name": "Manhattan Associates",
@@ -1449,6 +2019,8 @@
     "effectiveUrl": "https://infor.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 238
+    "contentLength": 238,
+    "s21bClass": "UNREACHABLE",
+    "s21bReason": "not in DO polling rotation (company_list mismatch)"
   }
 ]
