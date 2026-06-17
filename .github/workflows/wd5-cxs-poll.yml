@@ -50,6 +50,16 @@ jobs:
         with:
           token: ${{ secrets.STAT_PAT }}
 
+      - name: Install curl_cffi (Chrome TLS impersonation)
+        # curl_cffi replays Chrome's exact JA3/JA4 TLS fingerprint at the
+        # socket level, addressing the case where Cloudflare blocks bash
+        # curl's distinct fingerprint regardless of UA/IP. Bash curl is
+        # used as fallback if curl_cffi can't reach the upstream.
+        run: |
+          python3 -m pip install --quiet --upgrade pip
+          python3 -m pip install --quiet 'curl_cffi>=0.7'
+          python3 -c "from curl_cffi import requests; print('curl_cffi', requests.__file__)"
+
       - name: Verify secrets present
         run: |
           missing=()
@@ -121,30 +131,121 @@ jobs:
               fi
               HTML_FILE="outbox/wd5-html-${TENANT}-${CLUSTER}-${KW}-p${PAGE}.html"
 
-              # First try Googlebot UA
-              HTTP=$(curl -sS --max-time 45 -L -x "$PROXY" \
-                -o "$HTML_FILE" -w "%{http_code}" \
-                -H "User-Agent: ${UA_BOT}" \
-                -H "Accept: text/html,application/xhtml+xml" \
-                -H "Accept-Language: en-US" \
-                "$URL" 2>&1 || echo "000")
-              BYTES=$(wc -c < "$HTML_FILE" 2>/dev/null || echo 0)
-              UA_USED="bot"
+              # Fetch with curl_cffi (Chrome TLS impersonation) primary,
+              # bash curl + Googlebot UA fallback, bash curl + Chrome UA
+              # second fallback. The Python helper emits one line per
+              # attempt: METHOD=<cffi|curl-bot|curl-browser> HTTP=<n> BYTES=<n>
+              # EXCERPT=<first 200 chars, newline-collapsed>. Last line of
+              # output is the chosen method that wrote HTML_FILE.
+              FETCH_OUT=$(URL="$URL" HTML_FILE="$HTML_FILE" PROXY_URL="$PROXY" \
+                UA_BOT="$UA_BOT" UA_BROWSER="$UA_BROWSER" \
+                python3 << 'PYEOF'
+          import os, sys, subprocess, traceback
 
-              # Fallback to standard browser UA on blocked / tiny response
-              if [ "$HTTP" != "200" ] || [ "$BYTES" -lt 2000 ]; then
-                echo "  page $PAGE: bot UA HTTP=$HTTP bytes=$BYTES → retry with browser UA"
-                HTTP=$(curl -sS --max-time 45 -L -x "$PROXY" \
-                  -o "$HTML_FILE" -w "%{http_code}" \
-                  -H "User-Agent: ${UA_BROWSER}" \
-                  -H "Accept: text/html,application/xhtml+xml" \
-                  -H "Accept-Language: en-US" \
-                  "$URL" 2>&1 || echo "000")
-                BYTES=$(wc -c < "$HTML_FILE" 2>/dev/null || echo 0)
-                UA_USED="browser"
+          URL       = os.environ['URL']
+          HTML_FILE = os.environ['HTML_FILE']
+          PROXY     = os.environ['PROXY_URL']
+          UA_BOT    = os.environ['UA_BOT']
+          UA_BROWSER= os.environ['UA_BROWSER']
+
+          def excerpt(b):
+              try:
+                  s = b.decode('utf-8', errors='replace')
+              except Exception:
+                  s = ''
+              return s[:200].replace('\n', ' ').replace('\r', ' ').strip()
+
+          chosen = None  # 'cffi' | 'curl-bot' | 'curl-browser'
+
+          # ── Method 1: curl_cffi Chrome120 impersonation ─────────────────
+          try:
+              from curl_cffi import requests as cf_requests
+              try:
+                  r = cf_requests.get(
+                      URL,
+                      impersonate='chrome120',
+                      proxies={'https': PROXY, 'http': PROXY},
+                      timeout=30,
+                  )
+                  body = r.content or b''
+                  status = r.status_code
+                  print(f'METHOD=cffi HTTP={status} BYTES={len(body)} EXCERPT={excerpt(body)}')
+                  if status == 200 and len(body) > 5000:
+                      open(HTML_FILE, 'wb').write(body)
+                      chosen = 'cffi'
+              except Exception as e:
+                  print(f'METHOD=cffi HTTP=ERR BYTES=0 EXCERPT=ERROR: {e!r}')
+          except ImportError:
+              print('METHOD=cffi HTTP=NA BYTES=0 EXCERPT=curl_cffi not installed')
+
+          # ── Method 2: bash curl + Googlebot UA ──────────────────────────
+          if chosen is None:
+              tmp = HTML_FILE + '.tmp'
+              try:
+                  proc = subprocess.run([
+                      'curl','-sS','--max-time','45','-L','-x',PROXY,
+                      '-o',tmp,'-w','%{http_code}',
+                      '-H',f'User-Agent: {UA_BOT}',
+                      '-H','Accept: text/html,application/xhtml+xml',
+                      '-H','Accept-Language: en-US',
+                      URL,
+                  ], capture_output=True, text=True, timeout=60)
+                  status = (proc.stdout or '000').strip()
+                  body = open(tmp,'rb').read() if os.path.exists(tmp) else b''
+                  print(f'METHOD=curl-bot HTTP={status} BYTES={len(body)} EXCERPT={excerpt(body)}')
+                  if status == '200' and len(body) > 5000:
+                      os.replace(tmp, HTML_FILE)
+                      chosen = 'curl-bot'
+                  else:
+                      try: os.remove(tmp)
+                      except: pass
+              except Exception as e:
+                  print(f'METHOD=curl-bot HTTP=ERR BYTES=0 EXCERPT=ERROR: {e!r}')
+
+          # ── Method 3: bash curl + standard browser UA ───────────────────
+          if chosen is None:
+              tmp = HTML_FILE + '.tmp'
+              try:
+                  proc = subprocess.run([
+                      'curl','-sS','--max-time','45','-L','-x',PROXY,
+                      '-o',tmp,'-w','%{http_code}',
+                      '-H',f'User-Agent: {UA_BROWSER}',
+                      '-H','Accept: text/html,application/xhtml+xml',
+                      '-H','Accept-Language: en-US',
+                      URL,
+                  ], capture_output=True, text=True, timeout=60)
+                  status = (proc.stdout or '000').strip()
+                  body = open(tmp,'rb').read() if os.path.exists(tmp) else b''
+                  print(f'METHOD=curl-browser HTTP={status} BYTES={len(body)} EXCERPT={excerpt(body)}')
+                  # On final fallback, save HTML even if non-200 / tiny —
+                  # gives the parser something to inspect (and maintenance
+                  # page is itself diagnostic).
+                  if os.path.exists(tmp):
+                      os.replace(tmp, HTML_FILE)
+                  if status == '200' and len(body) > 5000:
+                      chosen = 'curl-browser'
+              except Exception as e:
+                  print(f'METHOD=curl-browser HTTP=ERR BYTES=0 EXCERPT=ERROR: {e!r}')
+
+          # Last line: chosen winner (or 'none' if all 3 failed)
+          print(f'CHOSEN={chosen or "none"}')
+          PYEOF
+              )
+              echo "$FETCH_OUT" | sed 's/^/  /'
+              # Extract HTTP/BYTES/UA_USED from the chosen winner line
+              CHOSEN=$(echo "$FETCH_OUT" | sed -n 's/^CHOSEN=//p' | tail -1)
+              # Parse method-specific HTTP+BYTES; default to last METHOD line if no winner
+              if [ "$CHOSEN" != "none" ] && [ -n "$CHOSEN" ]; then
+                METHOD_LINE=$(echo "$FETCH_OUT" | grep "^METHOD=$CHOSEN " | tail -1)
+              else
+                METHOD_LINE=$(echo "$FETCH_OUT" | grep "^METHOD=" | tail -1)
               fi
-
-              echo "  page $PAGE: HTTP=$HTTP bytes=$BYTES UA=$UA_USED"
+              HTTP=$(echo "$METHOD_LINE" | sed -n 's/.*HTTP=\([^ ]*\).*/\1/p')
+              BYTES=$(echo "$METHOD_LINE" | sed -n 's/.*BYTES=\([^ ]*\).*/\1/p')
+              [ -z "$HTTP" ] && HTTP="000"
+              [ -z "$BYTES" ] && BYTES=0
+              UA_USED="$CHOSEN"
+              echo "  page $PAGE: HTTP=$HTTP bytes=$BYTES method=$UA_USED"
               HTTP_LAST="$HTTP"
               BYTES_TOTAL=$((BYTES_TOTAL + BYTES))
               PAGES_FETCHED=$PAGE
