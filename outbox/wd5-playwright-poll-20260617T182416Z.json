@@ -1,0 +1,27 @@
+{
+  "ts": "20260617T182416Z",
+  "limit": 1,
+  "keywords": [
+    "epic",
+    "ehr",
+    "ambulatory",
+    "cadence",
+    "cogito",
+    "clarity",
+    "willow",
+    "radiant"
+  ],
+  "max_offset_pages": 10,
+  "jhbmc_unique_count": null,
+  "ingest_blocked": false,
+  "per_company": [
+    {
+      "tenant": "jhhs",
+      "cluster": "wd5",
+      "name": "Johns Hopkins",
+      "maintenance": true,
+      "unique_jobs": 0
+    }
+  ],
+  "ingest": []
+}
