@@ -1,3 +1,71 @@
+# STAT HANDOFF — 2026-06-17 (Session 27a END — GET CXS investigation, POST confirmed only)
+
+## State
+HEAD: (latest) — Worker deployed `c619744` (deploy 190 ✅); `/cxs-get-probe` route live
+Smoke: 213/213 ✅
+
+## Session 27a — Does Workday CXS accept GET? (2026-06-17)
+
+**Hypothesis.** Chat probe of CXS via GET to wd108 IMH returned HTTP 400 instead
+of 422. 400 suggests "format wrong" rather than CSRF rejection — maybe CXS
+accepts GET in some unknown format, which would eliminate the CSRF cookie
+problem entirely (CSRF only applies to mutating methods).
+
+**Built (commit `c619744`, deploy 190):**
+
+1. `src/routes/diagnostics.js` — added `GET /cxs-get-probe?tenant=X&host=Y&slug=Z`
+   read-only route. Tests 6 GET-format variations against any tenant server-side
+   with 2s pacing, returns JSON summary with status/bytes/jobCount/excerpt per
+   variation. No side effects.
+
+2. `.github/workflows/cxs-get-probe.yml` — dispatcher (workflow_dispatch only)
+   that calls `/cxs-get-probe` against IMH wd108 first, then JHBMC wd5 from CF
+   Worker IP, then JHBMC wd5 via DataImpulse + curl_cffi (only re-tests variations
+   that won on wd108). Uses curl_cffi + browser UA to reach the Worker (default
+   `Python-urllib` UA returned 403 from CF edge — fixed in `4e1fdfd`).
+
+**Run 2 results (`outbox/cxs-get-probe-20260617T180303Z.json`):**
+
+| variation | URL/header trick | HTTP | bytes | result |
+|---|---|---:|---:|---|
+| A_qs            | `?searchText=epic&limit=20&offset=0`              | 400 | 121 | generic `HTTP_400` errorCode |
+| B_get_body      | GET with `Content-Type: application/json` + body  | ERR |   0 | fetch/JS rejects body on GET method |
+| C_alt_path      | `/jobs/search?q=epic&limit=20` (different path)   | 422 | 121 | endpoint doesn't exist |
+| D_accept_json   | A + `Accept: application/json`                    | 400 | 121 | same as A |
+| E_xhr           | A + `X-Requested-With: XMLHttpRequest`            | 400 | 121 | same as A |
+| F_origin_referer | A + `Origin` + `Referer` matching tenant         | 400 | 121 | same as A |
+
+Latency 55–113ms across variations — Workday's app layer is responding
+fast, just rejecting the method/path. **No GET variation succeeded.**
+Phase 2 (wd5) was correctly skipped per the workflow guard (anyOk=false
+on wd108 means no point burning DataImpulse bandwidth on wd5).
+
+**Verdict.** Workday CXS is **POST-only**. The 400 isn't CSRF rejection
+— the endpoint refuses the method entirely. Confirms the S26
+session-cookie POST approach is the right path; no easier alternative
+exists at the CXS endpoint.
+
+**Updates:**
+- `CLAUDE.md`: added the GET-rejected explanation under the wd5
+  Session-Cookie CXS section so future sessions don't re-investigate.
+- This HANDOFF.
+
+**S27a artifacts kept:**
+- `/cxs-get-probe` route — read-only and cheap; future sessions can
+  re-test if Workday changes anything by dispatching the workflow.
+- `cxs-get-probe.yml` — works fine, just expect anyOk=false unless
+  Workday changes their API surface.
+
+### Open items into S27 (full session)
+
+Carry-forward from S26 still applies — when wd5 recovers from maintenance:
+1. Probe `jhhs.wd5` via Worker `/plain-fetch-test` for HTTP 200 + bytes > 10KB
+2. Dispatch `wd5-ssr-probe.yml` to confirm session-cookie approach (D)
+3. Dispatch `wd5-cxs-poll.yml` with `limit=3` to verify end-to-end ingest
+4. Enable cron `'0 */4 * * *'` once verified
+
+---
+
 # STAT HANDOFF — 2026-06-17 (Session 26 END — session-cookie CXS + SSR bypass probe)
 
 ## State

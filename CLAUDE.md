@@ -109,6 +109,14 @@ wd5 and wd3 clusters do **not** block CXS by IP — they reject CXS POSTs
 without valid session cookies. A bare `curl -X POST` (any IP) returns HTTP
 422 because `PLAY_SESSION` and `CALYPSO_CSRF_TOKEN` aren't present.
 
+**Why POST and not GET?** S27a tested 6 GET-format variations against IMH wd108
+(confirmed live cluster). All returned HTTP 400 or 422 with a generic
+`HTTP_400` errorCode (`/raw-fetch`, `?searchText=…` query string, JSON body,
+`Accept: application/json`, `X-Requested-With: XMLHttpRequest`, and `Origin`
++`Referer` headers). Workday CXS rejects GET in every format — it's not a
+CSRF issue, the endpoint is POST-only. Probe results in
+`outbox/cxs-get-probe-2026*.json`.
+
 **Production path (S26, `.github/workflows/wd5-cxs-poll.yml`):**
 
 1. **GET** `https://{tenant}.wd5.myworkdayjobs.com/en-US/{slug}` through
