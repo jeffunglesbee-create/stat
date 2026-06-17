@@ -1,0 +1,77 @@
+{
+  "phases": [
+    {
+      "phase": "wd108_imh_worker",
+      "response": {
+        "tenant": "imh",
+        "host": "imh.wd108.myworkdayjobs.com",
+        "slug": "imh",
+        "keyword": "epic",
+        "anyOk": false,
+        "winners": [],
+        "variations": [
+          {
+            "label": "A_qs",
+            "url": "https://imh.wd108.myworkdayjobs.com/wday/cxs/imh/imh/jobs?searchText=epic&limit=20&offset=0",
+            "status": 400,
+            "bytes": 121,
+            "ok": false,
+            "jobCount": 0,
+            "excerpt": "{\"errorCode\":\"HTTP_400\",\"errorCaseId\":\"6D4B3DMQIDPVCG\",\"httpStatus\":400,\"locale\":\"en-US\",\"message\":\"\",\"messageParams\":{}}",
+            "elapsedMs": 113
+          },
+          {
+            "label": "B_get_body",
+            "url": "https://imh.wd108.myworkdayjobs.com/wday/cxs/imh/imh/jobs",
+            "status": "ERR",
+            "bytes": 0,
+            "ok": false,
+            "jobCount": 0,
+            "excerpt": "ERROR: Request with a GET or HEAD method cannot have a body.",
+            "elapsedMs": 0
+          },
+          {
+            "label": "C_alt_path",
+            "url": "https://imh.wd108.myworkdayjobs.com/wday/cxs/imh/imh/jobs/search?q=epic&limit=20",
+            "status": 422,
+            "bytes": 121,
+            "ok": false,
+            "jobCount": 0,
+            "excerpt": "{\"errorCode\":\"HTTP_422\",\"errorCaseId\":\"6D4B3DMQIDPYH0\",\"httpStatus\":422,\"locale\":\"en-US\",\"message\":\"\",\"messageParams\":{}}",
+            "elapsedMs": 70
+          },
+          {
+            "label": "D_accept_json",
+            "url": "https://imh.wd108.myworkdayjobs.com/wday/cxs/imh/imh/jobs?searchText=epic&limit=20&offset=0",
+            "status": 400,
+            "bytes": 121,
+            "ok": false,
+            "jobCount": 0,
+            "excerpt": "{\"errorCode\":\"HTTP_400\",\"errorCaseId\":\"F26A1EMQIDQ02I\",\"httpStatus\":400,\"locale\":\"en-US\",\"message\":\"\",\"messageParams\":{}}",
+            "elapsedMs": 55
+          },
+          {
+            "label": "E_xhr",
+            "url": "https://imh.wd108.myworkdayjobs.com/wday/cxs/imh/imh/jobs?searchText=epic&limit=20&offset=0",
+            "status": 400,
+            "bytes": 121,
+            "ok": false,
+            "jobCount": 0,
+            "excerpt": "{\"errorCode\":\"HTTP_400\",\"errorCaseId\":\"78D2A6MQIDQ1NN\",\"httpStatus\":400,\"locale\":\"en-US\",\"message\":\"\",\"messageParams\":{}}",
+            "elapsedMs": 58
+          },
+          {
+            "label": "F_origin_referer",
+            "url": "https://imh.wd108.myworkdayjobs.com/wday/cxs/imh/imh/jobs?searchText=epic&limit=20&offset=0",
+            "status": 400,
+            "bytes": 121,
+            "ok": false,
+            "jobCount": 0,
+            "excerpt": "{\"errorCode\":\"HTTP_400\",\"errorCaseId\":\"F26A1EMQIDQ38S\",\"httpStatus\":400,\"locale\":\"en-US\",\"message\":\"\",\"messageParams\":{}}",
+            "elapsedMs": 55
+          }
+        ]
+      }
+    }
+  ]
+}
