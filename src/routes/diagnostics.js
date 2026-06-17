@@ -124,6 +124,100 @@ export async function handleDiagnostics(request, url, env) {
     }
   }
 
+  // GET /cxs-get-probe — does Workday CXS accept GET? (CSRF only applies to
+  // POST/PUT/DELETE; GET requests are exempt). Tests 6 GET-format variations.
+  // Read-only, no side effects.
+  //
+  // Usage: GET /cxs-get-probe?tenant=imh&host=imh.wd108.myworkdayjobs.com&slug=imh
+  // Optional: &keyword=epic (default), &limit=20 (default)
+  //
+  // Variations tested:
+  //   A — query string params (?searchText=epic&limit=20&offset=0)
+  //   B — GET with JSON body (Content-Type: application/json)
+  //   C — alternate path /jobs/search?q=epic&limit=20
+  //   D — A + Accept: application/json
+  //   E — A + X-Requested-With: XMLHttpRequest
+  //   F — A + Origin + Referer matching the tenant
+  //
+  // Returns: { variations: [{label, url, status, bytes, ok, jobCount, excerpt}, ...] }
+  // 2s delay between variations (rate limit).
+  if (url.pathname === '/cxs-get-probe' && request.method === 'GET') {
+    const tenant  = url.searchParams.get('tenant');
+    const host    = url.searchParams.get('host');
+    const slug    = url.searchParams.get('slug');
+    const keyword = url.searchParams.get('keyword') || 'epic';
+    const limit   = url.searchParams.get('limit')   || '20';
+    if (!tenant || !host || !slug) {
+      return json({ error: 'tenant, host, slug required' }, 400);
+    }
+    const origin    = `https://${host}`;
+    const referer   = `${origin}/en-US/${slug}`;
+    const baseJobs  = `https://${host}/wday/cxs/${tenant}/${slug}/jobs`;
+    const qs        = `searchText=${encodeURIComponent(keyword)}&limit=${limit}&offset=0`;
+
+    const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+    const baseHeaders = { 'User-Agent': UA, 'Accept-Language': 'en-US' };
+
+    const variations = [
+      { label: 'A_qs',         url: `${baseJobs}?${qs}`,                             method: 'GET',
+        headers: { ...baseHeaders }, body: undefined },
+      { label: 'B_get_body',   url: baseJobs,                                        method: 'GET',
+        headers: { ...baseHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchText: keyword, limit: Number(limit), offset: 0 }) },
+      { label: 'C_alt_path',   url: `https://${host}/wday/cxs/${tenant}/${slug}/jobs/search?q=${encodeURIComponent(keyword)}&limit=${limit}`,
+        method: 'GET', headers: { ...baseHeaders }, body: undefined },
+      { label: 'D_accept_json', url: `${baseJobs}?${qs}`,                            method: 'GET',
+        headers: { ...baseHeaders, 'Accept': 'application/json' }, body: undefined },
+      { label: 'E_xhr',        url: `${baseJobs}?${qs}`,                             method: 'GET',
+        headers: { ...baseHeaders, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: undefined },
+      { label: 'F_origin_referer', url: `${baseJobs}?${qs}`,                         method: 'GET',
+        headers: { ...baseHeaders, 'Accept': 'application/json', 'Origin': origin, 'Referer': referer },
+        body: undefined },
+    ];
+
+    const results = [];
+    for (const v of variations) {
+      const start = Date.now();
+      let entry = { label: v.label, url: v.url, status: 'ERR', bytes: 0, ok: false, jobCount: 0,
+        excerpt: '', elapsedMs: 0 };
+      try {
+        const init = { method: v.method, headers: v.headers, signal: AbortSignal.timeout(15000) };
+        if (v.body !== undefined) init.body = v.body;
+        const res = await fetch(v.url, init);
+        const body = await res.text();
+        entry.status   = res.status;
+        entry.bytes    = body.length;
+        entry.excerpt  = body.slice(0, 500).replace(/\s+/g, ' ');
+        entry.elapsedMs = Date.now() - start;
+        if (res.ok) {
+          try {
+            const data = JSON.parse(body);
+            const jobs = data?.jobPostings;
+            if (Array.isArray(jobs)) {
+              entry.jobCount = jobs.length;
+              entry.ok = jobs.length > 0;
+            }
+          } catch {}
+        }
+      } catch (e) {
+        entry.excerpt = `ERROR: ${e.message}`;
+        entry.elapsedMs = Date.now() - start;
+      }
+      results.push(entry);
+      // Polite 2s gap between variations
+      await new Promise(r => setTimeout(r, 2000));
+    }
+
+    const winners = results.filter(r => r.ok);
+    return json({
+      tenant, host, slug, keyword,
+      anyOk: winners.length > 0,
+      winners: winners.map(w => w.label),
+      variations: results,
+    });
+  }
+
   // GET /workday-probe — rate limit floor probe for Workday API
   // Tests a single tenant at decreasing intervals and returns results as JSON.
   // Usage: GET /workday-probe?tenant=jhhs&host=jhhs.wd5.myworkdayjobs.com&slug=JHH_External_Positions

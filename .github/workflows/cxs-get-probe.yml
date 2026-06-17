@@ -1,0 +1,216 @@
+# .github/workflows/cxs-get-probe.yml
+# S27a — test whether Workday CXS accepts GET (CSRF only applies to mutating
+# methods). If yes, the entire 2-request session-cookie flow is unnecessary.
+#
+# Step 1: dispatch the Worker's /cxs-get-probe against IMH wd108 (confirmed
+#         live in prior sessions). Tests 6 GET variations server-side.
+# Step 2: if any GET variation returned 200 + jobPostings on wd108, repeat the
+#         probe against JHBMC wd5 from the CF Worker IP. If wd5 still blocks
+#         GET → also try from DataImpulse residential proxy via curl_cffi.
+# Step 3: write combined results to outbox/cxs-get-probe-{ts}.json.
+#
+# DO NOT change the production CXS path on the strength of this run alone;
+# this workflow is diagnostic. wd5-cxs-poll.yml stays on session-cookie POST
+# until a follow-up commit migrates it to GET if any variation succeeds end-to-end.
+
+name: Probe Workday CXS GET (S27a)
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+env:
+  WORKER_URL: https://stat-job-watcher.jeffunglesbee.workers.dev
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+
+      - name: Install curl_cffi (for proxied wd5 probe)
+        run: |
+          python3 -m pip install --quiet --upgrade pip
+          python3 -m pip install --quiet 'curl_cffi>=0.7'
+
+      - name: Probe wd108 (IMH) + wd5 (JHBMC) via /cxs-get-probe + DataImpulse
+        env:
+          DI_USER: ${{ secrets.DATAIMPULSE_USER }}
+          DI_PASS: ${{ secrets.DATAIMPULSE_PASS }}
+        run: |
+          mkdir -p outbox
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/cxs-get-probe-${TS}.json"
+
+          DI_USER="$DI_USER" DI_PASS="$DI_PASS" OUT_FILE="$OUT" python3 << 'PYEOF'
+          import json, os, sys, time, urllib.parse, urllib.request, urllib.error
+          try:
+              from curl_cffi import requests as cf_requests
+              CFFI_OK = True
+          except ImportError:
+              cf_requests = None
+              CFFI_OK = False
+
+          WORKER = 'https://stat-job-watcher.jeffunglesbee.workers.dev'
+          DI_USER = os.environ['DI_USER']
+          DI_PASS = os.environ['DI_PASS']
+          PROXY = f'http://{DI_USER}:{DI_PASS}@gw.dataimpulse.com:823' if DI_USER else None
+          OUT_FILE = os.environ['OUT_FILE']
+
+          summary = {'phases': []}
+
+          # ── Phase 1: probe wd108 IMH via Worker (CF IP) ─────────────────
+          q = urllib.parse.urlencode({
+              'tenant': 'imh',
+              'host':   'imh.wd108.myworkdayjobs.com',
+              'slug':   'imh',
+              'keyword': 'epic',
+          })
+          probe_url = f'{WORKER}/cxs-get-probe?{q}'
+          print(f'=== PHASE 1: wd108 IMH via Worker ===')
+          print(f'GET {probe_url}')
+          try:
+              req = urllib.request.Request(probe_url)
+              with urllib.request.urlopen(req, timeout=120) as r:
+                  body = r.read().decode()
+              data = json.loads(body)
+              summary['phases'].append({'phase': 'wd108_imh_worker', 'response': data})
+              print(f'anyOk={data["anyOk"]} winners={data["winners"]}')
+              for v in data['variations']:
+                  print(f'  {v["label"]}: status={v["status"]} bytes={v["bytes"]} jobs={v["jobCount"]} excerpt={v["excerpt"][:120]}')
+          except Exception as e:
+              print(f'ERROR Phase 1: {e!r}')
+              summary['phases'].append({'phase': 'wd108_imh_worker', 'error': repr(e)})
+              json.dump(summary, open(OUT_FILE, 'w'), indent=2)
+              sys.exit(0)
+
+          wd108_winner_labels = [v['label'] for v in data['variations'] if v['ok']]
+          if not wd108_winner_labels:
+              print('\nNo GET variation worked on wd108. Skipping wd5 probe.')
+              json.dump(summary, open(OUT_FILE, 'w'), indent=2)
+              sys.exit(0)
+
+          # ── Phase 2: probe wd5 JHBMC via Worker (CF IP) ─────────────────
+          q = urllib.parse.urlencode({
+              'tenant': 'jhhs',
+              'host':   'jhhs.wd5.myworkdayjobs.com',
+              'slug':   'JHH_External_Positions',
+              'keyword': 'epic',
+          })
+          probe_url = f'{WORKER}/cxs-get-probe?{q}'
+          print(f'\n=== PHASE 2: wd5 JHBMC via Worker ===')
+          print(f'GET {probe_url}')
+          try:
+              req = urllib.request.Request(probe_url)
+              with urllib.request.urlopen(req, timeout=120) as r:
+                  body = r.read().decode()
+              data2 = json.loads(body)
+              summary['phases'].append({'phase': 'wd5_jhbmc_worker', 'response': data2})
+              print(f'anyOk={data2["anyOk"]} winners={data2["winners"]}')
+              for v in data2['variations']:
+                  print(f'  {v["label"]}: status={v["status"]} bytes={v["bytes"]} jobs={v["jobCount"]} excerpt={v["excerpt"][:120]}')
+          except Exception as e:
+              print(f'ERROR Phase 2: {e!r}')
+              summary['phases'].append({'phase': 'wd5_jhbmc_worker', 'error': repr(e)})
+              data2 = {'anyOk': False, 'variations': []}
+
+          # ── Phase 3: probe wd5 JHBMC via DataImpulse (only if Worker
+          #    path failed and we have a winning variation on wd108) ──────
+          if not data2.get('anyOk') and PROXY and CFFI_OK:
+              print(f'\n=== PHASE 3: wd5 JHBMC via DataImpulse (curl_cffi) ===')
+              host = 'jhhs.wd5.myworkdayjobs.com'
+              slug = 'JHH_External_Positions'
+              tenant = 'jhhs'
+              origin = f'https://{host}'
+              referer = f'{origin}/en-US/{slug}'
+              keyword = 'epic'
+              base = f'https://{host}/wday/cxs/{tenant}/{slug}/jobs'
+              qs = f'searchText={urllib.parse.quote(keyword)}&limit=20&offset=0'
+
+              def variation_specs(label):
+                  return {
+                      'A_qs':           {'url': f'{base}?{qs}', 'headers': {'Accept-Language': 'en-US'}, 'body': None},
+                      'B_get_body':     {'url': base, 'headers': {'Content-Type': 'application/json', 'Accept-Language': 'en-US'},
+                                          'body': json.dumps({'searchText': keyword, 'limit': 20, 'offset': 0})},
+                      'C_alt_path':     {'url': f'https://{host}/wday/cxs/{tenant}/{slug}/jobs/search?q={urllib.parse.quote(keyword)}&limit=20',
+                                          'headers': {'Accept-Language': 'en-US'}, 'body': None},
+                      'D_accept_json':  {'url': f'{base}?{qs}', 'headers': {'Accept': 'application/json', 'Accept-Language': 'en-US'}, 'body': None},
+                      'E_xhr':          {'url': f'{base}?{qs}', 'headers': {'Accept': 'application/json', 'Accept-Language': 'en-US',
+                                          'X-Requested-With': 'XMLHttpRequest'}, 'body': None},
+                      'F_origin_referer': {'url': f'{base}?{qs}', 'headers': {'Accept': 'application/json', 'Accept-Language': 'en-US',
+                                          'Origin': origin, 'Referer': referer}, 'body': None},
+                  }[label]
+
+              di_results = []
+              # Only re-test the variations that worked on wd108 (saves time/bandwidth)
+              for label in wd108_winner_labels:
+                  spec = variation_specs(label)
+                  t0 = time.time()
+                  try:
+                      kwargs = {'impersonate': 'chrome120', 'proxies': {'http': PROXY, 'https': PROXY},
+                                'headers': spec['headers'], 'timeout': 30}
+                      # curl_cffi GET-with-body is non-standard; pass via data=
+                      if spec['body']: kwargs['data'] = spec['body']
+                      r = cf_requests.get(spec['url'], **kwargs)
+                      status = r.status_code
+                      body = r.content
+                      job_count = 0
+                      ok = False
+                      if status == 200:
+                          try:
+                              jd = json.loads(body)
+                              jobs = jd.get('jobPostings')
+                              if isinstance(jobs, list):
+                                  job_count = len(jobs)
+                                  ok = job_count > 0
+                          except Exception:
+                              pass
+                      entry = {
+                          'label': label, 'url': spec['url'], 'status': str(status), 'bytes': len(body),
+                          'ok': ok, 'jobCount': job_count,
+                          'excerpt': body.decode('utf-8', errors='replace')[:500].replace('\n', ' ').replace('\r', ' '),
+                          'elapsedMs': int((time.time()-t0)*1000),
+                      }
+                      di_results.append(entry)
+                      print(f'  {label}: status={status} bytes={len(body)} jobs={job_count} ok={ok}')
+                  except Exception as e:
+                      di_results.append({
+                          'label': label, 'url': spec['url'], 'status': 'ERR', 'bytes': 0, 'ok': False,
+                          'jobCount': 0, 'excerpt': f'ERROR: {e!r}'[:500],
+                          'elapsedMs': int((time.time()-t0)*1000),
+                      })
+                      print(f'  {label}: ERROR {e!r}')
+                  time.sleep(2)
+
+              summary['phases'].append({
+                  'phase': 'wd5_jhbmc_dataimpulse',
+                  'anyOk': any(r['ok'] for r in di_results),
+                  'winners': [r['label'] for r in di_results if r['ok']],
+                  'variations': di_results,
+              })
+
+          # Persist
+          json.dump(summary, open(OUT_FILE, 'w'), indent=2)
+          print(f'\nWrote {OUT_FILE}')
+
+          # Print pithy summary
+          print('\n=== SUMMARY ===')
+          for ph in summary['phases']:
+              if 'error' in ph:
+                  print(f'  {ph["phase"]}: error={ph["error"][:100]}')
+                  continue
+              winners = ph.get('winners') or ph.get('response', {}).get('winners', [])
+              print(f'  {ph["phase"]}: winners={winners}')
+          PYEOF
+
+      - name: Commit probe results
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git pull --rebase origin main || true
+          git add outbox/cxs-get-probe-*.json 2>/dev/null || true
+          git commit -m "ci: S27a CXS GET probe results [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"
