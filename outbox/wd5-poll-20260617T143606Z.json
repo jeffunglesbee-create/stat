@@ -1,0 +1,7 @@
+[
+{"idx": 0, "name": "Johns Hopkins", "tenant": "jhhs", "cluster": "wd5", "slug": "JHH_External_Positions", "http_last": "500", "bytes_total": 238, "pages_fetched": 1, "ua_used": "browser", "jobs_parsed": 0}
+,
+{"idx": 1, "name": "Mayo Clinic", "tenant": "mayoclinic", "cluster": "wd5", "slug": "mayoclinic", "http_last": "500", "bytes_total": 238, "pages_fetched": 1, "ua_used": "browser", "jobs_parsed": 0}
+,
+{"idx": 2, "name": "Kaiser Permanente", "tenant": "kp", "cluster": "wd5", "slug": "KP_External_Career_Site", "http_last": "500", "bytes_total": 238, "pages_fetched": 1, "ua_used": "browser", "jobs_parsed": 0}
+]
