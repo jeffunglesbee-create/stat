@@ -1,0 +1,40 @@
+# .github/workflows/verify-workday-cxs.yml
+# One-shot validation that fetchWorkday's CXS API path actually returns jobs.
+# Calls /workday-probe (existing rate-limit probe) for a few tenants and
+# commits the JSON. Manual dispatch only.
+name: Verify Workday CXS
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+      - name: Probe a couple of tenants
+        run: |
+          mkdir -p outbox
+          W="https://stat-job-watcher.jeffunglesbee.workers.dev"
+          probe() {
+            local label="$1" tenant="$2" host="$3" slug="$4"
+            local out="outbox/cxs-probe-${label}.json"
+            curl -sS --max-time 75 \
+              "$W/workday-probe?tenant=${tenant}&host=${host}&slug=${slug}" \
+              > "$out"
+            echo "--- $label ---"
+            cat "$out"
+          }
+          probe jhbmc jhhs jhhs.wd5.myworkdayjobs.com JHH_External_Positions
+          probe imh   imh  imh.wd108.myworkdayjobs.com IntermountainCareers
+      - name: Commit
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git add outbox/cxs-probe-*.json
+          git commit -m "ci: CXS probe results [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"
