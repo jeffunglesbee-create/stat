@@ -1,0 +1,16 @@
+=== CF API Probe [20260617T174854Z] ===
+Request: GET https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https://imh.wd108.myworkdayjobs.com/wday/cxs/imh/imh/jobs?searchText=epic%26limit=20%26offset=0
+
+{
+    "ok": false,
+    "url": "https://imh.wd108.myworkdayjobs.com/wday/cxs/imh/imh/jobs?searchText=epic&limit=20&offset=0",
+    "http_status": 400,
+    "elapsed_ms": 108,
+    "body_bytes": 121,
+    "is_blocked": false,
+    "title": "",
+    "og_description": "",
+    "job_ids": [],
+    "job_hrefs": [],
+    "body_text_excerpt": "{\"errorCode\":\"HTTP_400\",\"errorCaseId\":\"F26A1EMQID7NRO\",\"httpStatus\":400,\"locale\":\"en-US\",\"message\":\"\",\"messageParams\":{}}"
+}
