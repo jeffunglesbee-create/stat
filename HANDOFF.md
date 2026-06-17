@@ -1,9 +1,75 @@
-# STAT HANDOFF — 2026-06-16 (Session 20 UPDATE — regen succeeded)
+# STAT HANDOFF — 2026-06-17 (Session 21 END — Workday URL audit)
 
 ## State
-HEAD: 3cf35c9
+HEAD: 7d48e28 (audit) — deploy 171 ✅ from this commit
 Smoke: 213/213 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 21 — Workday URL audit (2026-06-16/17)
+
+**Inventory.** 121 unique Workday URLs across `src/config.js`
+(`scripts/extract-workday-urls.js` parses them; smoke leaves them
+unmodified).
+
+**Probe path.** Direct curl from this sandbox + from a GitHub Actions
+runner both got HTTP 403 from every URL — anti-bot block on
+datacenter IPs. The deployed Worker IP is not blocked (that's how
+`fetchWorkday` actually polls in production), so the audit runs through
+the Worker's existing `GET /plain-fetch-test?url=…` diagnostic.
+
+- `scripts/extract-workday-urls.js` — emits `{name, url}` list.
+- `scripts/probe-workday-urls.js [--via-worker]` — sequential 600ms
+  pacing. `--via-worker` proxies each GET through `/plain-fetch-test`.
+- `.github/workflows/workday-audit.yml` — `workflow_dispatch` only,
+  invokes the probe with `--via-worker`, commits results to
+  `outbox/workday-audit-results.json` + a stderr log.
+
+**Audit results (run via Worker, 2026-06-16):**
+
+| status   | count |
+|----------|------:|
+| active   |    16 |
+| redirect |     1 |
+| dead     |    16 |
+| error    |    88 |
+| **total**| **121** |
+
+- **active (16)** — HTTP 200 from `*.myworkdayjobs.com`.
+- **dead (16, HTTP 404)** — `Mass General Brigham, Geisinger, Prisma
+  Health, Seattle Children's, ArcBest, Sagility, CoxHealth, OhioHealth,
+  Memorial Hermann, Avera Health, Humana, Cigna, Centene, Magellan
+  Health, Asurion, Manhattan Associates`.
+- **redirect (1)** — Cleveland Clinic. Already has the custom domain
+  (`jobs.clevelandclinic.org`) in config but that surface isn't Workday
+  SSR, so `fetchWorkday`'s `/wday/cxs/` POST has been failing silently.
+- **error (88, HTTP 500)** — Workday returned HTTP 500 to the Cloudflare
+  Worker IP for 88 tenants in this run. Likely transient anti-bot or
+  rate-limit; not a verdict of "dead". Re-run from a future session and
+  treat deltas, not absolute counts.
+
+**Fix (commit 7d48e28, deploy 171).** Each of the 17 dead+redirected
+entries flagged in `src/config.js` with
+`inactive: true, inactiveReason: 'audit S21: …'`. Per the prompt, NOT
+removed — entries stay so the company can re-activate later by clearing
+the flag.
+
+**Caveat.** The `inactive` field is currently **metadata only** —
+`fetchWorkday` still tries these on every cycle and gets 404 back, then
+returns []. No live behavior change yet. Wiring an early-skip in
+`adapters.js fetchCompanyJobs` (`if (company.inactive) return [];`) is
+an S22 follow-up.
+
+**Open items into S22:**
+- Wire `if (company.inactive) return [];` in `adapters.js
+  fetchCompanyJobs` so the 17 flagged tenants stop wasting Worker cycles.
+- Re-run `workday-audit.yml` on a different day to see whether the 88
+  HTTP-500 tenants stabilize. If they're consistently 500, that's
+  evidence Cloudflare-Worker-IP is being throttled by Workday at scale
+  and the polling architecture needs a different approach.
+- Search for replacement Workday tenants for the 16 confirmed-dead
+  health systems (the audit can't do this — needs manual research).
+
+---
 
 ## Session 20 UPDATE — Keyword regen succeeded after spend cap raise (2026-06-16 late)
 
