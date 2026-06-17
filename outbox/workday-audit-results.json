@@ -17,7 +17,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Mayo Clinic",
@@ -37,7 +40,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Kaiser Permanente",
@@ -57,7 +63,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 1,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Cleveland Clinic",
@@ -69,7 +78,10 @@
     "effectiveUrl": "https://jobs.clevelandclinic.org",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 1522036
+    "contentLength": 1522036,
+    "cluster": "custom-domain",
+    "cxsReachable": false,
+    "routing": "skip"
   },
   {
     "name": "Mass General Brigham",
@@ -81,7 +93,10 @@
     "effectiveUrl": "https://massgeneralbrigham.wd1.myworkdayjobs.com/en-US/MGB_External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "Penn Medicine",
@@ -101,7 +116,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Vanderbilt Health",
@@ -121,7 +139,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "AdventHealth",
@@ -141,7 +162,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "Ascension",
@@ -161,7 +185,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "CommonSpirit Health",
@@ -181,7 +208,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Intermountain Health",
@@ -193,7 +223,10 @@
     "effectiveUrl": "https://imh.wd108.myworkdayjobs.com/IntermountainCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 8637
+    "contentLength": 8637,
+    "cluster": "wd108",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "Advocate Health (Atrium)",
@@ -205,7 +238,10 @@
     "effectiveUrl": "https://aah.wd5.myworkdayjobs.com/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 7688
+    "contentLength": 7688,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Geisinger",
@@ -217,7 +253,10 @@
     "effectiveUrl": "https://geisinger.wd5.myworkdayjobs.com/en-US/MyGeisingerCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Sanford Health",
@@ -237,7 +276,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Houston Methodist",
@@ -249,7 +291,10 @@
     "effectiveUrl": "https://houstonmethodist.wd12.myworkdayjobs.com/en-US/GTI",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 7083
+    "contentLength": 7083,
+    "cluster": "wd12",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "WashU Medicine",
@@ -261,7 +306,10 @@
     "effectiveUrl": "https://wustl.wd1.myworkdayjobs.com/en-US/external",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 8360
+    "contentLength": 8360,
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "Boston Medical Center",
@@ -273,7 +321,10 @@
     "effectiveUrl": "https://bmc.wd1.myworkdayjobs.com/en-US/BMC",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 8438
+    "contentLength": 8438,
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "CVS Health",
@@ -285,7 +336,10 @@
     "effectiveUrl": "https://cvshealth.wd1.myworkdayjobs.com/en-US/cvs_health_careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 6960
+    "contentLength": 6960,
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "Enloe Health",
@@ -297,7 +351,10 @@
     "effectiveUrl": "https://enloe.wd12.myworkdayjobs.com/en-US/EnloeHealth",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 6767
+    "contentLength": 6767,
+    "cluster": "wd12",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "Jupiter Medical Center",
@@ -309,7 +366,10 @@
     "effectiveUrl": "https://jupitermed.wd1.myworkdayjobs.com/en-US/external",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 7357
+    "contentLength": 7357,
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "OU Health",
@@ -321,7 +381,10 @@
     "effectiveUrl": "https://oumedicine.wd5.myworkdayjobs.com/en-US/OUHealthCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 8327
+    "contentLength": 8327,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Banner Health",
@@ -341,7 +404,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Methodist Health System",
@@ -353,7 +419,10 @@
     "effectiveUrl": "https://methodisthealthsystem.wd1.myworkdayjobs.com/MHS_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 7924
+    "contentLength": 7924,
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "VHC Health",
@@ -365,7 +434,10 @@
     "effectiveUrl": "https://vhchealth.wd1.myworkdayjobs.com/en-US/VHCHealth",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 7206
+    "contentLength": 7206,
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "MultiCare Health",
@@ -377,7 +449,10 @@
     "effectiveUrl": "https://multicare.wd1.myworkdayjobs.com/multicare",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 9544
+    "contentLength": 9544,
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "St. Luke\\",
@@ -389,7 +464,10 @@
     "effectiveUrl": "https://sluhn.wd1.myworkdayjobs.com/SLUHN",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 7983
+    "contentLength": 7983,
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "Brown University Health",
@@ -401,7 +479,10 @@
     "effectiveUrl": "https://brownhealth.wd12.myworkdayjobs.com/External_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 8073
+    "contentLength": 8073,
+    "cluster": "wd12",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "WellStar Health",
@@ -421,7 +502,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "NYU Langone Health",
@@ -441,7 +525,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Ochsner Health",
@@ -461,7 +548,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 5x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 5x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Prisma Health",
@@ -473,7 +563,10 @@
     "effectiveUrl": "https://prismahealth.wd5.myworkdayjobs.com/en-US/PrismaHealthCareers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Piedmont Healthcare",
@@ -493,7 +586,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Spectrum Health / Corewell",
@@ -513,7 +609,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Henry Ford Health",
@@ -533,7 +632,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Cedars-Sinai",
@@ -553,7 +655,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Christus Health",
@@ -573,7 +678,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Hackensack Meridian",
@@ -593,7 +701,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "RWJBarnabas Health",
@@ -613,7 +724,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Duke Health",
@@ -633,7 +747,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "UNC Health",
@@ -653,7 +770,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "OSF HealthCare",
@@ -673,7 +793,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Adventist Health",
@@ -693,7 +816,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Mercy Health",
@@ -713,7 +839,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Trinity Health",
@@ -733,7 +862,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 5x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 5x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Sutter Health",
@@ -753,7 +885,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 2,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Children\\",
@@ -773,7 +908,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Seattle Children\\",
@@ -785,7 +923,10 @@
     "effectiveUrl": "https://seattlechildrens.wd5.myworkdayjobs.com/en-US/careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Children\\",
@@ -805,7 +946,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Stanford Health Care",
@@ -825,7 +969,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 8x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 8x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "OHSU",
@@ -845,7 +992,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "UW Medicine",
@@ -865,7 +1015,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "University of Michigan Health",
@@ -885,7 +1038,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "UChicago Medicine",
@@ -905,7 +1061,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Rush University Medical",
@@ -925,7 +1084,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Stanford Health Care",
@@ -937,7 +1099,10 @@
     "effectiveUrl": "https://stanfordmedicine.wd115.myworkdayjobs.com/en-US/shc_external_career_site",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 7650
+    "contentLength": 7650,
+    "cluster": "wd115",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "Concentrix",
@@ -957,7 +1122,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "TTEC",
@@ -977,7 +1145,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Teleperformance",
@@ -997,7 +1168,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd3",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Foundever (Sitel)",
@@ -1017,7 +1191,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Conduent",
@@ -1037,7 +1214,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Alorica",
@@ -1057,7 +1237,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Sutherland Global",
@@ -1077,7 +1260,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Maximus",
@@ -1097,7 +1283,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Sykes (Sitel)",
@@ -1117,7 +1306,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "XPO Logistics",
@@ -1137,7 +1329,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "ArcBest",
@@ -1149,7 +1344,10 @@
     "effectiveUrl": "https://arcbest.wd5.myworkdayjobs.com/en-US/Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Sagility",
@@ -1161,7 +1359,10 @@
     "effectiveUrl": "https://sagility.wd1.myworkdayjobs.com/SagilityHealth",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "Atos Health",
@@ -1181,7 +1382,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd3",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Maximus Federal",
@@ -1201,7 +1405,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd1",
+    "cxsReachable": true,
+    "routing": "cxs-direct"
   },
   {
     "name": "Medline Industries",
@@ -1213,7 +1420,10 @@
     "effectiveUrl": "https://medline.wd5.myworkdayjobs.com/medline",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 7388
+    "contentLength": 7388,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "WellSpan Health",
@@ -1233,7 +1443,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Bon Secours Mercy Health",
@@ -1253,7 +1466,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Ballad Health",
@@ -1273,7 +1489,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Parkview Health",
@@ -1293,7 +1512,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "CoxHealth",
@@ -1305,7 +1527,10 @@
     "effectiveUrl": "https://coxhealth.wd5.myworkdayjobs.com/CoxHealth_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Kettering Health",
@@ -1325,7 +1550,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Baptist Health South Florida",
@@ -1345,7 +1573,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Sentara Health",
@@ -1365,7 +1596,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 6x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "OhioHealth",
@@ -1377,7 +1611,10 @@
     "effectiveUrl": "https://ohiohealth.wd5.myworkdayjobs.com/OhioHealth_External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Luminis Health",
@@ -1397,7 +1634,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Summa Health",
@@ -1417,7 +1657,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "UnityPoint Health",
@@ -1437,7 +1680,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Aultman Health",
@@ -1457,7 +1703,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Guthrie Health",
@@ -1477,7 +1726,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Aspirus Health",
@@ -1497,7 +1749,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Parallon",
@@ -1517,7 +1772,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "ResultsCX",
@@ -1537,7 +1795,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Startek",
@@ -1557,7 +1818,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "iQor",
@@ -1577,7 +1841,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Webhelp",
@@ -1597,7 +1864,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd3",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Novant Health",
@@ -1611,7 +1881,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Franciscan Health",
@@ -1625,7 +1898,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Memorial Hermann",
@@ -1637,7 +1913,10 @@
     "effectiveUrl": "https://memorialhermann.wd5.myworkdayjobs.com/en-US/Memorial_Hermann_External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Tufts Medicine",
@@ -1651,7 +1930,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "SSM Health",
@@ -1665,7 +1947,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Bon Secours Mercy",
@@ -1679,7 +1964,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Centura Health",
@@ -1693,7 +1981,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Avera Health",
@@ -1705,7 +1996,10 @@
     "effectiveUrl": "https://avera.wd5.myworkdayjobs.com/en-US/AveraHealth",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Essentia Health",
@@ -1719,7 +2013,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "CHRISTUS Health",
@@ -1739,7 +2036,10 @@
     "jobsInLastPoll": 0,
     "matchCount": 0,
     "s21bClass": "ACTIVE",
-    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)"
+    "s21bReason": "DO polled 3x in last 200 alarm cycles (fetchWorkday succeeded)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "WVU Medicine",
@@ -1753,7 +2053,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "UCHealth",
@@ -1767,7 +2070,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Stormont Vail",
@@ -1781,7 +2087,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Cone Health",
@@ -1795,7 +2104,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Virtua Health",
@@ -1809,7 +2121,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Valley Health System",
@@ -1823,7 +2138,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Billings Clinic",
@@ -1837,7 +2155,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "DISH / EchoStar",
@@ -1851,7 +2172,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Humana",
@@ -1863,7 +2187,10 @@
     "effectiveUrl": "https://humana.wd5.myworkdayjobs.com/en-US/Humana_External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Cigna",
@@ -1875,7 +2202,10 @@
     "effectiveUrl": "https://cigna.wd5.myworkdayjobs.com/en-US/Cigna_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Aetna / CVS",
@@ -1889,7 +2219,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Anthem / Elevance",
@@ -1903,7 +2236,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "UnitedHealth Group",
@@ -1917,7 +2253,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Molina Healthcare",
@@ -1931,7 +2270,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Centene",
@@ -1943,7 +2285,10 @@
     "effectiveUrl": "https://centene.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Magellan Health",
@@ -1955,7 +2300,10 @@
     "effectiveUrl": "https://magellanhealth.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Asurion",
@@ -1967,7 +2315,10 @@
     "effectiveUrl": "https://asurion.wd5.myworkdayjobs.com/en-US/External",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Blue Yonder",
@@ -1981,7 +2332,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "E2open",
@@ -1995,7 +2349,10 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Manhattan Associates",
@@ -2007,7 +2364,10 @@
     "effectiveUrl": "https://manh.wd5.myworkdayjobs.com/en-US/MANH_Careers",
     "redirected": false,
     "isWorkdayResponse": false,
-    "contentLength": 233
+    "contentLength": 233,
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   },
   {
     "name": "Infor",
@@ -2021,6 +2381,9 @@
     "isWorkdayResponse": false,
     "contentLength": 238,
     "s21bClass": "UNREACHABLE",
-    "s21bReason": "not in DO polling rotation (company_list mismatch)"
+    "s21bReason": "not in DO polling rotation (company_list mismatch)",
+    "cluster": "wd5",
+    "cxsReachable": false,
+    "routing": "hiringcafe-dependent"
   }
 ]
