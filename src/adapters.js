@@ -228,7 +228,11 @@ export async function fetchWorkday(company, env) {
           'Content-Type':    'application/json',
           'Accept':          'application/json',
           'User-Agent':      UA,
-          'Accept-Language': 'en-US,en;q=0.9',
+          // Accept-Language MUST be a single locale tag — wd5 cluster
+          // rejects multi-value 'en-US,en;q=0.9' with HTTP 422 and the
+          // error body echoes "locale": "en-US,en;q=0.9" verbatim.
+          // wd108 is lax but still works with a single tag.
+          'Accept-Language': 'en-US',
           // Workday /wday/cxs/ rejects with 422 without same-origin Origin/Referer.
           'Origin':  origin,
           'Referer': referer,
