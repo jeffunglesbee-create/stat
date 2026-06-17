@@ -1,0 +1,16 @@
+=== CF API Probe [20260617T184417Z] ===
+Request: GET https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https://walmart.wd5.myworkdayjobs.com/WalmartExternalCareers?q=analyst
+
+{
+    "ok": false,
+    "url": "https://walmart.wd5.myworkdayjobs.com/WalmartExternalCareers?q=analyst",
+    "http_status": 500,
+    "elapsed_ms": 4433,
+    "body_bytes": 238,
+    "is_blocked": false,
+    "title": "",
+    "og_description": "",
+    "job_ids": [],
+    "job_hrefs": [],
+    "body_text_excerpt": ""
+}
