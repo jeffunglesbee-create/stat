@@ -145,7 +145,7 @@ jobs:
 
               # Parse this page's HTML for job links and append to the
               # per-tenant cumulative JSON file. Stop pagination if zero new.
-              NEW_COUNT=$(SLUG_RE="$SLUG" python3 << 'PYEOF'
+              NEW_COUNT=$(SLUG_RE="$SLUG" HTML_FILE="$HTML_FILE" ALL_JOBS_FILE="$ALL_JOBS_FILE" python3 << 'PYEOF'
           import json, os, re, sys
           slug = os.environ['SLUG_RE']
           html_path = os.environ['HTML_FILE']
