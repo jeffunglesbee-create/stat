@@ -1,3 +1,114 @@
+# STAT HANDOFF — 2026-06-17 (Session 27b END — Playwright XHR intercept + siteMap fix)
+
+## State
+HEAD: 5a59be7
+Smoke: 213/213 ✅
+No Worker code changed; Worker stays at deploy 190 (HEAD c619744).
+
+## Session 27b — Playwright XHR intercept for wd5 (2026-06-17)
+
+### Why a new approach
+S25 bash-curl + listing-page parse fails because Workday's listing page
+is a **client-rendered React shell** — HTML has zero job hrefs and zero
+data-automation-id. The only way to get jobs without juggling CSRF
+cookies manually is to execute the JS so the CXS POST XHR fires, then
+intercept the response. Playwright does exactly that.
+
+### Task 1 — fix siteMap URL in `wd5-ssr-probe.yml` (Approach A)
+
+Old: `https://{tenant}.wd5.myworkdayjobs.com/sitemap.xml` (404 / 500)
+New: `https://{tenant}.wd5.myworkdayjobs.com/en-US/{slug}/siteMap.xml`
+(capital S, scoped to the slug — Workday generates these for Google
+indexing).
+
+Approach A now runs unproxied first (WAFs rarely block sitemap.xml
+endpoints), then falls back to DataImpulse. Logged as `A_sitemap_noproxy`
+and `A_sitemap_di` in the probe JSON.
+
+### Task 2/3 — `wd5-playwright-poll.yml` + `scripts/wd5_playwright_poll.py`
+
+Chromium launches with DataImpulse proxy (split server/username/password,
+not embedded URL — Playwright's format). Per tenant:
+
+```
+For each keyword in (epic, ehr, ambulatory, cadence, cogito,
+                      clarity, willow, radiant):
+  For each startIndex offset in (0, 20, 40, ... up to MAX_OFFSET_PAGES):
+    page.goto(?q={kw}&startIndex={offset})
+    page.on('response') captures jobPostings from /wday/cxs/.../jobs XHR
+    Stop when <20 captured (last page) or zero captured
+    Maintenance redirect (community.workday.com/maintenance-page) → abort tenant
+  Dedup by req_id across pages
+Dedup across all keywords
+POST per-tenant payload to Worker /ingest
+```
+
+**Ground-truth guard:** if JHBMC (`jhhs` tenant) is in the slice and
+returns 0 jobs across all keywords *and* isn't in maintenance, the script
+blocks ingest and stops the sweep. Per S27b spec, this protects against
+silent regression in the extraction path.
+
+**Rate limits per spec:** 3s between tenants, 2s between keywords, 1s
+between pages.
+
+**Inputs:** `limit` (default 3), `offset_pages` (10), `keywords` (8-kw
+default list).
+
+**Run output:** `outbox/wd5-playwright-poll-{ts}.json` summarizes per-tenant
+unique-jobs / maintenance / ingest HTTP.
+
+### Task 4 — `wd5-recovery-watch.yml`
+
+Added step 3: dispatch `wd5-playwright-poll.yml` with `limit=3` after
+ssr-probe and cxs-poll. The 10-minute cron now fires the full S27
+sequence the moment JHBMC's listing returns HTTP 200 + bytes > 10KB.
+
+### Task 5 — `CLAUDE.md`
+
+New "Alternate path — Playwright XHR intercept" subsection under the
+wd5 Session-Cookie CXS section. Documents:
+- The empty-React-shell finding (since S22) — HTML parse is dead
+- Why Playwright works (JS executes; XHR fires; intercept response)
+- Correct siteMap URL `/en-US/{slug}/siteMap.xml`
+- Playwright proxy format (server / username / password split)
+- JHBMC ground-truth guard
+
+### Files this session
+
+- `.github/workflows/wd5-playwright-poll.yml` — NEW (95 lines)
+- `scripts/wd5_playwright_poll.py` — NEW (190 lines)
+- `.github/workflows/wd5-ssr-probe.yml` — Approach A path fix
+- `.github/workflows/wd5-recovery-watch.yml` — step 3 added
+- `CLAUDE.md` — new Playwright subsection (+33 lines)
+
+### Not dispatched this session
+
+Per constraint, did NOT dispatch `wd5-playwright-poll.yml` against live
+wd5 — every navigation would hit the maintenance redirect and burn
+DataImpulse bandwidth for no signal. `wd5-recovery-watch.yml` is
+scheduled (`*/10 * * * *`) and will fire the workflow the moment wd5
+recovers; no manual action required from this session.
+
+### Open items into S28
+
+1. **wd5 recovery → automatic full S27 sequence.** When the watch fires,
+   check `outbox/wd5-playwright-poll-*.json` for JHBMC results. If
+   `jhbmc_unique_count > 0` → the extraction path works end-to-end.
+2. **JHBMC ground-truth fail diagnostic.** If JHBMC returns 0 jobs and
+   blocks ingest, the most likely causes are (a) Workday changed the CXS
+   URL pattern (`/wday/cxs/` no longer in the response URL), (b)
+   `externalPath` field renamed, or (c) DataImpulse exit IP itself
+   blocked. Add a debug dump of all captured response URLs to the script
+   if this triggers.
+3. **wd1 slug verification** (carry from S23/S26) — 11 active wd1
+   companies may have wrong slugs. Probe via `/workday-probe`.
+4. **Conservative cron** — once first Playwright run succeeds end-to-end,
+   add `schedule: '0 */8 * * *'` (every 8h) to `wd5-playwright-poll.yml`.
+   Playwright + Chromium runs are heavier than bash curl (~5-10 min per
+   85-tenant sweep estimated), so don't go below 4h.
+
+---
+
 # STAT HANDOFF — 2026-06-17 (Session 27a END — GET CXS investigation, POST confirmed only)
 
 ## State
