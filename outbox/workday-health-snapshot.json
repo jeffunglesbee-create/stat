@@ -1,7 +1,7 @@
 {
   "count": 202,
   "logsAvailable": 200,
-  "generatedAt": "2026-06-17T00:58:13.957Z",
+  "generatedAt": "2026-06-17T01:22:35.282Z",
   "companies": [
     {
       "name": "Johns Hopkins",
@@ -44,7 +44,7 @@
       "url": "https://jobs.clevelandclinic.org",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 6,
+      "totalPolls": 5,
       "totalJobs": 0,
       "lastPollTs": "2026-06-16T23:48:31.630Z",
       "lastJobsSeenTs": null,
@@ -164,9 +164,9 @@
       "url": "https://geisinger.wd5.myworkdayjobs.com/en-US/MyGeisingerCareers",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 5,
+      "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T23:48:31.630Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 0
@@ -212,9 +212,9 @@
       "url": "https://bmc.wd1.myworkdayjobs.com/en-US/BMC",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 5,
+      "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T23:48:31.630Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 0
@@ -406,7 +406,7 @@
       "inactiveReason": null,
       "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-17T00:09:21.887Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 0
@@ -574,7 +574,7 @@
       "inactiveReason": null,
       "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-17T00:30:36.242Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 2
@@ -1114,7 +1114,7 @@
       "inactiveReason": null,
       "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-17T00:51:22.740Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 7
@@ -1172,9 +1172,9 @@
       "url": "https://geisinger.wd5.myworkdayjobs.com/geisingerexternal/job/Work-from-Home/Senior-Business-Intelligence-Analyst--AI_R-94619",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 5,
+      "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T23:48:31.630Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 0
@@ -1184,9 +1184,9 @@
       "url": "https://bmc.wd1.myworkdayjobs.com/bmc/job/Remote/Senior-Revenue-Cycle-Business-Analyst_46583",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 5,
+      "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T23:48:31.630Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 0
@@ -1196,9 +1196,9 @@
       "url": "https://ensemblehp.wd5.myworkdayjobs.com/ensemblehealthpartnerscareers/job/Remote---Nationwide/Sr-Engineer--Data_R041337",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 2,
+      "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 0
@@ -1208,9 +1208,9 @@
       "url": "https://vumc.wd1.myworkdayjobs.com/vumccareers/job/Nashville-TN/Principal-Informatics-Pharmacist--Remote-Available-_R-60115-1",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 2,
+      "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 0
@@ -1220,9 +1220,9 @@
       "url": "https://tegria.wd12.myworkdayjobs.com/ext/job/Advisory-Willow-Epic-Applications-Analyst_JR1144",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 2,
+      "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1234,7 +1234,7 @@
       "inactiveReason": null,
       "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-17T00:09:21.887Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 0
@@ -1246,7 +1246,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1258,7 +1258,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 0
@@ -1270,7 +1270,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1282,7 +1282,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1294,7 +1294,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1306,7 +1306,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 2
@@ -1318,7 +1318,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1330,7 +1330,7 @@
       "inactiveReason": null,
       "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-17T00:51:22.740Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 7
@@ -1342,7 +1342,7 @@
       "inactiveReason": null,
       "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T23:26:58.109Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 2
@@ -1354,7 +1354,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 0
@@ -1366,7 +1366,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1378,7 +1378,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1390,7 +1390,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1402,7 +1402,7 @@
       "inactiveReason": null,
       "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-17T00:30:36.242Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 2
@@ -1414,7 +1414,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 2
@@ -1426,7 +1426,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1438,7 +1438,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1450,7 +1450,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1462,7 +1462,7 @@
       "inactiveReason": null,
       "totalPolls": 3,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T22:57:43.340Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 1
@@ -1472,7 +1472,7 @@
       "url": "https://ccf.wd1.myworkdayjobs.com/clevelandcliniccareers/job/Remote-Location/AI-Software-Engineer---Center-for-Diagnostics-and-Artificial-Intelligence_343495",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 6,
+      "totalPolls": 5,
       "totalJobs": 0,
       "lastPollTs": "2026-06-16T23:48:31.630Z",
       "lastJobsSeenTs": null,
@@ -1484,7 +1484,7 @@
       "url": "https://solutionhealth.wd1.myworkdayjobs.com/careers/job/Remote---NH/Data-Analyst-III---IT-Reporting---Full-Time_JR11587",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 3,
+      "totalPolls": 2,
       "totalJobs": 0,
       "lastPollTs": "2026-06-16T22:57:43.340Z",
       "lastJobsSeenTs": null,
@@ -1496,7 +1496,7 @@
       "url": "https://nyp.wd1.myworkdayjobs.com/nypcareers/job/NYPWeill-Cornell-Medical-Center/Senior-Epic-Analyst---Patient-Access--Referrals---Cadence-_00882345-1",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 3,
+      "totalPolls": 2,
       "totalJobs": 0,
       "lastPollTs": "2026-06-16T23:06:20.080Z",
       "lastJobsSeenTs": null,
@@ -1508,7 +1508,7 @@
       "url": "https://hshs.wd1.myworkdayjobs.com/hshscareers/job/Springfield-IL/Digital-Health-Analyst_R1036541-1",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 3,
+      "totalPolls": 2,
       "totalJobs": 0,
       "lastPollTs": "2026-06-16T23:06:20.080Z",
       "lastJobsSeenTs": null,
@@ -1520,7 +1520,7 @@
       "url": "https://onehealthineers.wd3.myworkdayjobs.com/shsjb/job/MLV-LB/Senior-EHR-Data-Integration-Consultant---Remote--US_R-28534",
       "inactive": false,
       "inactiveReason": null,
-      "totalPolls": 3,
+      "totalPolls": 2,
       "totalJobs": 0,
       "lastPollTs": "2026-06-16T23:06:20.080Z",
       "lastJobsSeenTs": null,
@@ -1918,7 +1918,7 @@
       "inactiveReason": null,
       "totalPolls": 6,
       "totalJobs": 0,
-      "lastPollTs": "2026-06-16T23:26:58.109Z",
+      "lastPollTs": "2026-06-17T01:12:00.948Z",
       "lastJobsSeenTs": null,
       "jobsInLastPoll": 0,
       "matchCount": 2
