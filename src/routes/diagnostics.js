@@ -1,7 +1,77 @@
 import { json } from './_utils.js';
 import puppeteer from '@cloudflare/puppeteer';
+import { SEED_COMPANIES } from '../config.js';
+import { getStatStore, readLog, loadRecentMatches } from '../store.js';
+import { loadCompanyList } from '../state.js';
 
 export async function handleDiagnostics(request, url, env) {
+  // GET /workday-health — per-company Workday telemetry for the S21b audit
+  // Read-only: aggregates the rolling 200-entry log buffer + recent_matches
+  // store into one row per Workday company. No new fetches, no Workday hits.
+  //
+  // Per-row fields:
+  //   name, url, inactive, inactiveReason
+  //   totalPolls    — how many alarm cycles polled this company (≤200)
+  //   totalJobs     — sum of jobs returned across those polls
+  //   lastPollTs    — most recent alarm timestamp this company was polled
+  //   lastJobsSeenTs — most recent alarm where jobs > 0
+  //   jobsInLastPoll — jobs returned at the most recent poll
+  //   matchCount    — count of recent_matches whose job.company == name
+  if (url.pathname === '/workday-health' && request.method === 'GET') {
+    const store = getStatStore(env);
+    const [companies, logs, matches] = await Promise.all([
+      loadCompanyList(env).catch(() => null),
+      readLog(store, 200).catch(() => []),
+      loadRecentMatches(store).catch(() => []),
+    ]);
+    const list = (companies ?? SEED_COMPANIES).filter(c => c.ats === 'workday');
+
+    const matchesByCompany = Object.create(null);
+    for (const m of (matches ?? [])) {
+      const cname = m?.job?.company ?? m?.job?._company;
+      if (!cname) continue;
+      matchesByCompany[cname] = (matchesByCompany[cname] ?? 0) + 1;
+    }
+
+    const out = list.map(c => {
+      let totalPolls = 0, totalJobs = 0;
+      let lastPollTs = null, lastJobsSeenTs = null, jobsInLastPoll = null;
+      for (const log of logs) {
+        if (log.ats !== 'workday' || !Array.isArray(log.br)) continue;
+        const brEntry = log.br.find(b => b.company === c.name);
+        if (!brEntry) continue;
+        totalPolls++;
+        totalJobs += brEntry.jobs;
+        if (lastPollTs === null) {
+          lastPollTs = log.ts;
+          jobsInLastPoll = brEntry.jobs;
+        }
+        if (brEntry.jobs > 0 && lastJobsSeenTs === null) {
+          lastJobsSeenTs = log.ts;
+        }
+      }
+      return {
+        name: c.name,
+        url: c.url,
+        inactive: !!c.inactive,
+        inactiveReason: c.inactiveReason ?? null,
+        totalPolls,
+        totalJobs,
+        lastPollTs,
+        lastJobsSeenTs,
+        jobsInLastPoll,
+        matchCount: matchesByCompany[c.name] ?? 0,
+      };
+    });
+
+    return json({
+      count: out.length,
+      logsAvailable: logs.length,
+      generatedAt: new Date().toISOString(),
+      companies: out,
+    });
+  }
+
   // GET /workday-probe — rate limit floor probe for Workday API
   // Tests a single tenant at decreasing intervals and returns results as JSON.
   // Usage: GET /workday-probe?tenant=jhhs&host=jhhs.wd5.myworkdayjobs.com&slug=JHH_External_Positions
