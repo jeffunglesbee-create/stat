@@ -1,0 +1,101 @@
+# .github/workflows/verify-workday-urls.yml
+# S23 targeted URL verification:
+#   1. Banner Health — confirm wd108 CXS returns 200 + jobs (wd5 is known CF-blocked)
+#   2. Stanford Health Care wd5 — is stanfordhealthcare.wd5 dead or does it return 200?
+#   3. Stanford Health Care wd115 — confirm stanfordmedicine.wd115 CXS is reachable
+# Results committed to outbox/url-verify-*.json
+name: Verify Workday URLs (S23)
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+
+      - name: Probe Banner Health + Stanford clusters
+        run: |
+          mkdir -p outbox
+          W="https://stat-job-watcher.jeffunglesbee.workers.dev"
+
+          cxs_probe() {
+            local label="$1" tenant="$2" cluster="$3" slug="$4"
+            local host="${tenant}.${cluster}.myworkdayjobs.com"
+            local url="https://${host}/wday/cxs/${tenant}/${slug}/jobs"
+            local ref="https://${host}/en-US/${slug}"
+            local enc=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$url")
+            local body='{"appliedFacets":{},"limit":5,"offset":0,"searchText":"epic ehr"}'
+            echo "=== CXS probe: $label ($cluster) ==="
+            curl -sS --max-time 30 \
+              -D "outbox/url-verify-${label}-headers.txt" \
+              -X POST -H "Content-Type: application/json" \
+              -H "X-Wanted-Referer: ${ref}" \
+              --data "$body" \
+              "$W/raw-fetch?url=${enc}" \
+              > "outbox/url-verify-${label}-body.txt"
+            local status=$(grep -i "^x-upstream-status:" "outbox/url-verify-${label}-headers.txt" | awk '{print $2}' | tr -d '\r')
+            local total=$(python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('total',d.get('totalJobPostings','-')))" < "outbox/url-verify-${label}-body.txt" 2>/dev/null || echo "-")
+            local first=$(head -c 200 "outbox/url-verify-${label}-body.txt" | tr '\n' ' ')
+            echo "  http=$status  total=$total"
+            echo "  body: $first"
+            python3 -c "
+          import json, sys
+          label, status, total, first = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+          result = {'label': label, 'http_status': status, 'total_jobs': total, 'body_excerpt': first}
+          print(json.dumps(result, indent=2))
+          " "$label" "$status" "$total" "$first" > "outbox/url-verify-${label}.json"
+          }
+
+          get_probe() {
+            local label="$1" url="$2"
+            local enc=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$url")
+            echo "=== GET probe: $label ==="
+            curl -sS --max-time 30 \
+              -D "outbox/url-verify-${label}-get-headers.txt" \
+              "$W/plain-fetch-test?url=${enc}" \
+              > "outbox/url-verify-${label}-get.json"
+            python3 -c "
+          import json, sys
+          with open(sys.argv[1]) as f:
+              d = json.load(f)
+          print(f\"  http={d.get('http_status','?')}  title={d.get('title','?')[:80]}  ok={d.get('ok','?')}\")
+          " "outbox/url-verify-${label}-get.json" || echo "  (parse error)"
+          }
+
+          # 1. Banner Health — CXS probe on wd108 (expected: 200 + jobs if S23 prompt is right)
+          cxs_probe banner-wd108 bannerhealth wd108 Careers
+
+          # 2. Banner Health — CXS probe on wd5 (expected: 422, CF-blocked)
+          cxs_probe banner-wd5 bannerhealth wd5 Careers
+
+          # 3. Stanford Health Care wd5 — GET the listing page (does it return 200 or error?)
+          get_probe stanford-wd5 "https://stanfordhealthcare.wd5.myworkdayjobs.com/en-US/External"
+
+          # 4. Stanford Medicine wd115 — CXS probe (expected: 200 + jobs, confirmed tenant)
+          cxs_probe stanford-wd115 stanfordmedicine wd115 shc_external_career_site
+
+          # 5. Stanford Health Care wd5 — CXS probe (expected: 422 from CF block on wd5)
+          cxs_probe stanford-wd5-cxs stanfordhealthcare wd5 External
+
+          # 6. Bon Secours Mercy Health (bsmhealth.wd5) — GET to distinguish from bonsecours.wd5
+          get_probe bon-secours-bsmhealth "https://bsmhealth.wd5.myworkdayjobs.com/BSMHCareers"
+          get_probe bon-secours-bonsecours "https://bonsecours.wd5.myworkdayjobs.com/en-US/BSMH"
+
+          echo ""
+          echo "=== SUMMARY ==="
+          for f in outbox/url-verify-*.json; do echo "--- $f ---"; cat "$f"; echo; done
+
+      - name: Commit results
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git pull --rebase origin main || true
+          git add outbox/url-verify-*
+          git commit -m "ci: S23 Workday URL verification results [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"

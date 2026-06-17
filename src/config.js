@@ -775,8 +775,7 @@ export const BATCH_WATCHLIST = [
     url: 'https://avera.wd5.myworkdayjobs.com/en-US/AveraHealth', inactive: true, inactiveReason: 'audit S21: HTTP 404' },
   { name: 'Essentia Health',           ats: 'workday', token: 'essentia',
     url: 'https://essentia.wd5.myworkdayjobs.com/en-US/EssentiaHealthCareers' },
-  { name: 'CHRISTUS Health',           ats: 'workday', token: 'christushealth',
-    url: 'https://christus.wd5.myworkdayjobs.com/en-US/CHRISTUS' },
+  // CHRISTUS Health duplicate removed — exact same URL as SEED_COMPANIES 'Christus Health' entry (audit S23)
   { name: 'WVU Medicine',              ats: 'workday', token: 'wvumedicine',
     url: 'https://wvumedicine.wd5.myworkdayjobs.com/en-US/external' },
   { name: 'UCHealth',                  ats: 'workday', token: 'uchealth',
