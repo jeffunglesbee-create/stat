@@ -1,0 +1,295 @@
+# .github/workflows/wd5-ssr-probe.yml
+# S26 diagnostic — when wd5 returns from maintenance, dispatch this ONCE to
+# A/B-test 4 bypass approaches in parallel against 3 anchor tenants. One run
+# tells us which approach the production poll workflow should commit to.
+#
+# Approaches:
+#   A — sitemap.xml: passive XML feed (no JS, no cookies).
+#   B — Google Cache: webcache.googleusercontent.com via proxy.
+#   C — Social-crawler UA: LinkedInBot + Slackbot (Workday may pre-render for OG).
+#   D — Session-cookie → CXS: GET listing to seed cookies, POST CXS with cookies.
+#       Tested via both unproxied GHA runner and DataImpulse proxy.
+#
+# Each tenant × approach result lands in outbox/wd5-ssr-probe-{ts}.json as:
+#   {company, tenant, approach, status, bytes, job_count, body_excerpt,
+#    elapsed_ms, success}
+#
+# This workflow NEVER stops on individual failure — every approach is tried
+# for every tenant; the JSON summary is the deliverable.
+#
+# DO NOT DISPATCH while wd5 cluster is in maintenance — every probe will get
+# the 238-byte maintenance page and burn DataImpulse bandwidth for no signal.
+# Verify recovery first: GET via Worker /plain-fetch-test against jhhs.
+
+name: wd5 SSR bypass probe (S26)
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+env:
+  WORKER_URL: https://stat-job-watcher.jeffunglesbee.workers.dev
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+
+      - name: Install curl_cffi (Chrome TLS impersonation)
+        run: |
+          python3 -m pip install --quiet --upgrade pip
+          python3 -m pip install --quiet 'curl_cffi>=0.7'
+
+      - name: Verify secrets present
+        run: |
+          missing=()
+          [ -z "${{ secrets.DATAIMPULSE_USER }}" ] && missing+=("DATAIMPULSE_USER")
+          [ -z "${{ secrets.DATAIMPULSE_PASS }}" ] && missing+=("DATAIMPULSE_PASS")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing secrets: ${missing[*]}"; exit 1
+          fi
+          echo "OK"
+
+      - name: Probe 3 tenants × 4 approaches
+        env:
+          DI_USER: ${{ secrets.DATAIMPULSE_USER }}
+          DI_PASS: ${{ secrets.DATAIMPULSE_PASS }}
+        run: |
+          mkdir -p outbox
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          OUT="outbox/wd5-ssr-probe-${TS}.json"
+
+          DI_USER="$DI_USER" DI_PASS="$DI_PASS" OUT_FILE="$OUT" python3 << 'PYEOF'
+          import json, os, time, urllib.parse, urllib.request, urllib.error, re, sys
+
+          try:
+              from curl_cffi import requests as cf_requests
+              CFFI_OK = True
+          except ImportError:
+              cf_requests = None
+              CFFI_OK = False
+
+          DI_USER = os.environ['DI_USER']
+          DI_PASS = os.environ['DI_PASS']
+          PROXY = f'http://{DI_USER}:{DI_PASS}@gw.dataimpulse.com:823'
+          OUT_FILE = os.environ['OUT_FILE']
+
+          # 3 anchor tenants for the probe
+          TARGETS = [
+              {'company': 'Johns Hopkins',  'tenant': 'jhhs',       'slug': 'JHH_External_Positions'},
+              {'company': 'Mayo Clinic',    'tenant': 'mayoclinic', 'slug': 'mayoclinic'},
+              {'company': 'Atrium Health',  'tenant': 'aah',        'slug': 'External'},
+          ]
+
+          results = []
+
+          def excerpt(b, n=500):
+              try:
+                  return (b.decode('utf-8', errors='replace') if isinstance(b, bytes) else b)[:n].replace('\n', ' ').replace('\r', ' ')
+              except Exception:
+                  return ''
+
+          def cffi_get(url, proxy=None, headers=None, timeout=30, impersonate='chrome120'):
+              kwargs = {'timeout': timeout, 'impersonate': impersonate}
+              if proxy: kwargs['proxies'] = {'http': proxy, 'https': proxy}
+              if headers: kwargs['headers'] = headers
+              return cf_requests.get(url, **kwargs)
+
+          def cffi_post(url, body, proxy=None, headers=None, cookies=None, timeout=30, impersonate='chrome120'):
+              kwargs = {'timeout': timeout, 'impersonate': impersonate, 'data': body}
+              if proxy:   kwargs['proxies'] = {'http': proxy, 'https': proxy}
+              if headers: kwargs['headers'] = headers
+              if cookies: kwargs['cookies'] = cookies
+              return cf_requests.post(url, **kwargs)
+
+          for t in TARGETS:
+              company, tenant, slug = t['company'], t['tenant'], t['slug']
+              host = f'{tenant}.wd5.myworkdayjobs.com'
+              print(f'\n=== {company} ({tenant}.wd5, slug={slug}) ===')
+
+              # ── Approach A — sitemap.xml ────────────────────────────
+              t0 = time.time()
+              try:
+                  url = f'https://{host}/sitemap.xml'
+                  if CFFI_OK:
+                      r = cffi_get(url, proxy=PROXY)
+                      status, body = r.status_code, r.content
+                  else:
+                      raise RuntimeError('curl_cffi not installed')
+                  job_count = len(re.findall(r'<loc>[^<]+/job/[^<]+</loc>', body.decode(errors='replace'), re.IGNORECASE))
+                  success = (status == 200 and b'<loc>' in body and job_count > 0)
+                  results.append({
+                      'company': company, 'tenant': tenant, 'approach': 'A_sitemap',
+                      'status': str(status), 'bytes': len(body), 'job_count': job_count,
+                      'body_excerpt': excerpt(body),
+                      'elapsed_ms': int((time.time()-t0)*1000), 'success': success,
+                  })
+                  print(f'  A_sitemap: status={status} bytes={len(body)} jobs={job_count} success={success}')
+              except Exception as e:
+                  results.append({
+                      'company': company, 'tenant': tenant, 'approach': 'A_sitemap',
+                      'status': 'ERR', 'bytes': 0, 'job_count': 0,
+                      'body_excerpt': f'ERROR: {e!r}'[:500],
+                      'elapsed_ms': int((time.time()-t0)*1000), 'success': False,
+                  })
+                  print(f'  A_sitemap: ERROR {e!r}')
+
+              # ── Approach B — Google Cache (via proxy) ───────────────
+              t0 = time.time()
+              try:
+                  target = f'https://{host}/en-US/{slug}'
+                  url = f'https://webcache.googleusercontent.com/search?q=cache:{urllib.parse.quote(target, safe="")}'
+                  if CFFI_OK:
+                      r = cffi_get(url, proxy=PROXY)
+                      status, body = r.status_code, r.content
+                  else:
+                      raise RuntimeError('curl_cffi not installed')
+                  # Count Workday job links if present in cached snapshot
+                  body_str = body.decode(errors='replace')
+                  job_count = len(re.findall(r'/en-US/' + re.escape(slug) + r'/job/[^"\']+_R[A-Za-z0-9-]+', body_str, re.IGNORECASE))
+                  success = (status == 200 and len(body) > 5000 and job_count > 0)
+                  results.append({
+                      'company': company, 'tenant': tenant, 'approach': 'B_google_cache',
+                      'status': str(status), 'bytes': len(body), 'job_count': job_count,
+                      'body_excerpt': excerpt(body),
+                      'elapsed_ms': int((time.time()-t0)*1000), 'success': success,
+                  })
+                  print(f'  B_google_cache: status={status} bytes={len(body)} jobs={job_count} success={success}')
+              except Exception as e:
+                  results.append({
+                      'company': company, 'tenant': tenant, 'approach': 'B_google_cache',
+                      'status': 'ERR', 'bytes': 0, 'job_count': 0,
+                      'body_excerpt': f'ERROR: {e!r}'[:500],
+                      'elapsed_ms': int((time.time()-t0)*1000), 'success': False,
+                  })
+                  print(f'  B_google_cache: ERROR {e!r}')
+
+              # ── Approach C — Social crawler UAs ─────────────────────
+              for ua_label, ua_string in [
+                  ('linkedinbot', 'LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)'),
+                  ('slackbot',    'Slackbot 1.0 (+https://api.slack.com/robots)'),
+              ]:
+                  t0 = time.time()
+                  try:
+                      url = f'https://{host}/en-US/{slug}?q=epic'
+                      if CFFI_OK:
+                          r = cffi_get(url, proxy=PROXY, headers={'User-Agent': ua_string})
+                          status, body = r.status_code, r.content
+                      else:
+                          raise RuntimeError('curl_cffi not installed')
+                      body_str = body.decode(errors='replace')
+                      job_count = len(re.findall(r'/en-US/' + re.escape(slug) + r'/job/[^"\']+_R[A-Za-z0-9-]+', body_str, re.IGNORECASE))
+                      success = (status == 200 and len(body) > 5000 and job_count > 0)
+                      results.append({
+                          'company': company, 'tenant': tenant, 'approach': f'C_social_{ua_label}',
+                          'status': str(status), 'bytes': len(body), 'job_count': job_count,
+                          'body_excerpt': excerpt(body),
+                          'elapsed_ms': int((time.time()-t0)*1000), 'success': success,
+                      })
+                      print(f'  C_social_{ua_label}: status={status} bytes={len(body)} jobs={job_count} success={success}')
+                  except Exception as e:
+                      results.append({
+                          'company': company, 'tenant': tenant, 'approach': f'C_social_{ua_label}',
+                          'status': 'ERR', 'bytes': 0, 'job_count': 0,
+                          'body_excerpt': f'ERROR: {e!r}'[:500],
+                          'elapsed_ms': int((time.time()-t0)*1000), 'success': False,
+                      })
+                      print(f'  C_social_{ua_label}: ERROR {e!r}')
+
+              # ── Approach D — Session-cookie → CXS (no proxy + proxied)
+              for label, proxy_value in [
+                  ('Dnoproxy', None),
+                  ('Dproxy',   PROXY),
+              ]:
+                  t0 = time.time()
+                  try:
+                      listing_url = f'https://{host}/en-US/{slug}'
+                      cxs_url     = f'https://{host}/wday/cxs/{tenant}/{slug}/jobs'
+                      origin      = f'https://{host}'
+                      referer     = f'{origin}/en-US/{slug}'
+                      if not CFFI_OK:
+                          raise RuntimeError('curl_cffi not installed')
+                      # Step 1: GET listing to seed cookies
+                      g = cffi_get(listing_url, proxy=proxy_value)
+                      get_status = g.status_code
+                      get_bytes  = len(g.content)
+                      cookies = g.cookies
+                      # If GET failed badly, log and skip step 2
+                      if get_status != 200 or get_bytes < 1000:
+                          results.append({
+                              'company': company, 'tenant': tenant, 'approach': f'D_session_cookie_{label}',
+                              'status': str(get_status), 'bytes': get_bytes, 'job_count': 0,
+                              'body_excerpt': 'GET seed failed — ' + excerpt(g.content, 300),
+                              'elapsed_ms': int((time.time()-t0)*1000), 'success': False,
+                          })
+                          print(f'  D_session_cookie_{label}: GET status={get_status} bytes={get_bytes} — skipping POST')
+                          continue
+                      # Step 2: POST CXS with cookies
+                      body_json = json.dumps({'appliedFacets': {}, 'searchText': 'epic',
+                                              'limit': 20, 'offset': 0})
+                      p = cffi_post(
+                          cxs_url, body=body_json, proxy=proxy_value, cookies=cookies,
+                          headers={
+                              'Content-Type':    'application/json',
+                              'Accept':          'application/json',
+                              'Accept-Language': 'en-US',
+                              'Origin':          origin,
+                              'Referer':         referer,
+                          },
+                      )
+                      status = p.status_code
+                      body   = p.content
+                      job_count = 0
+                      if status == 200:
+                          try:
+                              data = json.loads(body)
+                              job_count = len(data.get('jobPostings', []))
+                          except Exception:
+                              pass
+                      success = (status == 200 and job_count > 0)
+                      results.append({
+                          'company': company, 'tenant': tenant, 'approach': f'D_session_cookie_{label}',
+                          'status': str(status), 'bytes': len(body), 'job_count': job_count,
+                          'body_excerpt': excerpt(body),
+                          'elapsed_ms': int((time.time()-t0)*1000), 'success': success,
+                      })
+                      print(f'  D_session_cookie_{label}: GET=200 POST status={status} bytes={len(body)} jobs={job_count} success={success}')
+                  except Exception as e:
+                      results.append({
+                          'company': company, 'tenant': tenant, 'approach': f'D_session_cookie_{label}',
+                          'status': 'ERR', 'bytes': 0, 'job_count': 0,
+                          'body_excerpt': f'ERROR: {e!r}'[:500],
+                          'elapsed_ms': int((time.time()-t0)*1000), 'success': False,
+                      })
+                      print(f'  D_session_cookie_{label}: ERROR {e!r}')
+
+              # Polite pause between tenants
+              time.sleep(2)
+
+          # Write final JSON
+          json.dump(results, open(OUT_FILE, 'w'), indent=2)
+          print(f'\nWrote {len(results)} probe results → {OUT_FILE}')
+
+          # Summary table (which approach succeeded per company)
+          print('\n=== SUMMARY ===')
+          by_company = {}
+          for r in results:
+              by_company.setdefault(r['company'], []).append(r)
+          for company, rows in by_company.items():
+              wins = [r['approach'] for r in rows if r['success']]
+              losses = [r['approach'] for r in rows if not r['success']]
+              print(f'  {company}: SUCCESS={wins or "(none)"}  FAIL={losses}')
+          PYEOF
+
+      - name: Commit probe results
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git pull --rebase origin main || true
+          git add outbox/wd5-ssr-probe-*.json 2>/dev/null || true
+          git commit -m "ci: S26 wd5 SSR bypass probe results [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"

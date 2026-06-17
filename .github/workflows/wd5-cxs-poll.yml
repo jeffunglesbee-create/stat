@@ -1,24 +1,33 @@
 # .github/workflows/wd5-cxs-poll.yml
-# S25: poll Workday wd5/wd3 listing pages via DataImpulse residential proxy.
+# S26 production poll — session-cookie CXS flow via DataImpulse residential proxy.
 #
-# S24 history: this workflow originally POSTed the CXS JSON API (/wday/cxs/...).
-# Even through DataImpulse all 3 test companies returned 422 — CXS requires
-# CSRF session cookies (PLAY_SESSION, CALYPSO_CSRF_TOKEN, __cf_bm) set during a
-# browser page load that a bare curl will never have.
-#
-# S25 fix: GET the SEO listing page with ?q=epic appended. Server-rendered for
-# crawlers, no CSRF, no JS, no cookies required. Parse <a href="/en-US/.../job/
-# .../title_R12345"> patterns out of the HTML.
+# History
+#   S24: POST CXS directly → 422 (CSRF cookies required)
+#   S25: GET SEO listing page → 500 maintenance redirect (cluster down)
+#        Multi-method A/B (cffi vs bot vs browser) confirmed all 3 identical;
+#        TLS fingerprinting is NOT the differentiator.
+#   S26: Two-request session-cookie flow:
+#        1. GET https://{tenant}.wd5.myworkdayjobs.com/en-US/{slug}
+#           → captures PLAY_SESSION + CALYPSO_CSRF_TOKEN + __cf_bm cookies.
+#        2. POST .../wday/cxs/{tenant}/{slug}/jobs with those cookies
+#           → returns CXS JSON {jobPostings: [...], total: N}.
+#        Multi-keyword loop reuses cookies (cookies are tenant-scoped, valid for
+#        the session). Workflow refuses to sweep all 85 tenants until the
+#        session-cookie approach is validated against JHBMC (first slice).
 #
 # Required secrets:
 #   DATAIMPULSE_USER  — gw.dataimpulse.com:823 username
 #   DATAIMPULSE_PASS  — gw.dataimpulse.com:823 password
 #   STAT_INGEST_TOKEN — shared secret matching env.STAT_INGEST_TOKEN on Worker
 #
-# Cost: GET listing = ~50KB HTML × 85 cos × cycles/day. Every 4h = 510 GETs/day
-# = 25MB/day = 750MB/month ≈ $0.40/month at DataImpulse residential rates.
+# Cost (session-cookie flow): 1 GET + 8 CXS POSTs per tenant per cycle.
+#   ~10KB GET + 8 × ~5KB POST exchange = ~50KB/tenant.
+#   At 85 tenants × 6 cycles/day (every 4h) = 25MB/day = 750MB/month ≈ $0.40/mo.
+#
+# DO NOT DISPATCH while wd5 cluster is in maintenance — every fetch returns the
+# 238-byte maintenance page. Confirm recovery via Worker /plain-fetch-test first.
 
-name: Poll wd5 Workday HTML listings via proxy (S25)
+name: Poll wd5 Workday CXS via session-cookie + proxy (S26)
 
 on:
   workflow_dispatch:
@@ -31,8 +40,12 @@ on:
         description: 'Skip first N companies (rotate test set).'
         required: false
         default: '0'
-      max_pages:
-        description: 'Max listing pages per tenant (20 jobs/page; startIndex stride).'
+      keywords:
+        description: 'Space-separated keywords. Default: epic ehr ambulatory cadence cogito clarity willow radiant.'
+        required: false
+        default: 'epic ehr ambulatory cadence cogito clarity willow radiant'
+      max_offset_pages:
+        description: 'Per keyword CXS pagination cap (20 jobs/page).'
         required: false
         default: '10'
 
@@ -50,15 +63,10 @@ jobs:
         with:
           token: ${{ secrets.STAT_PAT }}
 
-      - name: Install curl_cffi (Chrome TLS impersonation)
-        # curl_cffi replays Chrome's exact JA3/JA4 TLS fingerprint at the
-        # socket level, addressing the case where Cloudflare blocks bash
-        # curl's distinct fingerprint regardless of UA/IP. Bash curl is
-        # used as fallback if curl_cffi can't reach the upstream.
+      - name: Install curl_cffi
         run: |
           python3 -m pip install --quiet --upgrade pip
           python3 -m pip install --quiet 'curl_cffi>=0.7'
-          python3 -c "from curl_cffi import requests; print('curl_cffi', requests.__file__)"
 
       - name: Verify secrets present
         run: |
@@ -67,358 +75,276 @@ jobs:
           [ -z "${{ secrets.DATAIMPULSE_PASS }}" ] && missing+=("DATAIMPULSE_PASS")
           [ -z "${{ secrets.STAT_INGEST_TOKEN }}" ] && missing+=("STAT_INGEST_TOKEN")
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::Missing required secrets: ${missing[*]}"
-            echo "Set via: gh secret set <NAME> --body <VALUE> --repo jeffunglesbee-create/stat"
-            exit 1
+            echo "::error::Missing secrets: ${missing[*]}"; exit 1
           fi
-          echo "All required secrets present."
+          echo "OK"
 
-      - name: Poll wd5/wd3 listing pages via DataImpulse proxy
+      - name: Session-cookie CXS poll (wd5/wd3 via proxy)
         env:
           DI_USER:      ${{ secrets.DATAIMPULSE_USER }}
           DI_PASS:      ${{ secrets.DATAIMPULSE_PASS }}
           INGEST_TOKEN: ${{ secrets.STAT_INGEST_TOKEN }}
           LIMIT:        ${{ github.event.inputs.limit || '3' }}
           OFFSET:       ${{ github.event.inputs.offset || '0' }}
-          MAX_PAGES:    ${{ github.event.inputs.max_pages || '3' }}
+          KEYWORDS:     ${{ github.event.inputs.keywords || 'epic ehr ambulatory cadence cogito clarity willow radiant' }}
+          MAX_PAGES:    ${{ github.event.inputs.max_offset_pages || '10' }}
         run: |
-          set -u
           mkdir -p outbox
-          INV="outbox/wd5-companies.json"
-          [ -f "$INV" ] || { echo "::error::$INV missing"; exit 1; }
+          TS=$(date -u +%Y%m%dT%H%M%SZ)
+          POLL_LOG="outbox/wd5-poll-${TS}.json"
 
-          PROXY="http://${DI_USER}:${DI_PASS}@gw.dataimpulse.com:823"
-          POLL_LOG="outbox/wd5-poll-$(date -u +%Y%m%dT%H%M%SZ).json"
-          : > "$POLL_LOG"
-          echo "[" >> "$POLL_LOG"
-          FIRST=1
+          POLL_LOG="$POLL_LOG" python3 << 'PYEOF'
+          import json, os, sys, time, urllib.request, urllib.error
 
-          UA_BOT="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
-          UA_BROWSER="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-
-          COMPANY_COUNT=$(python3 -c "import json; print(len(json.load(open('$INV'))['companies']))")
-          echo "Inventory: $COMPANY_COUNT total. Slicing [offset=$OFFSET, limit=$LIMIT, max_pages=$MAX_PAGES]"
-
-          for idx in $(seq "$OFFSET" $((OFFSET + LIMIT - 1))); do
-            [ "$idx" -ge "$COMPANY_COUNT" ] && break
-            ROW=$(python3 -c "import json,sys; d=json.load(open('$INV'))['companies']; print(json.dumps(d[int(sys.argv[1])]))" "$idx")
-            NAME=$(echo "$ROW"   | python3 -c "import json,sys; print(json.load(sys.stdin)['name'])")
-            TENANT=$(echo "$ROW" | python3 -c "import json,sys; print(json.load(sys.stdin)['tenant'])")
-            CLUSTER=$(echo "$ROW"| python3 -c "import json,sys; print(json.load(sys.stdin)['cluster'])")
-            SLUG=$(echo "$ROW"   | python3 -c "import json,sys; print(json.load(sys.stdin)['slug'])")
-            HOST="${TENANT}.${CLUSTER}.myworkdayjobs.com"
-
-            echo "=== [$idx] $NAME ($TENANT.$CLUSTER, slug=$SLUG) ==="
-
-            # Multi-keyword expansion (deduped by req_id via cumulative
-            # ALL_JOBS_FILE — parser tracks seen_ids across all passes).
-            # Each keyword has its own startIndex pagination loop.
-            ALL_JOBS_FILE="outbox/wd5-jobs-${TENANT}-${CLUSTER}.json"
-            echo "[]" > "$ALL_JOBS_FILE"
-
-            HTTP_LAST="-"; BYTES_TOTAL=0; PAGES_FETCHED=0; UA_USED="bot"
-            KEYWORDS=("epic" "ehr" "ambulatory" "cadence" "cogito" "clarity" "willow" "radiant")
-
-            for KW in "${KEYWORDS[@]}"; do
-              echo "--- keyword: ?q=$KW ---"
-
-            for PAGE in $(seq 1 "$MAX_PAGES"); do
-              START_INDEX=$(( (PAGE - 1) * 20 ))
-              if [ "$START_INDEX" = "0" ]; then
-                URL="https://${HOST}/en-US/${SLUG}?q=${KW}"
-              else
-                URL="https://${HOST}/en-US/${SLUG}?q=${KW}&startIndex=${START_INDEX}"
-              fi
-              HTML_FILE="outbox/wd5-html-${TENANT}-${CLUSTER}-${KW}-p${PAGE}.html"
-
-              # Fetch with curl_cffi (Chrome TLS impersonation) primary,
-              # bash curl + Googlebot UA fallback, bash curl + Chrome UA
-              # second fallback. The Python helper emits one line per
-              # attempt: METHOD=<cffi|curl-bot|curl-browser> HTTP=<n> BYTES=<n>
-              # EXCERPT=<first 200 chars, newline-collapsed>. Last line of
-              # output is the chosen method that wrote HTML_FILE.
-              FETCH_OUT=$(URL="$URL" HTML_FILE="$HTML_FILE" PROXY_URL="$PROXY" \
-                UA_BOT="$UA_BOT" UA_BROWSER="$UA_BROWSER" \
-                python3 << 'PYEOF'
-          import os, sys, subprocess, traceback
-
-          URL       = os.environ['URL']
-          HTML_FILE = os.environ['HTML_FILE']
-          PROXY     = os.environ['PROXY_URL']
-          UA_BOT    = os.environ['UA_BOT']
-          UA_BROWSER= os.environ['UA_BROWSER']
-
-          def excerpt(b):
-              try:
-                  s = b.decode('utf-8', errors='replace')
-              except Exception:
-                  s = ''
-              return s[:200].replace('\n', ' ').replace('\r', ' ').strip()
-
-          chosen = None  # 'cffi' | 'curl-bot' | 'curl-browser'
-
-          # ── Method 1: curl_cffi Chrome120 impersonation ─────────────────
           try:
               from curl_cffi import requests as cf_requests
-              try:
-                  r = cf_requests.get(
-                      URL,
-                      impersonate='chrome120',
-                      proxies={'https': PROXY, 'http': PROXY},
-                      timeout=30,
-                  )
-                  body = r.content or b''
-                  status = r.status_code
-                  print(f'METHOD=cffi HTTP={status} BYTES={len(body)} EXCERPT={excerpt(body)}')
-                  if status == 200 and len(body) > 5000:
-                      open(HTML_FILE, 'wb').write(body)
-                      chosen = 'cffi'
-              except Exception as e:
-                  print(f'METHOD=cffi HTTP=ERR BYTES=0 EXCERPT=ERROR: {e!r}')
-          except ImportError:
-              print('METHOD=cffi HTTP=NA BYTES=0 EXCERPT=curl_cffi not installed')
+          except ImportError as e:
+              print(f'::error::curl_cffi import failed: {e}', file=sys.stderr); sys.exit(1)
 
-          # ── Method 2: bash curl + Googlebot UA ──────────────────────────
-          if chosen is None:
-              tmp = HTML_FILE + '.tmp'
-              try:
-                  proc = subprocess.run([
-                      'curl','-sS','--max-time','45','-L','-x',PROXY,
-                      '-o',tmp,'-w','%{http_code}',
-                      '-H',f'User-Agent: {UA_BOT}',
-                      '-H','Accept: text/html,application/xhtml+xml',
-                      '-H','Accept-Language: en-US',
-                      URL,
-                  ], capture_output=True, text=True, timeout=60)
-                  status = (proc.stdout or '000').strip()
-                  body = open(tmp,'rb').read() if os.path.exists(tmp) else b''
-                  print(f'METHOD=curl-bot HTTP={status} BYTES={len(body)} EXCERPT={excerpt(body)}')
-                  if status == '200' and len(body) > 5000:
-                      os.replace(tmp, HTML_FILE)
-                      chosen = 'curl-bot'
-                  else:
-                      try: os.remove(tmp)
-                      except: pass
-              except Exception as e:
-                  print(f'METHOD=curl-bot HTTP=ERR BYTES=0 EXCERPT=ERROR: {e!r}')
+          DI_USER      = os.environ['DI_USER']
+          DI_PASS      = os.environ['DI_PASS']
+          PROXY        = f'http://{DI_USER}:{DI_PASS}@gw.dataimpulse.com:823'
+          INGEST_TOKEN = os.environ['INGEST_TOKEN']
+          WORKER_URL   = os.environ['WORKER_URL']
+          LIMIT        = int(os.environ['LIMIT'])
+          OFFSET       = int(os.environ['OFFSET'])
+          KEYWORDS     = os.environ['KEYWORDS'].split()
+          MAX_PAGES    = int(os.environ['MAX_PAGES'])
+          POLL_LOG     = os.environ['POLL_LOG']
 
-          # ── Method 3: bash curl + standard browser UA ───────────────────
-          if chosen is None:
-              tmp = HTML_FILE + '.tmp'
-              try:
-                  proc = subprocess.run([
-                      'curl','-sS','--max-time','45','-L','-x',PROXY,
-                      '-o',tmp,'-w','%{http_code}',
-                      '-H',f'User-Agent: {UA_BROWSER}',
-                      '-H','Accept: text/html,application/xhtml+xml',
-                      '-H','Accept-Language: en-US',
-                      URL,
-                  ], capture_output=True, text=True, timeout=60)
-                  status = (proc.stdout or '000').strip()
-                  body = open(tmp,'rb').read() if os.path.exists(tmp) else b''
-                  print(f'METHOD=curl-browser HTTP={status} BYTES={len(body)} EXCERPT={excerpt(body)}')
-                  # On final fallback, save HTML even if non-200 / tiny —
-                  # gives the parser something to inspect (and maintenance
-                  # page is itself diagnostic).
-                  if os.path.exists(tmp):
-                      os.replace(tmp, HTML_FILE)
-                  if status == '200' and len(body) > 5000:
-                      chosen = 'curl-browser'
-              except Exception as e:
-                  print(f'METHOD=curl-browser HTTP=ERR BYTES=0 EXCERPT=ERROR: {e!r}')
+          # Load inventory
+          inv = json.load(open('outbox/wd5-companies.json'))['companies']
+          companies = inv[OFFSET : OFFSET + LIMIT]
+          print(f'Inventory: {len(inv)} total. Slicing [offset={OFFSET}, limit={LIMIT}]')
+          print(f'Keywords ({len(KEYWORDS)}): {KEYWORDS}')
 
-          # Last line: chosen winner (or 'none' if all 3 failed)
-          print(f'CHOSEN={chosen or "none"}')
-          PYEOF
+          def seed_session(host, slug, proxy=PROXY):
+              """Step 1: GET listing page through proxy, return Response with cookies."""
+              listing_url = f'https://{host}/en-US/{slug}'
+              return cf_requests.get(
+                  listing_url,
+                  impersonate='chrome120',
+                  proxies={'http': proxy, 'https': proxy},
+                  timeout=30,
               )
-              echo "$FETCH_OUT" | sed 's/^/  /'
-              # Extract HTTP/BYTES/UA_USED from the chosen winner line
-              CHOSEN=$(echo "$FETCH_OUT" | sed -n 's/^CHOSEN=//p' | tail -1)
-              # Parse method-specific HTTP+BYTES; default to last METHOD line if no winner
-              if [ "$CHOSEN" != "none" ] && [ -n "$CHOSEN" ]; then
-                METHOD_LINE=$(echo "$FETCH_OUT" | grep "^METHOD=$CHOSEN " | tail -1)
-              else
-                METHOD_LINE=$(echo "$FETCH_OUT" | grep "^METHOD=" | tail -1)
-              fi
-              HTTP=$(echo "$METHOD_LINE" | sed -n 's/.*HTTP=\([^ ]*\).*/\1/p')
-              BYTES=$(echo "$METHOD_LINE" | sed -n 's/.*BYTES=\([^ ]*\).*/\1/p')
-              [ -z "$HTTP" ] && HTTP="000"
-              [ -z "$BYTES" ] && BYTES=0
-              UA_USED="$CHOSEN"
-              echo "  page $PAGE: HTTP=$HTTP bytes=$BYTES method=$UA_USED"
-              HTTP_LAST="$HTTP"
-              BYTES_TOTAL=$((BYTES_TOTAL + BYTES))
-              PAGES_FETCHED=$PAGE
 
-              # Parse this page's HTML for job links + total-count header.
-              # Output two lines: NEW_COUNT and TOTAL_REPORTED (or -1 unknown).
-              # Stop pagination when total reached or fewer than 20 new links.
-              PARSE_OUT=$(SLUG_RE="$SLUG" HTML_FILE="$HTML_FILE" ALL_JOBS_FILE="$ALL_JOBS_FILE" python3 << 'PYEOF'
-          import json, os, re, sys
-          slug = os.environ['SLUG_RE']
-          html_path = os.environ['HTML_FILE']
-          all_path  = os.environ['ALL_JOBS_FILE']
-          try:
-              html = open(html_path, 'r', encoding='utf-8', errors='replace').read()
-          except Exception:
-              print('0'); print('-1'); sys.exit(0)
+          def cxs_post(host, tenant, slug, keyword, offset, cookies, proxy=PROXY):
+              """Step 2: POST CXS with cookies and search params, return Response."""
+              cxs_url = f'https://{host}/wday/cxs/{tenant}/{slug}/jobs'
+              origin  = f'https://{host}'
+              referer = f'{origin}/en-US/{slug}'
+              body = json.dumps({
+                  'appliedFacets': {},
+                  'searchText':    keyword,
+                  'limit':         20,
+                  'offset':        offset,
+              })
+              return cf_requests.post(
+                  cxs_url,
+                  impersonate='chrome120',
+                  proxies={'http': proxy, 'https': proxy},
+                  cookies=cookies,
+                  data=body,
+                  headers={
+                      'Content-Type':    'application/json',
+                      'Accept':          'application/json',
+                      'Accept-Language': 'en-US',
+                      'Origin':          origin,
+                      'Referer':         referer,
+                  },
+                  timeout=30,
+              )
 
-          # Match Workday job links:
-          #   /en-US/{slug}/job/{Location}/{Title-with-dashes}_{ReqId}
-          pat = re.compile(
-              r'href="(/en-US/' + re.escape(slug) + r'/job/([^/"]+)/([^"]+?)_([A-Za-z0-9-]+))"',
-              re.IGNORECASE,
-          )
-          existing = json.load(open(all_path))
-          seen_ids = {j['req_id'] for j in existing}
-          new_rows = []
-          for m in pat.finditer(html):
-              path, location, title_slug, req_id = m.group(1), m.group(2), m.group(3), m.group(4)
-              if req_id in seen_ids:
+          def post_ingest(jobs, source):
+              """Ship parsed jobs to Worker /ingest."""
+              if not jobs: return None
+              payload = json.dumps({'source': source, 'jobs': jobs}).encode()
+              req = urllib.request.Request(
+                  WORKER_URL + '/ingest', data=payload, method='POST',
+                  headers={
+                      'Content-Type':   'application/json',
+                      'X-STAT-Ingest':  INGEST_TOKEN,
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      return {'http': r.status, 'body': r.read(800).decode()}
+              except urllib.error.HTTPError as e:
+                  return {'http': e.code, 'body': e.read(500).decode()}
+              except Exception as e:
+                  return {'http': 'ERR', 'body': str(e)}
+
+          # ── Runtime guard: validate session-cookie on FIRST company before
+          #    sweeping the rest. If it fails, log and exit cleanly.
+          validation_passed = False
+          poll_rows = []
+          ingest_total_jobs = 0
+          ingest_total_matches = 0
+
+          for idx, c in enumerate(companies, start=OFFSET):
+              name    = c['name']
+              tenant  = c['tenant']
+              cluster = c['cluster']
+              slug    = c['slug']
+              host    = f'{tenant}.{cluster}.myworkdayjobs.com'
+              print(f'\n=== [{idx}] {name} ({tenant}.{cluster}, slug={slug}) ===')
+
+              row = {
+                  'idx': idx, 'name': name, 'tenant': tenant, 'cluster': cluster, 'slug': slug,
+                  'get_status': '-', 'get_bytes': 0,
+                  'session_validated': False,
+                  'unique_jobs': 0, 'keywords_completed': 0,
+                  'ingest_http': '-', 'ingest_body': '',
+                  'maintenance': False, 'skipped_reason': None,
+              }
+
+              # ── Step 1: seed session cookies ────────────────────────
+              try:
+                  g = seed_session(host, slug)
+                  row['get_status'] = str(g.status_code)
+                  row['get_bytes']  = len(g.content)
+                  print(f'  GET listing: status={g.status_code} bytes={len(g.content)}')
+                  if g.status_code == 500 and b'maintenance-page' in g.content:
+                      print('  → maintenance signature; skipping tenant')
+                      row['maintenance'] = True
+                      row['skipped_reason'] = 'maintenance'
+                      poll_rows.append(row)
+                      continue
+                  if g.status_code != 200 or len(g.content) < 1000:
+                      print(f'  → unexpected GET response; skipping tenant')
+                      row['skipped_reason'] = f'GET status={g.status_code} bytes={len(g.content)}'
+                      poll_rows.append(row)
+                      continue
+                  cookies = g.cookies
+              except Exception as e:
+                  print(f'  GET ERROR: {e!r}')
+                  row['get_status'] = 'ERR'
+                  row['skipped_reason'] = f'GET exception: {e!r}'
+                  poll_rows.append(row)
                   continue
-              seen_ids.add(req_id)
-              new_rows.append({
-                  'path':     path,
-                  'location': location.replace('-', ' '),
-                  'title':    title_slug.replace('-', ' '),
-                  'req_id':   req_id,
-              })
-          if new_rows:
-              existing.extend(new_rows)
-              json.dump(existing, open(all_path, 'w'))
 
-          # Extract total reported by Workday: "1 - 20 of 137 jobs" pattern.
-          # Workday SSR text may include HTML escapes; strip tags first.
-          stripped = re.sub(r'<[^>]+>', ' ', html)
-          mtot = re.search(r'\b(\d+)\s*-\s*(\d+)\s*of\s*(\d+)\s*jobs?\b', stripped, re.IGNORECASE)
-          total = int(mtot.group(3)) if mtot else -1
-          print(len(new_rows))
-          print(total)
+              # ── Step 2: validation probe (first company only) ──────
+              if not validation_passed:
+                  try:
+                      v = cxs_post(host, tenant, slug, KEYWORDS[0], 0, cookies)
+                      vbytes = len(v.content)
+                      vstat  = v.status_code
+                      print(f'  validation POST: status={vstat} bytes={vbytes}')
+                      if vstat == 200:
+                          try:
+                              vd = json.loads(v.content)
+                              if isinstance(vd.get('jobPostings'), list):
+                                  validation_passed = True
+                                  row['session_validated'] = True
+                                  print(f'  → session-cookie validated ({len(vd["jobPostings"])} jobs in probe)')
+                          except Exception:
+                              pass
+                  except Exception as e:
+                      print(f'  validation ERROR: {e!r}')
+
+                  if not validation_passed:
+                      print('::error::Session-cookie approach failed validation against first company.')
+                      print('Refusing to sweep remaining tenants. Per S26 spec — log + exit.')
+                      row['skipped_reason'] = 'session-cookie validation failed'
+                      poll_rows.append(row)
+                      # Don't break — write the log and stop with non-success.
+                      json.dump(poll_rows, open(POLL_LOG, 'w'), indent=2)
+                      sys.exit(0)  # exit 0 — workflow itself succeeded, just no ingest
+
+              # ── Step 3: multi-keyword × paginated CXS sweep ─────────
+              unique_by_req = {}  # req_id → job dict
+              for kw in KEYWORDS:
+                  print(f'  --- keyword: {kw} ---')
+                  pages_done = 0
+                  for page in range(MAX_PAGES):
+                      off = page * 20
+                      try:
+                          r = cxs_post(host, tenant, slug, kw, off, cookies)
+                      except Exception as e:
+                          print(f'    page off={off}: POST ERROR {e!r}')
+                          break
+                      if r.status_code != 200:
+                          print(f'    page off={off}: status={r.status_code} bytes={len(r.content)} — stopping keyword')
+                          break
+                      try:
+                          d = json.loads(r.content)
+                      except Exception:
+                          print(f'    page off={off}: non-JSON response — stopping keyword')
+                          break
+                      postings = d.get('jobPostings') or []
+                      total    = d.get('total')
+                      new_here = 0
+                      for p in postings:
+                          ep = p.get('externalPath') or ''
+                          # req_id = trailing token after last underscore
+                          import re
+                          m = re.search(r'_([A-Za-z0-9-]+)$', ep)
+                          req_id = m.group(1) if m else (p.get('bulletFields') or [None])[0] or ep or p.get('title') or ''
+                          req_id = str(req_id)
+                          if not req_id or req_id in unique_by_req:
+                              continue
+                          loc = p.get('locationsText') or ''
+                          env_tag = 'remote' if 'remote' in loc.lower() else ('hybrid' if 'hybrid' in loc.lower() else '')
+                          job_url = (f'https://{host}/en-US' + ep) if ep else f'https://{host}'
+                          unique_by_req[req_id] = {
+                              'id':          req_id,
+                              'title':       p.get('title') or '',
+                              'company':     name,
+                              'location':    loc,
+                              'environment': env_tag,
+                              'url':         job_url,
+                              'postedAt':    p.get('postedOn'),
+                              'atsSource':   'workday',
+                              'description': '',
+                          }
+                          new_here += 1
+                      pages_done = page + 1
+                      print(f'    page off={off}: postings={len(postings)} new={new_here} total_reported={total}')
+                      # Stop conditions: less-than-full page or hit reported total
+                      if len(postings) < 20: break
+                      if isinstance(total, int) and len(unique_by_req) >= total: break
+                      time.sleep(1)  # polite per-page
+                  row['keywords_completed'] += 1
+                  time.sleep(1)  # polite per-keyword
+
+              row['unique_jobs'] = len(unique_by_req)
+              print(f'  TOTAL unique: {len(unique_by_req)} across {row["keywords_completed"]} keywords')
+
+              # ── Step 4: ingest ──────────────────────────────────────
+              if unique_by_req:
+                  src = f'wd5-cron:{tenant}.{cluster}'
+                  ir = post_ingest(list(unique_by_req.values()), src)
+                  if ir:
+                      row['ingest_http'] = ir['http']
+                      row['ingest_body'] = ir['body']
+                      print(f'  ingest: http={ir["http"]} body={ir["body"][:200]}')
+                      try:
+                          ib = json.loads(ir['body'])
+                          ingest_total_matches += int(ib.get('newMatches', 0))
+                      except Exception:
+                          pass
+                  ingest_total_jobs += len(unique_by_req)
+
+              poll_rows.append(row)
+              time.sleep(2)  # polite per-tenant
+
+          json.dump(poll_rows, open(POLL_LOG, 'w'), indent=2)
+
+          print('\n=== SUMMARY ===')
+          print(f'Companies polled: {len(poll_rows)}')
+          print(f'Total unique jobs ingested: {ingest_total_jobs}')
+          print(f'Total new matches: {ingest_total_matches}')
+          for r in poll_rows:
+              marker = '✅' if r['unique_jobs'] > 0 else ('🛠' if r['maintenance'] else '❌')
+              print(f'  {marker} [{r["idx"]}] {r["name"]}: jobs={r["unique_jobs"]} '
+                    f'kws_done={r["keywords_completed"]} ingest={r["ingest_http"]}')
           PYEOF
-              )
-              NEW_COUNT=$(echo "$PARSE_OUT" | sed -n '1p')
-              TOTAL_REPORTED=$(echo "$PARSE_OUT" | sed -n '2p')
-              echo "  page $PAGE: parsed $NEW_COUNT new job links (total reported by tenant: $TOTAL_REPORTED)"
 
-              # Pagination stop conditions:
-              #   1. Page returned zero new links (end of unique results)
-              #   2. Page returned fewer than 20 links (last page)
-              #   3. Cumulative parsed count ≥ tenant-reported total
-              if [ "$NEW_COUNT" = "0" ]; then
-                echo "  page $PAGE: zero new — stopping pagination"
-                break
-              fi
-              if [ "$NEW_COUNT" -lt 20 ]; then
-                echo "  page $PAGE: <20 new — last page, stopping pagination"
-                break
-              fi
-              PARSED_SO_FAR=$(python3 -c "import json; print(len(json.load(open('$ALL_JOBS_FILE'))))")
-              if [ "$TOTAL_REPORTED" -gt 0 ] && [ "$PARSED_SO_FAR" -ge "$TOTAL_REPORTED" ]; then
-                echo "  page $PAGE: parsed $PARSED_SO_FAR ≥ reported total $TOTAL_REPORTED — stopping"
-                break
-              fi
-              # Polite delay between pagination requests
-              sleep 1
-            done
-              # Brief pause between keyword passes
-              sleep 1
-            done
-
-            TOTAL=$(python3 -c "import json; print(len(json.load(open('$ALL_JOBS_FILE'))))")
-            echo "  TOTAL: $TOTAL unique jobs across all keyword passes (last page=$PAGES_FETCHED)"
-
-            # Transform parsed jobs → STAT /ingest shape and POST
-            INGEST_HTTP="-"; INGEST_MATCHES="-"
-            if [ "$TOTAL" -gt 0 ]; then
-              ALL_JOBS_FILE="$ALL_JOBS_FILE" HOST="$HOST" NAME="$NAME" \
-              WORKER_URL="$WORKER_URL" INGEST_TOKEN="$INGEST_TOKEN" \
-              TENANT="$TENANT" CLUSTER="$CLUSTER" \
-              python3 << 'PYEOF'
-          import json, os, urllib.request, urllib.error, datetime
-          rows = json.load(open(os.environ['ALL_JOBS_FILE']))
-          host = os.environ['HOST']
-          name = os.environ['NAME']
-          tenant = os.environ['TENANT']
-          cluster = os.environ['CLUSTER']
-          jobs = []
-          for r in rows:
-              # Stable global ID: tenant_reqid — survives across pages and cycles.
-              # If req_id starts with 'R', use it directly to match S22 platform-DO
-              # ingest dedup keys; otherwise prefix with tenant.
-              gid = r['req_id'] if r['req_id'].startswith('R') else f"{tenant}_{r['req_id']}"
-              loc = r['location']
-              env = 'remote' if 'remote' in loc.lower() else ('hybrid' if 'hybrid' in loc.lower() else '')
-              jobs.append({
-                  'id':          gid,
-                  'title':       r['title'],
-                  'company':     name,
-                  'location':    loc,
-                  'environment': env,
-                  'url':         'https://' + host + r['path'],
-                  'postedAt':    None,
-                  'atsSource':   'workday',
-                  'description': '',
-              })
-          payload = json.dumps({
-              'source': f'wd5-proxy:{tenant}.{cluster}',
-              'jobs':   jobs,
-          }).encode()
-          req = urllib.request.Request(
-              os.environ['WORKER_URL'] + '/ingest',
-              data=payload,
-              method='POST',
-              headers={
-                  'Content-Type': 'application/json',
-                  'X-STAT-Ingest': os.environ['INGEST_TOKEN'],
-              },
-          )
-          try:
-              with urllib.request.urlopen(req, timeout=20) as r:
-                  body = r.read(800).decode()
-                  print(f'  ingest http={r.status} body={body}')
-          except urllib.error.HTTPError as e:
-              print(f'  ingest FAILED http={e.code} body={e.read(500).decode()}')
-          except Exception as e:
-              print(f'  ingest ERROR: {e}')
-          PYEOF
-            fi
-
-            # Append summary row to poll log
-            [ $FIRST -eq 0 ] && echo "," >> "$POLL_LOG"
-            FIRST=0
-            ROW_OUT=$(python3 -c "
-          import json
-          print(json.dumps({
-              'idx': $idx,
-              'name': '''${NAME}'''.replace(\"'''\", \"'\"),
-              'tenant': '${TENANT}', 'cluster': '${CLUSTER}', 'slug': '${SLUG}',
-              'http_last': '$HTTP_LAST', 'bytes_total': $BYTES_TOTAL,
-              'pages_fetched': $PAGES_FETCHED, 'ua_used': '$UA_USED',
-              'jobs_parsed': $TOTAL,
-          }))")
-            echo "$ROW_OUT" >> "$POLL_LOG"
-
-            # Rate limit between tenants
-            sleep 2
-          done
-
-          echo "]" >> "$POLL_LOG"
-          echo ""
-          echo "=== POLL LOG ==="
-          cat "$POLL_LOG"
-
-      - name: Commit results
+      - name: Commit poll results
         run: |
           git config user.email "ci@stat"
           git config user.name "STAT CI"
           git pull --rebase origin main || true
-          # Commit summary + small HTML samples (truncate huge ones)
-          git add outbox/wd5-poll-*.json outbox/wd5-jobs-*.json 2>/dev/null || true
-          # Skip raw HTML — too noisy for repo; keep first one for diagnostics
-          for f in outbox/wd5-html-*.html; do
-            [ -f "$f" ] || continue
-            head -c 8192 "$f" > "${f}.head8k" && rm "$f"
-          done
-          git add outbox/wd5-html-*.head8k 2>/dev/null || true
-          git commit -m "ci: S25 wd5 listing-page poll results [skip ci]" || echo "no changes"
+          git add outbox/wd5-poll-*.json 2>/dev/null || true
+          git commit -m "ci: S26 wd5 session-cookie CXS poll results [skip ci]" || echo "no changes"
           git push origin main || echo "push skipped"

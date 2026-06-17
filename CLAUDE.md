@@ -102,3 +102,56 @@ AI API calls route through `field-claude-proxy.jeffunglesbee.workers.dev`:
 - Auth: `X-FIELD-Relay: field-relay-cron-2026` header (server-to-server bypass)
 - Force Claude: `X-FIELD-Force-Claude: true` header (bypass Gemini for complex agent calls)
 - No local ANTHROPIC_API_KEY needed — proxy holds the key
+
+## Workday wd5 / wd3 — Session-Cookie CXS Approach
+
+wd5 and wd3 clusters do **not** block CXS by IP — they reject CXS POSTs
+without valid session cookies. A bare `curl -X POST` (any IP) returns HTTP
+422 because `PLAY_SESSION` and `CALYPSO_CSRF_TOKEN` aren't present.
+
+**Production path (S26, `.github/workflows/wd5-cxs-poll.yml`):**
+
+1. **GET** `https://{tenant}.wd5.myworkdayjobs.com/en-US/{slug}` through
+   DataImpulse residential proxy with curl_cffi (Chrome120 TLS impersonation).
+   Response sets `PLAY_SESSION`, `CALYPSO_CSRF_TOKEN`, `__cf_bm` cookies.
+2. **POST** `…/wday/cxs/{tenant}/{slug}/jobs` with those cookies plus
+   `Origin` + `Referer` headers, body `{searchText, limit, offset}`.
+   Returns `{jobPostings: [...], total: N}` JSON.
+3. Multi-keyword loop reuses the same cookies (tenant-scoped, session-valid):
+   `epic, ehr, ambulatory, cadence, cogito, clarity, willow, radiant`.
+4. Per-tenant dedup by `req_id`, POST result array to Worker `/ingest`.
+
+**Runtime guard:** the workflow validates the session-cookie approach
+against the first tenant (JHBMC) before sweeping the rest. If validation
+fails, it logs and exits without burning DataImpulse bandwidth on 84 more
+tenants.
+
+**Maintenance signature** (cluster down — distinguish from a real block):
+
+```
+HTTP 500, 238 bytes
+<!DOCTYPE HTML><html><head><script>
+  window.location.href = "https://community.workday.com/maintenance-page"
+</script></head><body></body></html>
+```
+
+Identical across all UAs and TLS fingerprints (verified S25 A/B). When this
+signature appears, the cluster is in a maintenance window; back off and
+retry later — do not burn proxy bandwidth.
+
+**S26 trigger condition** — when wd5 recovers:
+1. Probe via Worker:
+   `GET /plain-fetch-test?url=https://jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions?q=epic`
+2. When HTTP becomes 200 + bytes > 10KB → wd5 is live.
+3. Dispatch `wd5-ssr-probe.yml` to confirm which bypass (sitemap, Google
+   Cache, social-crawler UA, or session-cookie) works on the current
+   configuration. Results land in `outbox/wd5-ssr-probe-{ts}.json`.
+4. If session-cookie probe (Approach D) succeeds → dispatch
+   `wd5-cxs-poll.yml` with `limit=3` for verification, then with full
+   sweep once verified.
+
+**Required GitHub Actions secrets:**
+- `DATAIMPULSE_USER` / `DATAIMPULSE_PASS` — gw.dataimpulse.com:823 creds.
+- `STAT_INGEST_TOKEN` — shared secret matching Worker `env.STAT_INGEST_TOKEN`.
+- `STAT_PAT` — for the workflow to push outbox results back to main.
+
