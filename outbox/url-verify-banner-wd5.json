@@ -1,0 +1,6 @@
+{
+  "label": "banner-wd5",
+  "http_status": "422",
+  "total_jobs": "-",
+  "body_excerpt": "{\"errorCode\":\"HTTP_422\",\"errorCaseId\":\"64407CMQI3X0G5\",\"httpStatus\":422,\"locale\":\"en-US\",\"message\":\"\",\"messageParams\":{}}"
+}

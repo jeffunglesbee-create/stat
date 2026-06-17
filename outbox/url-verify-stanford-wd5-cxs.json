@@ -1,0 +1,6 @@
+{
+  "label": "stanford-wd5-cxs",
+  "http_status": "422",
+  "total_jobs": "-",
+  "body_excerpt": "{\"errorCode\":\"HTTP_422\",\"errorCaseId\":\"AFA78BMQI3X28J\",\"httpStatus\":422,\"locale\":\"en-US\",\"message\":\"\",\"messageParams\":{}}"
+}
