@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-17T00:52:10Z
-HEAD: 1503cd2
+Generated: 2026-06-17T01:05:44Z
+HEAD: f655675
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  1503cd2 feat: /workday-health diagnostic — per-company DO telemetry (S21b)
+  f655675 diag: /raw-fetch + grab-workday-html workflow (S22 SSR parser investigation)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
