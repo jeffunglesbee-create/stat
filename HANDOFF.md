@@ -1,9 +1,93 @@
-# STAT HANDOFF — 2026-06-17 (Session 21 END — Workday URL audit)
+# STAT HANDOFF — 2026-06-17 (Session 21b END — DO telemetry resolves the 88)
 
 ## State
-HEAD: 7d48e28 (audit) — deploy 171 ✅ from this commit
+HEAD: 917cb61 — Worker code last deployed 1503cd2 (deploy 173 ✅)
 Smoke: 213/213 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 21b — Resolve the 88 inconclusive Workday companies (2026-06-17)
+
+S21's raw probes returned HTTP 500 for 88 Workday tenants — but that's
+Workday's WAF blocking raw GETs from Cloudflare IPs, **not the tenants
+being dead**. Truth is in the DO polling telemetry.
+
+**New diagnostic (deploy 173, commit 1503cd2):** `GET /workday-health`
+— read-only endpoint in `src/routes/diagnostics.js` that aggregates the
+rolling 200-entry log buffer (each Workday alarm cycle writes a
+`brLog[]` with `{company, source, jobs}`) plus the recent_matches store
+into one row per Workday company. No new fetches, no Workday hits.
+
+Per row: `{ totalPolls, totalJobs, lastPollTs, lastJobsSeenTs,
+jobsInLastPoll, matchCount, inactive, inactiveReason }`.
+
+**Snapshot taken via `workday-health-snapshot.yml`** (dispatched from
+this session) → `outbox/workday-health-snapshot.json` (202 Workday
+companies, 200 log entries available).
+
+**JHBMC control case (Johns Hopkins, the user's anchor):**
+`totalPolls=3, totalJobs=0, lastPollTs=2026-06-16T23:48Z, lastJobsSeenTs=null`.
+JHBMC has 3 successful fetches in the recent window → ✓ classified as
+ACTIVE.
+
+**Classification result for the 88:**
+
+| class | count | meaning |
+|---|---:|---|
+| ACTIVE | 66 | DO has fetched this tenant successfully ≥1× in the recent 200 alarm cycles (URL reachable from Cloudflare, including JHBMC). |
+| DEAD | 0 | In DO rotation but zero successful fetches — none observed. |
+| UNREACHABLE | 22 | Not in DO's polling rotation at all (`company_list` doesn't contain them). Distinct from "dead URL" — they're never even tried. |
+
+UNREACHABLE list (22): Novant Health, Franciscan Health, Tufts Medicine,
+SSM Health, Bon Secours Mercy, Centura Health, Essentia Health,
+WVU Medicine, UCHealth, Stormont Vail, Cone Health, Virtua Health,
+Valley Health System, Billings Clinic, DISH / EchoStar, Aetna / CVS,
+Anthem / Elevance, UnitedHealth Group, Molina Healthcare, Blue Yonder,
+E2open, Infor.
+
+**Criteria deviation from prompt.** The prompt's strict rules
+(`ACTIVE = seenCount > 0 AND lastJobSeen within 30 days`) assumed
+per-company `seenCount`/`lastJobSeen` exist in the DO store. They
+don't — `platform-do.js` only stores platform-level totals. The
+closest proxies are `totalPolls` (successful fetches in recent log
+window) and `totalJobs` (sum of jobs across those polls). Revised
+criteria are documented in the audit JSON `s21bClass`/`s21bReason`
+fields and pass the JHBMC anchor.
+
+**System-wide signal worth surfacing.** All 66 ACTIVE companies have
+`lastJobsSeenTs = null` and `totalJobs = 0`. `fetchWorkday` is
+returning HTTP 200 but extracting **zero jobs** across every Workday
+tenant in the recent 200 alarm cycles. JHBMC included. This is a
+much bigger issue than the audit — the SSR pagination / parser may
+be broken since a recent Workday change. **S22 priority.**
+
+**No `src/config.js` changes** from this audit (no DEAD to flag; per
+prompt UNREACHABLE/ACTIVE left unchanged). The 22 UNREACHABLE need
+`company_list` reseeding, not an `inactive` flag.
+
+**Files**:
+- `src/routes/diagnostics.js` — `+/workday-health` (read-only)
+- `.github/workflows/workday-health-snapshot.yml` — dispatch helper
+- `outbox/workday-health-snapshot.json` — raw snapshot
+- `outbox/workday-audit-results.json` — merged with `s21bClass` +
+  telemetry fields for the 88 entries
+
+**Open items into S22 (priorities reordered):**
+1. **Why does `fetchWorkday` find zero jobs across every Workday
+   tenant in the recent 200 alarm cycles?** Diagnostic via
+   `/workday-probe?tenant=jhhs&host=jhhs.wd5.myworkdayjobs.com&slug=JHH_External_Positions`
+   would isolate whether it's the SSR HTML structure changing or the
+   `?q=epic` filter no longer working.
+2. **Reseed `company_list`** so the 22 UNREACHABLE Workday companies
+   get polled. `bootstrapDOs` in `index.js` merges by `(ats, url)` —
+   if the stored list pre-dates a seed addition, the entry never
+   makes it. Force-resync option: temporarily clear `company_list`
+   then dispatch `/bootstrap` (which will re-merge from
+   `SEED_COMPANIES`).
+3. Wire `if (company.inactive) return [];` in
+   `adapters.js fetchCompanyJobs` so the 17 S21-flagged tenants stop
+   wasting Worker cycles (carried over from S21).
+
+---
 
 ## Session 21 — Workday URL audit (2026-06-16/17)
 
