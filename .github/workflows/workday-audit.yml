@@ -28,10 +28,15 @@ jobs:
         with:
           node-version: 20
 
-      - name: Run audit probe
+      - name: Run audit probe (via Worker — ground truth)
         run: |
           mkdir -p outbox
-          node scripts/probe-workday-urls.js 2>&1 | tee outbox/workday-audit-stderr.log
+          # --via-worker proxies each GET through /plain-fetch-test so the
+          # actual fetch runs from the Cloudflare Worker IP. Workday
+          # rejects 403 for direct GitHub Actions traffic but accepts the
+          # Worker, so this is the only mode that matches fetchWorkday's
+          # production behavior.
+          node scripts/probe-workday-urls.js --via-worker 2>&1 | tee outbox/workday-audit-stderr.log
 
       - name: Commit results
         run: |
