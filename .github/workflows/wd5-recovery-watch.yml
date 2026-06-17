@@ -1,0 +1,57 @@
+# .github/workflows/wd5-recovery-watch.yml
+#
+# Polls JHBMC every 10 minutes. The moment wd5 exits maintenance
+# (HTTP 200 + bytes > 10KB), auto-fires wd5-ssr-probe.yml and
+# wd5-cxs-poll.yml with limit=3. No human intervention needed.
+
+name: wd5 Recovery Watch
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check wd5 recovery
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RESULT=$(curl -s -w "\n%{http_code}:%{size_download}" \
+            "https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?url=https://jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions" \
+            --max-time 10 2>/dev/null)
+          HTTP=$(echo "$RESULT" | tail -1 | cut -d: -f1)
+          BYTES=$(echo "$RESULT" | tail -1 | cut -d: -f2)
+          echo "HTTP: $HTTP, Bytes: $BYTES"
+          if [ "$HTTP" = "200" ] && [ "${BYTES:-0}" -gt 10000 ]; then
+            echo "wd5 RECOVERED — firing S27 sequence"
+            echo "recovered=true" >> $GITHUB_OUTPUT
+          else
+            echo "wd5 still in maintenance (HTTP: $HTTP, bytes: ${BYTES:-0})"
+            echo "recovered=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fire S27 sequence
+        if: steps.check.outputs.recovered == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="jeffunglesbee-create/stat"
+          BASE="https://api.github.com/repos/$REPO/actions/workflows"
+          AUTH="Authorization: token $GH_TOKEN"
+
+          echo "Step 1: Dispatch wd5-ssr-probe.yml"
+          curl -s -X POST -H "$AUTH" -H "Accept: application/vnd.github.v3+json" \
+            "$BASE/wd5-ssr-probe.yml/dispatches" -d '{"ref":"main"}' && echo "✅" || echo "❌"
+
+          sleep 5
+
+          echo "Step 2: Dispatch wd5-cxs-poll.yml with limit=3"
+          curl -s -X POST -H "$AUTH" -H "Accept: application/vnd.github.v3+json" \
+            "$BASE/wd5-cxs-poll.yml/dispatches" \
+            -d '{"ref":"main","inputs":{"limit":"3"}}' && echo "✅" || echo "❌"
+
+          echo "S27 sequence fired. Check Actions for results."
