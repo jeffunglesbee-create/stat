@@ -1,3 +1,129 @@
+# STAT HANDOFF — 2026-06-17 (Session 24 END — wd5 automated ingestion pipeline)
+
+## State
+HEAD: 3c54757 — Worker last deployed 3c54757 (deploy 189 ✅)
+Smoke: 213/213 ✅
+Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 24 — wd5 automated ingestion pipeline (2026-06-17)
+
+**Goal.** 85 active Workday companies on wd5/wd3 clusters return HTTP 422
+to CXS calls from CF Worker IPs (cluster-level IP block, confirmed since
+S4). HiringCafe covers them via wide-net scrape but misses tenant-specific
+postings. This session built a direct CXS poll path.
+
+### Phase 1 — RSS / Atom feed probe — NO BYPASS
+
+`probe-wd5-feeds.yml` (run 27695217207) tested 3 feed URL patterns × 5 wd5
+tenants (jhhs, kp, vanderbilt, rwjbarnabas, dukehealth):
+
+| pattern | URL | result |
+|---|---|---|
+| p1 | `/wday/cxs/{t}/{slug}/feed` | HTTP 422, identical errorCode HTTP_422 body |
+| p2 | `/{slug}/rss.xml` | HTTP 500 (CF anti-bot) |
+| p3 | `/en-US/{slug}/rss.xml` | HTTP 500 |
+
+**Verdict:** the cluster-level IP block applies to all feed code paths.
+RSS bypass does not exist. Proceeded to Phase 2.
+
+Files: `outbox/wd5-feed-*` (15 JSON probe results + summary TSV).
+
+### Phase 2 — DataImpulse proxy + /ingest endpoint — SHIPPED
+
+**Architecture:**
+```
+  GitHub Actions cron
+       │ curl -x http://gw.dataimpulse.com:823
+       ▼
+  Workday CXS JSON API (residential IP not blocked)
+       │ transform jobPostings → STAT job shape
+       ▼ HTTPS POST {X-STAT-Ingest: token}
+  Worker /ingest
+       │ ghost filter → env filter → seen dedup → matchJob
+       ▼
+  saveRecentMatches + saveUnmatchedJobs + dispatchAlerts
+```
+
+**New endpoint — `POST /ingest`** (`src/routes/operations.js`, deploy 189):
+- Auth via `X-STAT-Ingest` header matching `env.STAT_INGEST_TOKEN`.
+- Body: `{ source, jobs: [{id, title, company, location, environment?,
+  salary?, url, postedAt?, atsSource?, description?}, ...] }`.
+- Pipeline mirrors `platform-do.js` job loop: ghost filter → env filter →
+  global seen-id dedup (StateStoreDO) → `matchJob` → `saveUnmatchedJobs`
+  for Browse + `saveRecentMatches` for matches + `dispatchAlerts` for
+  Pushover/email + `appendLog` for diagnostics.
+- Skips `enrichDescriptions` + fit scoring (cron-side responsibility, can
+  pre-populate `description` field if needed).
+- Returns counters: `considered, ghostSkipped, envSkipped, alreadySeen,
+  unmatched, newMatches`.
+
+**New workflow — `.github/workflows/wd5-cxs-poll.yml`:**
+- `workflow_dispatch` only — no cron schedule yet.
+- Inputs: `limit` (default 3), `offset` (default 0) for test rotation.
+- Verifies presence of secrets `DATAIMPULSE_USER`, `DATAIMPULSE_PASS`,
+  `STAT_INGEST_TOKEN`; fails fast with actionable error if missing.
+- Reads `outbox/wd5-companies.json` (committed, 85 entries) for inventory.
+- For each company: curl through `gw.dataimpulse.com:823` to `/wday/cxs/
+  {tenant}/{slug}/jobs` with the standard headers (Origin, Referer,
+  Accept-Language: en-US). 45s timeout per CXS call.
+- Transforms `jobPostings[]` to STAT job shape inline (Python heredoc) and
+  POSTs to `/ingest` with the shared-secret header.
+- 2s sleep between requests (DataImpulse politeness).
+- Commits `outbox/wd5-poll-*.json` (per-run summary) and the per-tenant
+  raw response bodies for offline inspection.
+
+**Cost estimate (DataImpulse residential ~$0.50/GB):**
+- CXS POST = ~3KB up + ~10KB down (5 jobs) ≈ 13KB/request.
+- 85 cos × 12 cycles/day (every 2h) = 1,020 reqs/day = 13.3MB/day = ~400MB/month.
+- ~**$0.20/month** at the residential rate.
+- Conservative every-4h (6 cycles/day): ~510 reqs/day ≈ **$0.10/month**.
+
+**SECRETS — NOT YET SET (blocker for first test run):**
+
+1. `DATAIMPULSE_USER` and `DATAIMPULSE_PASS` — both exist as Worker
+   secrets per S22 HANDOFF, but **not** as GitHub Actions secrets. The
+   wd5-cxs-poll workflow fails fast on the "Verify secrets present"
+   step until they're added.
+2. `STAT_INGEST_TOKEN` — brand new shared secret. Must be set in **both**:
+   - GitHub Actions repo secret (for the cron workflow to send).
+   - Cloudflare Worker secret `STAT_INGEST_TOKEN` (for `/ingest` to verify).
+
+   Pick a random 32-byte hex token. Set both sides via the existing
+   PyNaCl pattern (same as S20 STAT_PAT). The Worker code reads
+   `env.STAT_INGEST_TOKEN`; absence yields all `/ingest` calls returning 401.
+
+**Pipeline NOT YET tested end-to-end** because secrets are not present.
+Workflow file is ready; smoke 213/213; deploy 189 ✅.
+
+### Files
+
+- `src/routes/operations.js` — `/ingest` endpoint (+138 lines).
+- `.github/workflows/probe-wd5-feeds.yml` — Phase 1 RSS probe (workflow_dispatch).
+- `.github/workflows/wd5-cxs-poll.yml` — Phase 2 cron poll (workflow_dispatch).
+- `outbox/wd5-companies.json` — 85-entry inventory (wd5: 82, wd3: 3).
+- `outbox/wd5-feed-*` — Phase 1 RSS probe outputs (commit `2779199`).
+
+### Open items into S25
+
+1. **Set the 3 GitHub Actions secrets** (`DATAIMPULSE_USER`, `DATAIMPULSE_PASS`,
+   `STAT_INGEST_TOKEN`) plus the Worker secret `STAT_INGEST_TOKEN`. PyNaCl
+   pattern from S20. Once set, dispatch `wd5-cxs-poll.yml` with `limit=3` and
+   verify ingest counters.
+2. **End-to-end test:** dispatch with the JHBMC anchor in the slice (offset=0)
+   and confirm any matches show up in `/jobs`. Use `/logs` to see the
+   `ingest:wd5-cron:...` appendLog entries.
+3. **Enable cron schedule** once test succeeds. Conservative start:
+   `schedule: - cron: '0 */4 * * *'` (every 4h, $0.10/mo). Add `concurrency`
+   guard to skip overlapping runs.
+4. **Pre-flight cost check** with DataImpulse dashboard after first ~50
+   real requests. If billing is per-request rather than per-byte,
+   recalibrate cost estimate.
+5. **wd1 slug verification** (carry from S23) — 11 active wd1 companies
+   may have wrong slugs (S22 probe showed `"not found: Job_Posting_Si…"`).
+   Probe each: `GET /workday-probe?tenant=X&host=X.wd1…&slug=Y`.
+
+---
+
 # STAT HANDOFF — 2026-06-17 (Session 23 END — Workday URL audit + cluster corrections)
 
 ## State
