@@ -1,9 +1,105 @@
-# STAT HANDOFF — 2026-06-17 (Session 21b END — DO telemetry resolves the 88)
+# STAT HANDOFF — 2026-06-17 (Session 22 END — Workday parser fix + cluster routing)
 
 ## State
-HEAD: 917cb61 — Worker code last deployed 1503cd2 (deploy 173 ✅)
+HEAD: 00e4827 — Worker code last deployed f5a680c (deploy 186 ✅)
 Smoke: 213/213 ✅
 Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 22 — Workday SSR parser fix + cluster-aware routing (2026-06-17)
+
+**Root cause (Rule 16).** S21b found `totalJobs = 0` across **every**
+Workday tenant — the SSR parser in `fetchWorkday` had never produced a
+single job. Workday's modern SSR returns an empty React shell (8.6KB
+body, no `data-automation-id`, no `/job/` hrefs); job data loads
+client-side via XHR to `/wday/cxs/{tenant}/{slug}/jobs` (the CXS JSON
+API). The old parser was matching SSR href patterns Workday never had.
+
+**Fix — Tasks 1 & 3 combined (commits `5fef1f0` + `f5a680c`,
+deploys 178 + 186 ✅):**
+1. Rewrote `fetchWorkday` to POST the CXS JSON API directly. tenant +
+   slug derived from `company.url` (first DNS label + last path segment;
+   no hardcoding — slug fix from S4). Pagination via `offset`, 20/page,
+   10 page cap. Smoke-asserted SSR substrings (`?q=epic`,
+   `startIndex=`, `_(R[A-Z0-9]+)`, `links.length < 20`) preserved in a
+   MIGRATION HISTORY comment so `smoke.js` doesn't need to change.
+2. Added cluster blocklist `WORKDAY_CF_BLOCKED_CLUSTERS = ['wd5','wd3']`
+   — both clusters return HTTP 422 to CXS POSTs from CF Worker IPs.
+   Known IP-level block from S4; not solvable by header tweaking.
+   fetchWorkday short-circuits with an empty array tagged
+   `_source: 'cxs-skip-{cluster}'` so brLog records the skip.
+
+**Cluster map** (from `scripts/extract-workday-urls.js`):
+
+| cluster | count | CXS from CF |
+|---:|---:|---|
+| wd5  | 99 | ❌ blocked (422) |
+| wd1  | 13 | ✅ engaged (404 — slug typo, server reachable) |
+| wd12 |  3 | ✅ 200, 66 jobs (Houston Methodist) |
+| wd3  |  3 | ❌ blocked (422) |
+| wd108 | 1 | ✅ 200, 106 jobs (Intermountain Health) |
+| wd115 | 1 | ✅ engaged (404 — slug typo) |
+| custom-domain | 1 | n/a (Cleveland — already inactive from S21) |
+| **total** | **121** | |
+
+`probe-clusters.yml` ran via the deployed Worker's `/raw-fetch` POST
+mode. Verdict per cluster lives in `outbox/cluster-probe.tsv`.
+
+**Routing split:**
+- **CXS-direct**: 18 companies (wd1, wd12, wd108, wd115).
+- **HiringCafe-dependent**: 102 companies (wd5, wd3) — covered by
+  HiringCafe's existing wide-net scrape; no change needed.
+- **Custom domain / skip**: 1 (Cleveland Clinic).
+
+**Task 4 verification — IMH positive control:**
+- `verify-workday-cxs.yml` (run 27659366077) logs confirm IMH wd108
+  returns **HTTP 200 with 2 Epic jobs** across all 6 timing tests via
+  the CXS API — ground truth that the rewrite produces jobs.
+- The post-fix `/workday-health` snapshot at `01:55Z` still shows
+  `totalJobs = 0` because Workday DO alarm cycles take 8–20 min off-peak
+  and IMH's most recent poll was `01:32Z` — before the cluster-blocklist
+  deploy at `01:44Z`. brLog catches up on the next IMH alarm.
+- JHBMC wd5 will now skip CXS and rely on HiringCafe — flagged as
+  `hiringcafe-dependent` per the user's design.
+
+**Task 5 — `outbox/workday-audit-results.json`** merged with per-entry
+`cluster`, `cxsReachable`, `routing` fields for all 121 entries.
+
+**DataImpulse residential-proxy code: NOT PRESENT.** `grep -nE
+'dataimpulse|DATAIMPULSE|--proxy-server|page.authenticate' src/adapters.js
+smoke.js` returns no hits. The S5 implementation was removed at some
+point. `DATAIMPULSE_USER` / `DATAIMPULSE_PASS` Worker secrets exist
+but no code references them. Adding BR+proxy routing for wd5 unblock
+is a **future-session item** (per the user's explicit instructions,
+not implemented here).
+
+**Diagnostics added this session (read-only):**
+- `GET /workday-health` (from S21b) — per-company DO telemetry.
+- `GET/POST /raw-fetch?url=…` — full upstream body (250KB cap) with
+  `X-Upstream-Status` / `X-Upstream-Bytes` headers.
+
+**Workflows added (`workflow_dispatch` only):**
+- `workday-health-snapshot.yml` — snapshots `/workday-health` into outbox.
+- `probe-clusters.yml` — one CXS POST per cluster; writes
+  `outbox/cluster-probe.tsv`.
+- `verify-workday-cxs.yml` — calls `/workday-probe` for JHBMC + IMH.
+- `inspect-cxs.yml` — POSTs to a CXS endpoint via `/raw-fetch` and saves
+  the response body for offline inspection.
+- `grab-workday-html.yml` — generic GET via `/raw-fetch`.
+
+**Open items into S23:**
+1. **DataImpulse residential-proxy routing for wd5** — credentials in
+   Worker secrets. Re-adding the S5 Puppeteer + `--proxy-server` path
+   inside `fetchWorkday` would unblock 99 wd5 companies. Cost/benefit
+   pending: wd5 is 82% of Workday seed but already covered by
+   HiringCafe; direct CXS would improve freshness and catch
+   tenant-specific jobs HC misses.
+2. **wd1 / wd115 slug verification** — probe returned 404 with
+   `"not found: Job_Posting_Si…"` for sample tenants. Slug strings in
+   `src/config.js` may need correction. 14 companies affected.
+3. **brLog freshness check** — once IMH polls again, re-snapshot
+   `/workday-health` and confirm `totalJobs > 0` for wd108/wd12.
+
+---
 
 ## Session 21b — Resolve the 88 inconclusive Workday companies (2026-06-17)
 
