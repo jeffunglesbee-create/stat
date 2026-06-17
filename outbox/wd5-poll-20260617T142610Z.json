@@ -1,0 +1,7 @@
+[
+{"idx": 0, "name": "Johns Hopkins", "tenant": "jhhs", "cluster": "wd5", "slug": "JHH_External_Positions", "http": "422", "bytes": 121, "total": "-", "postings_returned": "-"}
+,
+{"idx": 1, "name": "Mayo Clinic", "tenant": "mayoclinic", "cluster": "wd5", "slug": "mayoclinic", "http": "422", "bytes": 121, "total": "-", "postings_returned": "-"}
+,
+{"idx": 2, "name": "Kaiser Permanente", "tenant": "kp", "cluster": "wd5", "slug": "KP_External_Career_Site", "http": "422", "bytes": 121, "total": "-", "postings_returned": "-"}
+]
