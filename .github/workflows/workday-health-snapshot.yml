@@ -1,0 +1,37 @@
+# .github/workflows/workday-health-snapshot.yml
+#
+# Calls the Worker's /workday-health diagnostic endpoint and commits the
+# JSON to outbox/. Used by S21b to grab DO telemetry without re-probing
+# Workday URLs. Manual dispatch only.
+name: Workday health snapshot
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+
+      - name: Fetch /workday-health
+        run: |
+          mkdir -p outbox
+          curl -sS --max-time 30 \
+            "https://stat-job-watcher.jeffunglesbee.workers.dev/workday-health" \
+            > outbox/workday-health-snapshot.json
+          # Sanity check: must include companies array
+          python3 -c "import json; d=json.load(open('outbox/workday-health-snapshot.json')); print('count=', d.get('count'), 'logs=', d.get('logsAvailable'))"
+
+      - name: Commit snapshot
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git add outbox/workday-health-snapshot.json
+          git commit -m "ci: Workday health snapshot [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"
