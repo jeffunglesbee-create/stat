@@ -1,3 +1,133 @@
+# STAT HANDOFF — 2026-06-17 (Session 26 END — session-cookie CXS + SSR bypass probe)
+
+## State
+HEAD: 92f7c91 — Worker last deployed 3c54757 (deploy 189; no Worker code change this session)
+Smoke: 213/213 ✅
+Active DOs: 126 | Companies: 525 | Seen IDs: 2,840
+
+## Session 26 — Session-cookie CXS + SSR bypass probe (2026-06-17)
+
+Built two workflows + CLAUDE.md doc while wd5 remains in maintenance, so
+the moment the cluster recovers a single dispatch validates the approach
+end-to-end. Nothing was dispatched against live wd5 this session per the
+constraint (every fetch would just return the 238-byte maintenance page).
+
+### Task 1 — `wd5-ssr-probe.yml` (NEW, workflow_dispatch)
+
+Diagnostic that tests **4 bypass approaches against 3 anchor tenants**
+(jhhs, mayoclinic, aah) in one dispatch:
+
+| approach | URL / technique | proxy | success criterion |
+|---|---|---|---|
+| A — sitemap.xml | `GET https://{host}/sitemap.xml` | DataImpulse | 200 + `<loc>…/job/…</loc>` matches |
+| B — Google Cache | `webcache.googleusercontent.com/search?q=cache:…` | DataImpulse | 200 + cached job hrefs |
+| C — Social-crawler UAs | `?q=epic` with `User-Agent: LinkedInBot` and `Slackbot` | DataImpulse | 200 + listing job hrefs |
+| D — Session-cookie CXS | `GET` listing → cookies → `POST` CXS | both unproxied + proxied | 200 + `jobPostings[]` non-empty |
+
+All fetches use `curl_cffi` Chrome120 TLS impersonation. Results land in
+`outbox/wd5-ssr-probe-{ts}.json` per row:
+`{company, tenant, approach, status, bytes, job_count, body_excerpt,
+ elapsed_ms, success}`. Workflow never stops on individual failure —
+every (tenant × approach) is probed; the JSON summary is the deliverable.
+
+**Dispatch this once wd5 recovers** to confirm the production path works.
+
+### Task 2 — `wd5-cxs-poll.yml` (REWRITTEN, workflow_dispatch)
+
+Replaced the S25 HTML-scrape body with a clean Python-driven session-cookie
+flow. The previous CXS-direct (S24) and HTML-listing (S25) paths are
+documented in the header comment but no longer present in code.
+
+**Per tenant flow:**
+1. **GET** `https://{tenant}.wd5.myworkdayjobs.com/en-US/{slug}` via DataImpulse
+   curl_cffi (chrome120). Captures `PLAY_SESSION` + `CALYPSO_CSRF_TOKEN` +
+   `__cf_bm` cookies into the curl_cffi session.
+2. **Maintenance detection:** if response body contains `maintenance-page`,
+   skip tenant (row marked `maintenance=True`, `skipped_reason='maintenance'`).
+3. **Multi-keyword sweep** (per the S25 + S26 spec):
+   `epic, ehr, ambulatory, cadence, cogito, clarity, willow, radiant`.
+   For each keyword: `POST .../wday/cxs/{tenant}/{slug}/jobs` with cookies +
+   `Origin`/`Referer` + body `{searchText: KW, limit: 20, offset: N}`.
+4. **Pagination** via offset stride (20-jobs/page). Stop when: returned < 20,
+   parsed ≥ tenant-reported total, or 10-page cap reached.
+5. **Dedup** by `req_id` (last underscore-segment of `externalPath`).
+6. **Ingest** → `POST` Worker `/ingest` with shared-secret auth and the
+   per-tenant deduped job list. The Worker handles env filter, seen dedup,
+   matchJob, dispatchAlerts, saveRecentMatches.
+
+**Runtime guard** per S26 spec: validates session-cookie against the
+first tenant in the slice (JHBMC by default at `offset=0`) before sweeping
+the rest. If validation fails → log + exit cleanly so we don't burn
+DataImpulse bandwidth on 84 more tenants.
+
+**Workflow inputs:**
+- `limit` (default 3) — companies to poll
+- `offset` (default 0) — slice start (rotate test set)
+- `keywords` (default 8-keyword default list) — space-separated override
+- `max_offset_pages` (default 10) — CXS pagination cap per keyword
+
+**Cost** (when wd5 is live): 1 GET + 8 CXS POSTs per tenant per cycle.
+~50KB/tenant × 85 cos × 6 cycles/day ≈ **$0.40/month** at DataImpulse
+residential rates. Add `schedule: '0 */4 * * *'` once first manual
+dispatch succeeds.
+
+### Task 3 — `CLAUDE.md` updated
+
+New section: **"Workday wd5 / wd3 — Session-Cookie CXS Approach"** documenting:
+- The 2-request CSRF-cookie architecture (not an IP block — a cookie block)
+- Maintenance signature: HTTP 500, 238 bytes, `window.location.href = "https://community.workday.com/maintenance-page"`
+- S26 trigger condition: dispatch via Worker `/plain-fetch-test` returning 200
+- Required GH Actions secrets
+
+### Files this session
+
+- `.github/workflows/wd5-ssr-probe.yml` (NEW, 243 lines)
+- `.github/workflows/wd5-cxs-poll.yml` (FULL REWRITE, ~280 lines)
+- `CLAUDE.md` (+55 lines for the wd5 section)
+
+### Worker — UNCHANGED
+
+`/ingest` endpoint (S24, deploy 189) handles the new payload shape unchanged.
+No Worker code change this session. Smoke 213/213.
+
+### Open items into S27 — wd5 recovery flow
+
+**Step 0: detect wd5 recovery.** Probe JHBMC via Worker:
+```
+GET https://stat-job-watcher.jeffunglesbee.workers.dev/plain-fetch-test?
+  url=https%3A%2F%2Fjhhs.wd5.myworkdayjobs.com%2Fen-US%2FJHH_External_Positions%3Fq%3Depic
+```
+When HTTP becomes 200 + bytes > 10KB → wd5 is live.
+
+**Step 1: dispatch `wd5-ssr-probe.yml`.** One run gives us 3 tenants × 4
+approaches = 12 probe results. Read `outbox/wd5-ssr-probe-{ts}.json`.
+
+**Step 2 (if Approach D succeeded): dispatch `wd5-cxs-poll.yml`** with
+`limit=3` for end-to-end verification. JHBMC matches should appear in
+`/jobs`; `/logs` should show `ingest:wd5-cron:jhhs.wd5` appendLog entries.
+
+**Step 3: enable cron schedule** on `wd5-cxs-poll.yml`. Conservative start:
+`schedule: '0 */4 * * *'`. Verify per-run cost stays under expected.
+
+**Step 4 (if Approach D failed but B/C succeeded):** S27 implementation
+task — wire the working approach into a new `fetchWorkdayCached` (Google
+Cache) or `fetchWorkdaySocial` (crawler UA) helper, hook into ingest path.
+
+### Carry-forward (S23/S24/S25)
+
+- **wd1 slug verification** — 11 active wd1 companies may have wrong slugs
+  (S22 probe returned 404 for sample tenants). Probe individually via
+  `/workday-probe?tenant=X&host=X.wd1…&slug=Y`.
+- **Bon Secours two-tenant question** — `bsmhealth.wd5` (SEED) and
+  `bonsecours.wd5` (BATCH) — both blocked from CF IPs. Leave as-is until
+  wd5 recovers and we can confirm via residential probe.
+- **Runtime budget for full-scale sweep** — at 85 tenants × 8 keywords ×
+  pagination + session-cookie GET each, expect 30-60min/run when wd5 is
+  live. Fine for cron, too long for manual testing. Use `limit` input
+  during verification.
+
+---
+
 # STAT HANDOFF — 2026-06-17 (Session 25 END — wd5 HTML pivot + curl_cffi A/B + multi-keyword)
 
 ## State
