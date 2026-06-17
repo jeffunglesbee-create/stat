@@ -1,5 +1,7 @@
 import { json } from './_utils.js';
-import { getStatStore, storeGet, storeSet, storeDel, readLog } from '../store.js';
+import { getStatStore, storeGet, storeSet, storeDel, readLog, saveRecentMatches, saveUnmatchedJobs, appendLog } from '../store.js';
+import { matchJob, passesEnvFilter, dispatchAlerts } from '../notify.js';
+import { GHOST } from '../config.js';
 // runHiringCafeScrape and jobhive CSV helpers live in index.js (also used by
 // the cron handler). Circular import is safe because these bindings are only
 // used inside async handlers, not at module init.
@@ -236,6 +238,149 @@ export async function handleOperations(request, url, env) {
     await storeSet(getStatStore(env), 'match_counts', JSON.stringify({}));
     await storeDel(getStatStore(env), 'company_list');
     return json({ ok: true, message: 'Full reset — POST /bootstrap to re-initialize all platform DOs' });
+  }
+
+  // POST /ingest — external job-data feed (S24 wd5 proxy pipeline)
+  //
+  // Accepts jobs scraped externally (e.g. by GitHub Actions cron via DataImpulse
+  // proxy) and runs them through the normal matching pipeline. Used to feed in
+  // wd5/wd3 Workday tenants whose CXS API is blocked from CF Worker IPs.
+  //
+  // Auth: header `X-STAT-Ingest: <env.STAT_INGEST_TOKEN>` (shared-secret).
+  //
+  // Body shape: { source: 'wd5-cron', jobs: [
+  //   { id, title, company, location, environment?, salary?, url, postedAt?, atsSource? },
+  //   ...
+  // ] }
+  //
+  // Pipeline: ghost filter → env filter → seen-id dedup (StateStoreDO global set)
+  // → matchJob → saveRecentMatches → saveUnmatchedJobs → dispatchAlerts → log.
+  // Does NOT call enrichDescriptions or fit scoring — those run only inside the
+  // platform-DO alarm cycle. Ingested jobs match on title + provided description.
+  if (url.pathname === '/ingest' && request.method === 'POST') {
+    const expected = env.STAT_INGEST_TOKEN;
+    const token    = request.headers.get('X-STAT-Ingest') || '';
+    if (!expected || token !== expected) {
+      return json({ error: 'unauthorized' }, 401);
+    }
+
+    let body;
+    try { body = await request.json(); } catch { return json({ error: 'invalid JSON' }, 400); }
+    const source = String(body?.source || 'ingest');
+    const jobsIn = Array.isArray(body?.jobs) ? body.jobs : null;
+    if (!jobsIn) return json({ error: 'jobs[] required' }, 400);
+
+    const stub = getStatStore(env);
+
+    // Load global seen-set for dedup
+    let globalSeen = new Map();
+    try {
+      const raw = await storeGet(stub, 'seen_ids');
+      const arr = raw ? JSON.parse(raw) : [];
+      for (const e of arr) if (e?.id) globalSeen.set(String(e.id), e);
+    } catch {}
+
+    const newMatches    = [];
+    const browseCapture = [];
+    let   considered    = 0;
+    let   ghostSkipped  = 0;
+    let   envSkipped    = 0;
+    let   alreadySeen   = 0;
+    let   unmatched     = 0;
+
+    for (const raw of jobsIn) {
+      considered++;
+      // Normalize to standard job shape
+      const job = {
+        id:           String(raw.id ?? ''),
+        title:        raw.title ?? 'Unknown Title',
+        company:      raw.company ?? 'Unknown Company',
+        location:     raw.location ?? '',
+        environment:  raw.environment ?? '',
+        salary:       raw.salary ?? null,
+        url:          raw.url ?? '',
+        postedAt:     raw.postedAt ?? null,
+        daysAgo:      typeof raw.daysAgo === 'number' ? raw.daysAgo : null,
+        ghostFlag:    raw.ghostFlag ?? null,
+        matchedKeyword: null,
+        atsSource:    raw.atsSource ?? source,
+        description:  raw.description ?? '',
+      };
+
+      // Ghost filter (same logic as platform-do.js)
+      if (job.daysAgo !== null) {
+        if (job.daysAgo > GHOST.suppress_after_days) { ghostSkipped++; continue; }
+        if (job.daysAgo > GHOST.warn_after_days) job.ghostFlag = 'warn';
+      }
+      if (job.ghostFlag === 'suppress') { ghostSkipped++; continue; }
+
+      // Env filter — drop on-site / unspecified
+      if (!passesEnvFilter(job)) { envSkipped++; continue; }
+
+      // Browse capture (env-filtered jobs always go to Browse)
+      browseCapture.push(job);
+
+      // Dedup against global seen-set
+      if (globalSeen.has(job.id)) { alreadySeen++; continue; }
+      globalSeen.set(job.id, {
+        id:     job.id,
+        seenAt: new Date().toISOString(),
+        ...(job.url ? { url: job.url } : {}),
+      });
+
+      // Keyword match
+      const match = matchJob(job, []);
+      if (!match) { unmatched++; continue; }
+
+      job.matchedKeyword = match.matchedKw;
+      job._matchGroup    = match.label;
+      newMatches.push({ job, match });
+    }
+
+    // Persist updated global seen-set
+    try {
+      const gArr = Array.from(globalSeen.values());
+      await storeSet(stub, 'seen_ids', JSON.stringify(gArr));
+    } catch (e) {
+      console.warn('[STAT ingest] seen-set save failed:', e.message);
+    }
+
+    if (browseCapture.length > 0) {
+      const browseForStore = browseCapture.map(j => ({ ...j, description: undefined }));
+      await saveUnmatchedJobs(stub, browseForStore);
+    }
+
+    if (newMatches.length > 0) {
+      await dispatchAlerts(env, newMatches);
+      const matchesForStore = newMatches.map(m => ({
+        ...m, job: { ...m.job, description: undefined },
+      }));
+      await saveRecentMatches(stub, matchesForStore);
+    }
+
+    // Record this ingestion in the rolling diagnostic log
+    try {
+      await appendLog(stub, {
+        ts:       new Date().toISOString(),
+        ats:      'workday',
+        source:   `ingest:${source}`,
+        polled:   considered,
+        matches:  newMatches.length,
+        br:       [{ company: source, source: 'ingest', jobs: considered }],
+      });
+    } catch {}
+
+    return json({
+      ok:           true,
+      source,
+      considered,
+      ghostSkipped,
+      envSkipped,
+      alreadySeen,
+      unmatched,
+      newMatches:   newMatches.length,
+      time:         new Date().toISOString(),
+    });
   }
 
   return null;

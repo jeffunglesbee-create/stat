@@ -1,0 +1,605 @@
+{
+  "generatedAt": "2026-06-17T14:11:02.771Z",
+  "total": 85,
+  "byCluster": {
+    "wd5": 82,
+    "wd3": 3
+  },
+  "companies": [
+    {
+      "name": "Johns Hopkins",
+      "tenant": "jhhs",
+      "cluster": "wd5",
+      "slug": "JHH_External_Positions",
+      "url": "https://jhhs.wd5.myworkdayjobs.com/en-US/JHH_External_Positions"
+    },
+    {
+      "name": "Mayo Clinic",
+      "tenant": "mayoclinic",
+      "cluster": "wd5",
+      "slug": "mayoclinic",
+      "url": "https://mayoclinic.wd5.myworkdayjobs.com/en-US/mayoclinic"
+    },
+    {
+      "name": "Kaiser Permanente",
+      "tenant": "kp",
+      "cluster": "wd5",
+      "slug": "KP_External_Career_Site",
+      "url": "https://kp.wd5.myworkdayjobs.com/en-US/KP_External_Career_Site"
+    },
+    {
+      "name": "Penn Medicine",
+      "tenant": "uphs",
+      "cluster": "wd5",
+      "slug": "UPHS",
+      "url": "https://uphs.wd5.myworkdayjobs.com/en-US/UPHS"
+    },
+    {
+      "name": "Vanderbilt Health",
+      "tenant": "vanderbilt",
+      "cluster": "wd5",
+      "slug": "ext-vumc",
+      "url": "https://vanderbilt.wd5.myworkdayjobs.com/en-US/ext-vumc"
+    },
+    {
+      "name": "CommonSpirit Health",
+      "tenant": "commonspirit",
+      "cluster": "wd5",
+      "slug": "CommonSpiritHealthExternal",
+      "url": "https://commonspirit.wd5.myworkdayjobs.com/en-US/CommonSpiritHealthExternal"
+    },
+    {
+      "name": "Advocate Health (Atrium)",
+      "tenant": "aah",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://aah.wd5.myworkdayjobs.com/External"
+    },
+    {
+      "name": "Sanford Health",
+      "tenant": "sanfordhealth",
+      "cluster": "wd5",
+      "slug": "SanfordCareers",
+      "url": "https://sanfordhealth.wd5.myworkdayjobs.com/en-US/SanfordCareers"
+    },
+    {
+      "name": "OU Health",
+      "tenant": "oumedicine",
+      "cluster": "wd5",
+      "slug": "OUHealthCareers",
+      "url": "https://oumedicine.wd5.myworkdayjobs.com/en-US/OUHealthCareers"
+    },
+    {
+      "name": "WellStar Health",
+      "tenant": "wellstar",
+      "cluster": "wd5",
+      "slug": "WellStarCareers",
+      "url": "https://wellstar.wd5.myworkdayjobs.com/en-US/WellStarCareers"
+    },
+    {
+      "name": "NYU Langone Health",
+      "tenant": "nyulangone",
+      "cluster": "wd5",
+      "slug": "Careers",
+      "url": "https://nyulangone.wd5.myworkdayjobs.com/en-US/Careers"
+    },
+    {
+      "name": "Ochsner Health",
+      "tenant": "ochsner",
+      "cluster": "wd5",
+      "slug": "Ochsner",
+      "url": "https://ochsner.wd5.myworkdayjobs.com/en-US/Ochsner"
+    },
+    {
+      "name": "Piedmont Healthcare",
+      "tenant": "piedmont",
+      "cluster": "wd5",
+      "slug": "PiedmontCareers",
+      "url": "https://piedmont.wd5.myworkdayjobs.com/en-US/PiedmontCareers"
+    },
+    {
+      "name": "Spectrum Health / Corewell",
+      "tenant": "corewellhealth",
+      "cluster": "wd5",
+      "slug": "corewellexternal",
+      "url": "https://corewellhealth.wd5.myworkdayjobs.com/en-US/corewellexternal"
+    },
+    {
+      "name": "Henry Ford Health",
+      "tenant": "henryfordhealth",
+      "cluster": "wd5",
+      "slug": "Henry_Ford_Health",
+      "url": "https://henryfordhealth.wd5.myworkdayjobs.com/en-US/Henry_Ford_Health"
+    },
+    {
+      "name": "Cedars-Sinai",
+      "tenant": "cedars-sinai",
+      "cluster": "wd5",
+      "slug": "CS_Careers",
+      "url": "https://cedars-sinai.wd5.myworkdayjobs.com/en-US/CS_Careers"
+    },
+    {
+      "name": "Christus Health",
+      "tenant": "christus",
+      "cluster": "wd5",
+      "slug": "CHRISTUS",
+      "url": "https://christus.wd5.myworkdayjobs.com/en-US/CHRISTUS"
+    },
+    {
+      "name": "Hackensack Meridian",
+      "tenant": "hackensackmeridian",
+      "cluster": "wd5",
+      "slug": "HMH",
+      "url": "https://hackensackmeridian.wd5.myworkdayjobs.com/en-US/HMH"
+    },
+    {
+      "name": "RWJBarnabas Health",
+      "tenant": "rwjbarnabas",
+      "cluster": "wd5",
+      "slug": "external_career_site",
+      "url": "https://rwjbarnabas.wd5.myworkdayjobs.com/en-US/external_career_site"
+    },
+    {
+      "name": "Duke Health",
+      "tenant": "dukehealth",
+      "cluster": "wd5",
+      "slug": "Duke",
+      "url": "https://dukehealth.wd5.myworkdayjobs.com/en-US/Duke"
+    },
+    {
+      "name": "UNC Health",
+      "tenant": "unchealth",
+      "cluster": "wd5",
+      "slug": "UNC_Health",
+      "url": "https://unchealth.wd5.myworkdayjobs.com/en-US/UNC_Health"
+    },
+    {
+      "name": "OSF HealthCare",
+      "tenant": "osf",
+      "cluster": "wd5",
+      "slug": "OSF",
+      "url": "https://osf.wd5.myworkdayjobs.com/en-US/OSF"
+    },
+    {
+      "name": "Adventist Health",
+      "tenant": "adventisthealth",
+      "cluster": "wd5",
+      "slug": "AdventistHealthCareers",
+      "url": "https://adventisthealth.wd5.myworkdayjobs.com/en-US/AdventistHealthCareers"
+    },
+    {
+      "name": "Mercy Health",
+      "tenant": "mercy",
+      "cluster": "wd5",
+      "slug": "MercyCareers",
+      "url": "https://mercy.wd5.myworkdayjobs.com/en-US/MercyCareers"
+    },
+    {
+      "name": "Trinity Health",
+      "tenant": "trinity",
+      "cluster": "wd5",
+      "slug": "TrinityHealthCareers",
+      "url": "https://trinity.wd5.myworkdayjobs.com/en-US/TrinityHealthCareers"
+    },
+    {
+      "name": "Sutter Health",
+      "tenant": "sutterhealth",
+      "cluster": "wd5",
+      "slug": "SutterHealthCareers",
+      "url": "https://sutterhealth.wd5.myworkdayjobs.com/en-US/SutterHealthCareers"
+    },
+    {
+      "name": "Children\\",
+      "tenant": "chop",
+      "cluster": "wd5",
+      "slug": "CHOP_Careers",
+      "url": "https://chop.wd5.myworkdayjobs.com/en-US/CHOP_Careers"
+    },
+    {
+      "name": "Children\\",
+      "tenant": "childrensnational",
+      "cluster": "wd5",
+      "slug": "CNH",
+      "url": "https://childrensnational.wd5.myworkdayjobs.com/en-US/CNH"
+    },
+    {
+      "name": "OHSU",
+      "tenant": "ohsu",
+      "cluster": "wd5",
+      "slug": "Careers",
+      "url": "https://ohsu.wd5.myworkdayjobs.com/en-US/Careers"
+    },
+    {
+      "name": "UW Medicine",
+      "tenant": "uwmedicine",
+      "cluster": "wd5",
+      "slug": "UWMed_External",
+      "url": "https://uwmedicine.wd5.myworkdayjobs.com/en-US/UWMed_External"
+    },
+    {
+      "name": "University of Michigan Health",
+      "tenant": "uofmhealth",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://uofmhealth.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "UChicago Medicine",
+      "tenant": "uchicagomed",
+      "cluster": "wd5",
+      "slug": "UChicagoMedCareers",
+      "url": "https://uchicagomed.wd5.myworkdayjobs.com/en-US/UChicagoMedCareers"
+    },
+    {
+      "name": "Rush University Medical",
+      "tenant": "rush",
+      "cluster": "wd5",
+      "slug": "RushCareers",
+      "url": "https://rush.wd5.myworkdayjobs.com/en-US/RushCareers"
+    },
+    {
+      "name": "Concentrix",
+      "tenant": "concentrix",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://concentrix.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "TTEC",
+      "tenant": "ttec",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://ttec.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Teleperformance",
+      "tenant": "teleperformance",
+      "cluster": "wd3",
+      "slug": "TPglobal",
+      "url": "https://teleperformance.wd3.myworkdayjobs.com/en-US/TPglobal"
+    },
+    {
+      "name": "Foundever (Sitel)",
+      "tenant": "foundever",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://foundever.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Conduent",
+      "tenant": "conduent",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://conduent.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Alorica",
+      "tenant": "alorica",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://alorica.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Sutherland Global",
+      "tenant": "sutherland",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://sutherland.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Maximus",
+      "tenant": "maximus",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://maximus.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Sykes (Sitel)",
+      "tenant": "sykes",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://sykes.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "XPO Logistics",
+      "tenant": "xpo",
+      "cluster": "wd5",
+      "slug": "xpocareers",
+      "url": "https://xpo.wd5.myworkdayjobs.com/en-US/xpocareers"
+    },
+    {
+      "name": "Atos Health",
+      "tenant": "atos",
+      "cluster": "wd3",
+      "slug": "Atos_Careers",
+      "url": "https://atos.wd3.myworkdayjobs.com/Atos_Careers"
+    },
+    {
+      "name": "Medline Industries",
+      "tenant": "medline",
+      "cluster": "wd5",
+      "slug": "medline",
+      "url": "https://medline.wd5.myworkdayjobs.com/medline"
+    },
+    {
+      "name": "WellSpan Health",
+      "tenant": "wellspan",
+      "cluster": "wd5",
+      "slug": "WellSpan",
+      "url": "https://wellspan.wd5.myworkdayjobs.com/WellSpan"
+    },
+    {
+      "name": "Bon Secours Mercy Health",
+      "tenant": "bsmhealth",
+      "cluster": "wd5",
+      "slug": "BSMHCareers",
+      "url": "https://bsmhealth.wd5.myworkdayjobs.com/BSMHCareers"
+    },
+    {
+      "name": "Ballad Health",
+      "tenant": "balladhealth",
+      "cluster": "wd5",
+      "slug": "Careers",
+      "url": "https://balladhealth.wd5.myworkdayjobs.com/Careers"
+    },
+    {
+      "name": "Parkview Health",
+      "tenant": "parkview",
+      "cluster": "wd5",
+      "slug": "Parkview_Careers",
+      "url": "https://parkview.wd5.myworkdayjobs.com/Parkview_Careers"
+    },
+    {
+      "name": "Kettering Health",
+      "tenant": "ketteringhealth",
+      "cluster": "wd5",
+      "slug": "KetteringHealth",
+      "url": "https://ketteringhealth.wd5.myworkdayjobs.com/KetteringHealth"
+    },
+    {
+      "name": "Baptist Health South Florida",
+      "tenant": "baptisthealth",
+      "cluster": "wd5",
+      "slug": "Careers",
+      "url": "https://baptisthealth.wd5.myworkdayjobs.com/Careers"
+    },
+    {
+      "name": "Sentara Health",
+      "tenant": "sentara",
+      "cluster": "wd5",
+      "slug": "Sentara",
+      "url": "https://sentara.wd5.myworkdayjobs.com/Sentara"
+    },
+    {
+      "name": "Luminis Health",
+      "tenant": "luminishealth",
+      "cluster": "wd5",
+      "slug": "LuminisHealth",
+      "url": "https://luminishealth.wd5.myworkdayjobs.com/LuminisHealth"
+    },
+    {
+      "name": "Summa Health",
+      "tenant": "summahealth",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://summahealth.wd5.myworkdayjobs.com/External"
+    },
+    {
+      "name": "UnityPoint Health",
+      "tenant": "unitypoint",
+      "cluster": "wd5",
+      "slug": "UnityPoint_Careers",
+      "url": "https://unitypoint.wd5.myworkdayjobs.com/UnityPoint_Careers"
+    },
+    {
+      "name": "Aultman Health",
+      "tenant": "aultman",
+      "cluster": "wd5",
+      "slug": "Aultman",
+      "url": "https://aultman.wd5.myworkdayjobs.com/Aultman"
+    },
+    {
+      "name": "Guthrie Health",
+      "tenant": "guthrie",
+      "cluster": "wd5",
+      "slug": "GuthrieHealth",
+      "url": "https://guthrie.wd5.myworkdayjobs.com/GuthrieHealth"
+    },
+    {
+      "name": "Aspirus Health",
+      "tenant": "aspirus",
+      "cluster": "wd5",
+      "slug": "Aspirus",
+      "url": "https://aspirus.wd5.myworkdayjobs.com/Aspirus"
+    },
+    {
+      "name": "Parallon",
+      "tenant": "hca",
+      "cluster": "wd5",
+      "slug": "HCAhealthcare",
+      "url": "https://hca.wd5.myworkdayjobs.com/HCAhealthcare"
+    },
+    {
+      "name": "ResultsCX",
+      "tenant": "resultscx",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://resultscx.wd5.myworkdayjobs.com/External"
+    },
+    {
+      "name": "Startek",
+      "tenant": "startek",
+      "cluster": "wd5",
+      "slug": "StarTek",
+      "url": "https://startek.wd5.myworkdayjobs.com/StarTek"
+    },
+    {
+      "name": "iQor",
+      "tenant": "iqor",
+      "cluster": "wd5",
+      "slug": "iQor",
+      "url": "https://iqor.wd5.myworkdayjobs.com/iQor"
+    },
+    {
+      "name": "Webhelp",
+      "tenant": "webhelp",
+      "cluster": "wd3",
+      "slug": "Webhelp",
+      "url": "https://webhelp.wd3.myworkdayjobs.com/Webhelp"
+    },
+    {
+      "name": "Novant Health",
+      "tenant": "novant",
+      "cluster": "wd5",
+      "slug": "Novant_Health_External",
+      "url": "https://novant.wd5.myworkdayjobs.com/en-US/Novant_Health_External"
+    },
+    {
+      "name": "Franciscan Health",
+      "tenant": "franciscanhealth",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://franciscanhealth.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Tufts Medicine",
+      "tenant": "tuftsmedicine",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://tuftsmedicine.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "SSM Health",
+      "tenant": "ssmhealth",
+      "cluster": "wd5",
+      "slug": "careers",
+      "url": "https://ssmhealth.wd5.myworkdayjobs.com/en-US/careers"
+    },
+    {
+      "name": "Bon Secours Mercy",
+      "tenant": "bonsecours",
+      "cluster": "wd5",
+      "slug": "BSMH",
+      "url": "https://bonsecours.wd5.myworkdayjobs.com/en-US/BSMH"
+    },
+    {
+      "name": "Centura Health",
+      "tenant": "centura",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://centura.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Essentia Health",
+      "tenant": "essentia",
+      "cluster": "wd5",
+      "slug": "EssentiaHealthCareers",
+      "url": "https://essentia.wd5.myworkdayjobs.com/en-US/EssentiaHealthCareers"
+    },
+    {
+      "name": "WVU Medicine",
+      "tenant": "wvumedicine",
+      "cluster": "wd5",
+      "slug": "external",
+      "url": "https://wvumedicine.wd5.myworkdayjobs.com/en-US/external"
+    },
+    {
+      "name": "UCHealth",
+      "tenant": "uchealth",
+      "cluster": "wd5",
+      "slug": "UCHealth",
+      "url": "https://uchealth.wd5.myworkdayjobs.com/en-US/UCHealth"
+    },
+    {
+      "name": "Stormont Vail",
+      "tenant": "stormontvail",
+      "cluster": "wd5",
+      "slug": "Careers",
+      "url": "https://stormontvail.wd5.myworkdayjobs.com/en-US/Careers"
+    },
+    {
+      "name": "Cone Health",
+      "tenant": "conehealth",
+      "cluster": "wd5",
+      "slug": "ConeHealthCareers",
+      "url": "https://conehealth.wd5.myworkdayjobs.com/en-US/ConeHealthCareers"
+    },
+    {
+      "name": "Virtua Health",
+      "tenant": "virtua",
+      "cluster": "wd5",
+      "slug": "Virtua",
+      "url": "https://virtua.wd5.myworkdayjobs.com/en-US/Virtua"
+    },
+    {
+      "name": "Valley Health System",
+      "tenant": "valleyhealthnj",
+      "cluster": "wd5",
+      "slug": "careers",
+      "url": "https://valleyhealthnj.wd5.myworkdayjobs.com/en-US/careers"
+    },
+    {
+      "name": "Billings Clinic",
+      "tenant": "billingsclinic",
+      "cluster": "wd5",
+      "slug": "careers",
+      "url": "https://billingsclinic.wd5.myworkdayjobs.com/en-US/careers"
+    },
+    {
+      "name": "DISH / EchoStar",
+      "tenant": "dish",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://dish.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Aetna / CVS",
+      "tenant": "aetna",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://aetna.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Anthem / Elevance",
+      "tenant": "elevancehealth",
+      "cluster": "wd5",
+      "slug": "careers",
+      "url": "https://elevancehealth.wd5.myworkdayjobs.com/en-US/careers"
+    },
+    {
+      "name": "UnitedHealth Group",
+      "tenant": "uhg",
+      "cluster": "wd5",
+      "slug": "UHG",
+      "url": "https://uhg.wd5.myworkdayjobs.com/en-US/UHG"
+    },
+    {
+      "name": "Molina Healthcare",
+      "tenant": "molina",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://molina.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Blue Yonder",
+      "tenant": "blueyonder",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://blueyonder.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "E2open",
+      "tenant": "e2open",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://e2open.wd5.myworkdayjobs.com/en-US/External"
+    },
+    {
+      "name": "Infor",
+      "tenant": "infor",
+      "cluster": "wd5",
+      "slug": "External",
+      "url": "https://infor.wd5.myworkdayjobs.com/en-US/External"
+    }
+  ]
+}

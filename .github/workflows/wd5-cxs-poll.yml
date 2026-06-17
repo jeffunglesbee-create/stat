@@ -1,0 +1,219 @@
+# .github/workflows/wd5-cxs-poll.yml
+# S24 Phase 2: poll Workday wd5/wd3 CXS endpoints via DataImpulse residential
+# proxy (CF Worker IPs are 422-blocked at the cluster level — DataImpulse exit
+# IPs are residential and not blocked).
+#
+# Required secrets (set with `gh secret set` or PyNaCl from chat):
+#   DATAIMPULSE_USER  — gw.dataimpulse.com:823 username
+#   DATAIMPULSE_PASS  — gw.dataimpulse.com:823 password
+#   STAT_INGEST_TOKEN — shared secret matching env.STAT_INGEST_TOKEN on Worker
+#
+# Cost (DataImpulse residential proxy, ~$0.50/GB at ingest plan):
+#   Per request: CXS POST = ~3KB request + ~10KB response (5 jobs) = ~13KB
+#   85 cos × 12 cycles/day (every 2h) = 1,020 requests/day
+#   1,020 × 13KB = 13.3MB/day = 400MB/month = ~$0.20/month
+#   Conservative (every 4h, 6 cycles/day): 510 reqs/day = 200MB/month = ~$0.10/mo
+#
+# Starts as workflow_dispatch ONLY. Add `schedule:` block after a manual test
+# round confirms the proxy path and ingest endpoint work.
+
+name: Poll wd5 Workday CXS via proxy (S24)
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Max companies to poll (test mode). Default 3.'
+        required: false
+        default: '3'
+      offset:
+        description: 'Skip first N companies (rotate test set).'
+        required: false
+        default: '0'
+
+permissions:
+  contents: write
+
+env:
+  WORKER_URL: https://stat-job-watcher.jeffunglesbee.workers.dev
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.STAT_PAT }}
+
+      - name: Verify secrets present
+        run: |
+          missing=()
+          [ -z "${{ secrets.DATAIMPULSE_USER }}" ] && missing+=("DATAIMPULSE_USER")
+          [ -z "${{ secrets.DATAIMPULSE_PASS }}" ] && missing+=("DATAIMPULSE_PASS")
+          [ -z "${{ secrets.STAT_INGEST_TOKEN }}" ] && missing+=("STAT_INGEST_TOKEN")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            echo "Set via: gh secret set <NAME> --body <VALUE> --repo jeffunglesbee-create/stat"
+            echo "Or via PyNaCl from chat session."
+            exit 1
+          fi
+          echo "All required secrets present."
+
+      - name: Poll wd5/wd3 tenants via DataImpulse proxy
+        env:
+          DI_USER:      ${{ secrets.DATAIMPULSE_USER }}
+          DI_PASS:      ${{ secrets.DATAIMPULSE_PASS }}
+          INGEST_TOKEN: ${{ secrets.STAT_INGEST_TOKEN }}
+          LIMIT:        ${{ github.event.inputs.limit || '3' }}
+          OFFSET:       ${{ github.event.inputs.offset || '0' }}
+        run: |
+          mkdir -p outbox
+          INV="outbox/wd5-companies.json"
+          if [ ! -f "$INV" ]; then
+            echo "::error::$INV not found. Run scripts/extract-workday-urls.js first."
+            exit 1
+          fi
+
+          PROXY="http://${DI_USER}:${DI_PASS}@gw.dataimpulse.com:823"
+          POLL_LOG="outbox/wd5-poll-$(date -u +%Y%m%dT%H%M%SZ).json"
+          : > "$POLL_LOG"
+          echo "[" >> "$POLL_LOG"
+          FIRST=1
+
+          # Slice the company inventory: skip OFFSET, take LIMIT
+          COMPANY_COUNT=$(python3 -c "import json; print(len(json.load(open('$INV'))['companies']))")
+          echo "Inventory: $COMPANY_COUNT total. Slicing [offset=$OFFSET, limit=$LIMIT]"
+
+          # Iterate slice
+          for idx in $(seq "$OFFSET" $((OFFSET + LIMIT - 1))); do
+            [ "$idx" -ge "$COMPANY_COUNT" ] && break
+            ROW=$(python3 -c "import json,sys; d=json.load(open('$INV'))['companies']; i=int(sys.argv[1]); print(json.dumps(d[i]))" "$idx")
+            NAME=$(echo "$ROW" | python3 -c "import json,sys; print(json.load(sys.stdin)['name'])")
+            TENANT=$(echo "$ROW" | python3 -c "import json,sys; print(json.load(sys.stdin)['tenant'])")
+            CLUSTER=$(echo "$ROW" | python3 -c "import json,sys; print(json.load(sys.stdin)['cluster'])")
+            SLUG=$(echo "$ROW" | python3 -c "import json,sys; print(json.load(sys.stdin)['slug'])")
+            HOST="${TENANT}.${CLUSTER}.myworkdayjobs.com"
+            CXS_URL="https://${HOST}/wday/cxs/${TENANT}/${SLUG}/jobs"
+            REF="https://${HOST}/en-US/${SLUG}"
+
+            echo "=== [$idx] $NAME ($TENANT.$CLUSTER, slug=$SLUG) ==="
+
+            BODY='{"appliedFacets":{},"limit":20,"offset":0,"searchText":"epic"}'
+
+            # Curl via DataImpulse proxy with 45s timeout
+            RESP_FILE="outbox/wd5-resp-${TENANT}-${CLUSTER}.json"
+            HTTP=$(curl -sS --max-time 45 \
+              -x "$PROXY" \
+              -o "$RESP_FILE" \
+              -w "%{http_code}" \
+              -X POST "$CXS_URL" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -H "Accept-Language: en-US" \
+              -H "Origin: https://${HOST}" \
+              -H "Referer: $REF" \
+              -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" \
+              -d "$BODY" 2>&1 || echo "000")
+
+            BYTES=$(wc -c < "$RESP_FILE" 2>/dev/null || echo 0)
+            echo "  http=$HTTP bytes=$BYTES"
+
+            TOTAL="-"; POSTINGS="-"
+            if [ "$HTTP" = "200" ]; then
+              TOTAL=$(python3 -c "import json; d=json.load(open('$RESP_FILE')); print(d.get('total','-'))" 2>/dev/null || echo "-")
+              POSTINGS=$(python3 -c "import json; d=json.load(open('$RESP_FILE')); print(len(d.get('jobPostings',[])))" 2>/dev/null || echo "-")
+              echo "  total=$TOTAL  postings_returned=$POSTINGS"
+
+              # Transform CXS jobPostings into STAT ingest shape and POST to Worker
+              python3 << PYEOF
+          import json, urllib.request, urllib.error, os, sys
+          with open('$RESP_FILE') as f:
+              d = json.load(f)
+          postings = d.get('jobPostings', [])
+          host = '${HOST}'
+          origin = 'https://' + host
+          jobs = []
+          for p in postings:
+              ep = p.get('externalPath', '') or ''
+              # Req ID from trailing underscore segment, fallback to bulletFields[0] or externalPath
+              req_id = None
+              if ep:
+                  import re
+                  m = re.search(r'_([A-Za-z0-9-]+)$', ep)
+                  if m: req_id = m.group(1)
+              if not req_id:
+                  bf = p.get('bulletFields') or []
+                  req_id = (bf[0] if bf else None) or ep or p.get('title') or ''
+              job_url = (origin + '/en-US' + ep) if ep else origin
+              loc = p.get('locationsText', '') or ''
+              env = 'remote' if 'remote' in loc.lower() else ('hybrid' if 'hybrid' in loc.lower() else '')
+              jobs.append({
+                  'id':         str(req_id),
+                  'title':      p.get('title', '') or '',
+                  'company':    '''${NAME}'''.replace("'''", "'"),
+                  'location':   loc,
+                  'environment': env,
+                  'url':        job_url,
+                  'postedAt':   p.get('postedOn'),
+                  'atsSource':  'workday',
+                  'description': '',
+              })
+          if not jobs:
+              print('  no jobs to ingest')
+              sys.exit(0)
+          payload = json.dumps({'source': 'wd5-cron:${TENANT}.${CLUSTER}', 'jobs': jobs}).encode()
+          req = urllib.request.Request(
+              os.environ['WORKER_URL'] + '/ingest',
+              data=payload,
+              method='POST',
+              headers={
+                  'Content-Type': 'application/json',
+                  'X-STAT-Ingest': os.environ['INGEST_TOKEN'],
+              },
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=20) as r:
+                  print('  ingest http=' + str(r.status) + ' body=' + r.read(500).decode())
+          except urllib.error.HTTPError as e:
+              print('  ingest FAILED http=' + str(e.code) + ' body=' + e.read(500).decode())
+              sys.exit(1)
+          except Exception as e:
+              print('  ingest ERROR: ' + str(e))
+              sys.exit(1)
+          PYEOF
+            else
+              echo "  (skipping ingest — non-200)"
+              # First 200 bytes for diagnostics
+              head -c 200 "$RESP_FILE" 2>/dev/null | tr '\n' ' '
+              echo
+            fi
+
+            # Append to poll log
+            [ $FIRST -eq 0 ] && echo "," >> "$POLL_LOG"
+            FIRST=0
+            python3 -c "
+          import json
+          row = {
+              'idx': $idx, 'name': '''${NAME}'''.replace(\"'''\", \"'\"),
+              'tenant': '${TENANT}', 'cluster': '${CLUSTER}', 'slug': '${SLUG}',
+              'http': '$HTTP', 'bytes': $BYTES, 'total': '$TOTAL', 'postings_returned': '$POSTINGS',
+          }
+          print(json.dumps(row))" >> "$POLL_LOG"
+
+            # Rate limit: 2s between requests (DataImpulse politeness)
+            sleep 2
+          done
+
+          echo "]" >> "$POLL_LOG"
+          echo ""
+          echo "=== POLL LOG ==="
+          cat "$POLL_LOG"
+
+      - name: Commit results
+        run: |
+          git config user.email "ci@stat"
+          git config user.name "STAT CI"
+          git pull --rebase origin main || true
+          git add outbox/wd5-poll-*.json outbox/wd5-resp-*.json 2>/dev/null || true
+          git commit -m "ci: wd5 CXS poll results [skip ci]" || echo "no changes"
+          git push origin main || echo "push skipped"
