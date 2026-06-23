@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-17T17:55:38Z
-HEAD: c619744
+Generated: 2026-06-23T16:12:45Z
+HEAD: cac2418
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  c619744 feat: S27a /cxs-get-probe — does Workday CXS accept GET?
+  cac2418 feat: unblock wd5/wd3 — remove WORKDAY_CF_BLOCKED_CLUSTERS guard
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
