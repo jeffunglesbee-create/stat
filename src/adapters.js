@@ -1151,6 +1151,59 @@ export async function fetchSelectMinds(company, selectmindsCursor = null) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SmartRecruiters
+// Public REST API — no auth required for published postings.
+// https://api.smartrecruiters.com/v1/companies/{company.token}/postings?status=PUBLISHED
+// Confirmed live tenants 2026-06-23: UniversityOfMarylandMedicalSystem
+// ─────────────────────────────────────────────────────────────────────────────
+export async function fetchSmartRecruiters(company) {
+  if (!company.token) return [];
+  const url = `https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(company.token)}/postings?status=PUBLISHED&limit=100&offset=0`;
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': UA, 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      console.warn(`[STAT SmartRecruiters] ${company.name}: HTTP ${res.status} — skipped`);
+      return [];
+    }
+    const data = await res.json().catch(() => null);
+    const postings = data?.content;
+    if (!Array.isArray(postings)) return [];
+
+    const jobs = [];
+    for (const p of postings) {
+      const reqId = String(p.id || p.refNumber || '');
+      if (!reqId) continue;
+      const title = p.name || '';
+      const loc   = [p.location?.city, p.location?.region, p.location?.country].filter(Boolean).join(', ');
+      const remote = !!(p.location?.remote || /remote/i.test(loc) || /remote/i.test(p.typeOfEmployment?.label || ''));
+      const environment = remote ? 'remote'
+        : (/hybrid/i.test(loc) || /hybrid/i.test(p.typeOfEmployment?.label || '') ? 'hybrid' : '');
+      // Canonical applicant-facing URL: jobs.smartrecruiters.com/{company}/{postingId}
+      const jobUrl = p.applyUrl || p.ref || `https://jobs.smartrecruiters.com/${encodeURIComponent(company.token)}/${reqId}`;
+      jobs.push(makeJob({
+        id:          reqId,
+        title,
+        company:     company.name,
+        location:    loc,
+        environment,
+        salary:      null,
+        url:         jobUrl,
+        postedAt:    p.releasedDate || p.createdOn || null,
+        atsSource:   'smartrecruiters',
+        description: '', // detail page enrichment is a future step
+      }));
+    }
+    return jobs;
+  } catch (e) {
+    console.warn('[STAT smartrecruiters]', company.name, 'fetch failed:', e.message);
+    return [];
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Dispatcher — routes to the right adapter by ATS type
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchCompanyJobs(company, env) {
@@ -1166,6 +1219,11 @@ export async function fetchCompanyJobs(company, env) {
     case 'oracle_hcm':     return fetchOracleHcm(company);
     case 'infor_hcm':      return fetchInforHcm(company);
     case 'selectminds':    return fetchSelectMinds(company);
+    case 'smartrecruiters': return fetchSmartRecruiters(company);
+    // hiringcafe-tagged companies are polled by the global runHiringCafeScrape
+    // cron (keyword-based, not per-company). Explicit no-op here so they aren't
+    // miscategorized as "no ats / unrouted".
+    case 'hiringcafe':     return [];
     default: return [];
   }
 }

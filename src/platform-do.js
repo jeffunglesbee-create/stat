@@ -31,7 +31,7 @@
 import {
   fetchGreenhouse, fetchLever, fetchAshby,
   fetchWorkday, fetchICIMS, fetchSuccessFactors, fetchTaleo, fetchOracleHcm, fetchInforHcm,
-  fetchSelectMinds,
+  fetchSelectMinds, fetchSmartRecruiters,
 } from './adapters.js';
 import { matchJob, passesEnvFilter, dispatchAlerts, checkJobLiveness } from './notify.js';
 import { enrichJobWithSalary } from './salary.js';
@@ -427,6 +427,9 @@ class PlatformDO {
       case 'oracle_hcm':     return fetchOracleHcm(company);
       case 'infor_hcm':      return fetchInforHcm(company);
       case 'selectminds':    return fetchSelectMinds(company, this._selectmindsCursor ?? null);
+      case 'smartrecruiters': return fetchSmartRecruiters(company);
+      // hiringcafe — handled by global cron, not per-company. Explicit no-op.
+      case 'hiringcafe':     return [];
       default:               return [];
     }
   }

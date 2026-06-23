@@ -350,6 +350,19 @@ export const SEED_COMPANIES = [
   { name: 'Chartis Group',              ats: 'lever',      token: 'chartisgroup' },
   { name: 'S&P Consultants',            ats: 'lever',      token: 'spconsultants' },
   { name: 'Engage (Meditech)',          ats: 'ashby',      token: 'engage' },
+  // Added 2026-06-23 (CC registry audit)
+  { name: 'The Wilshire Group',         ats: 'greenhouse', token: 'thewilshiregroup' },
+  // 4 smaller Epic consulting firms — ATS not confirmed from sandbox; tagged
+  // hiringcafe so the global keyword cron covers them while a follow-up
+  // probes their career pages and promotes to the right per-company adapter.
+  { name: 'Stoltenberg Consulting',     ats: 'hiringcafe', token: 'stoltenberg',
+    url: 'https://stoltenberg.com/careers/' },
+  { name: 'Incisive Consultants',       ats: 'hiringcafe', token: 'incisive',
+    url: 'https://incisive-consultants.com/careers/' },
+  { name: 'Evergreen Healthcare Partners', ats: 'hiringcafe', token: 'evergreenhcp',
+    url: 'https://evergreen.partners/careers/' },
+  { name: 'Anura Connect',              ats: 'hiringcafe', token: 'anuraconnect',
+    url: 'https://anuraconnect.com/careers/' },
 
   // ── Health systems — Workday (verified URLs from live career pages) ───────
   { name: 'Johns Hopkins',              ats: 'workday', token: 'jhhs',
@@ -500,6 +513,11 @@ export const SEED_COMPANIES = [
     url: 'https://careers-lifepointhealth.icims.com/jobs/search?in_iframe=1' },
   { name: 'Community Health Systems',  ats: 'icims', token: 'chs',
     url: 'https://careers-chs.icims.com/jobs/search?in_iframe=1' },
+
+  // ── Health systems — SmartRecruiters (added 2026-06-23) ───────────────────
+  // Public REST API: api.smartrecruiters.com/v1/companies/{token}/postings?status=PUBLISHED
+  { name: 'University of Maryland Medical System', ats: 'smartrecruiters',
+    token: 'UniversityOfMarylandMedicalSystem' },
 
   // ── Health systems — SAP SuccessFactors ───────────────────────────────────
   // XML feed confirmed working 2026-06-06. Full job description in <Job-Description> CDATA.
@@ -815,31 +833,31 @@ export const BATCH_WATCHLIST = [
   { name: 'Aloha Care',                ats: 'greenhouse', token: 'alohacare' },
   { name: 'Asurion',                   ats: 'workday', token: 'asurion',
     url: 'https://asurion.wd5.myworkdayjobs.com/en-US/External', inactive: true, inactiveReason: 'audit S21: HTTP 404' },
-  { name: 'Wayfair',                   ats: 'greenhouse', token: 'wayfair' },
-  { name: 'Chewy',                     ats: 'greenhouse', token: 'chewy' },
-  { name: 'Zappos',                    ats: 'greenhouse', token: 'zappos' },
-  { name: 'Jet.com / Walmart eComm',  ats: 'greenhouse', token: 'walmart' },
-  { name: 'Overstock',                 ats: 'greenhouse', token: 'overstock' },
-  { name: 'Hopper',                    ats: 'greenhouse', token: 'hopper' },
-  { name: 'Outdoorsy',                 ats: 'lever',      token: 'outdoorsy' },
-  { name: 'Lemonade',                  ats: 'greenhouse', token: 'lemonade' },
-  { name: 'Root Insurance',            ats: 'greenhouse', token: 'rootinsurance' },
-  { name: 'Hippo Insurance',           ats: 'greenhouse', token: 'hippo' },
-  { name: 'Policygenius',              ats: 'greenhouse', token: 'policygenius' },
+  { name: 'Wayfair', ats: 'greenhouse', token: 'wayfair', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Chewy', ats: 'greenhouse', token: 'chewy', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Zappos', ats: 'greenhouse', token: 'zappos', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Jet.com / Walmart eComm', ats: 'greenhouse', token: 'walmart', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Overstock', ats: 'greenhouse', token: 'overstock', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Hopper', ats: 'greenhouse', token: 'hopper', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Outdoorsy', ats: 'lever', token: 'outdoorsy', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Lemonade', ats: 'greenhouse', token: 'lemonade', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Root Insurance', ats: 'greenhouse', token: 'rootinsurance', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Hippo Insurance', ats: 'greenhouse', token: 'hippo', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Policygenius', ats: 'greenhouse', token: 'policygenius', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
 
   // Additional logistics
-  { name: 'DispatchTrack',             ats: 'greenhouse', token: 'dispatchtrack' },
-  { name: 'Bringg',                    ats: 'greenhouse', token: 'bringg' },
-  { name: 'Onfleet',                   ats: 'greenhouse', token: 'onfleet' },
-  { name: 'Route',                     ats: 'greenhouse', token: 'route' },
-  { name: 'AfterShip',                 ats: 'greenhouse', token: 'aftership' },
-  { name: 'EasyPost',                  ats: 'greenhouse', token: 'easypost' },
-  { name: 'Shippo',                    ats: 'greenhouse', token: 'shippo' },
-  { name: 'Pirateship',                ats: 'ashby',      token: 'pirateship' },
-  { name: 'Freightos',                 ats: 'greenhouse', token: 'freightos' },
-  { name: 'Freight Club',              ats: 'lever',      token: 'freightclub' },
-  { name: 'uShip',                     ats: 'greenhouse', token: 'uship' },
-  { name: 'Dray Alliance',             ats: 'lever',      token: 'drayalliance' },
+  { name: 'DispatchTrack', ats: 'greenhouse', token: 'dispatchtrack', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Bringg', ats: 'greenhouse', token: 'bringg', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Onfleet', ats: 'greenhouse', token: 'onfleet', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Route', ats: 'greenhouse', token: 'route', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'AfterShip', ats: 'greenhouse', token: 'aftership', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'EasyPost', ats: 'greenhouse', token: 'easypost', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Shippo', ats: 'greenhouse', token: 'shippo', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Pirateship', ats: 'ashby', token: 'pirateship', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Freightos', ats: 'greenhouse', token: 'freightos', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Freight Club', ats: 'lever', token: 'freightclub', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'uShip', ats: 'greenhouse', token: 'uship', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
+  { name: 'Dray Alliance', ats: 'lever', token: 'drayalliance', inactive: true, inactiveReason: 'audit 2026-06-23: non-Epic — buzzword false positive' },
   { name: 'Transplace',                ats: 'greenhouse', token: 'transplace' },
   { name: 'Blue Yonder',               ats: 'workday', token: 'blueyonder',
     url: 'https://blueyonder.wd5.myworkdayjobs.com/en-US/External' },
