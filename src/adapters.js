@@ -250,7 +250,10 @@ export async function fetchWorkday(company, env) {
         }),
         signal: AbortSignal.timeout(ADAPTER_TIMEOUT_MS),
       });
-      if (!res.ok) break;
+      if (!res.ok) {
+        console.warn(`[STAT Workday] ${company.name}: HTTP ${res.status} on page ${page} — skipped`);
+        break;
+      }
       const data = await res.json().catch(() => null);
       const postings = data?.jobPostings;
       if (!Array.isArray(postings) || postings.length === 0) break;
