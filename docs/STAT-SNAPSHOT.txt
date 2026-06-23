@@ -1,6 +1,6 @@
 STAT - Auto-generated Snapshot
-Generated: 2026-06-23T16:12:45Z
-HEAD: cac2418
+Generated: 2026-06-23T16:35:00Z
+HEAD: 1b509c5
 Smoke: 213/213
 
 COMPANIES
@@ -9,7 +9,7 @@ COMPANIES
   Greenhouse: 59
 
 RECENT COMMITS
-  cac2418 feat: unblock wd5/wd3 — remove WORKDAY_CF_BLOCKED_CLUSTERS guard
+  1b509c5 feat: log per-tenant Workday non-200 responses (and defer viewport auto-trigger)
 
 POLLING LAYERS
   1. HiringCafe: 1-min cron, time-aware adaptive backoff, BR + SSR fallback
