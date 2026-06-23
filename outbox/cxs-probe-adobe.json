@@ -1,0 +1,49 @@
+{
+  "tenant": "adobe",
+  "results": [
+    {
+      "gap": 0,
+      "http": 200,
+      "elapsed": 1376,
+      "jobs": 0,
+      "verdict": "SILENT_THROTTLE"
+    },
+    {
+      "gap": 30,
+      "http": 200,
+      "elapsed": 874,
+      "jobs": 0,
+      "verdict": "SILENT_THROTTLE"
+    },
+    {
+      "gap": 10,
+      "http": 200,
+      "elapsed": 2414,
+      "jobs": 0,
+      "verdict": "SILENT_THROTTLE"
+    },
+    {
+      "gap": 5,
+      "http": 200,
+      "elapsed": 907,
+      "jobs": 0,
+      "verdict": "SILENT_THROTTLE"
+    },
+    {
+      "gap": 2,
+      "http": 200,
+      "elapsed": 733,
+      "jobs": 0,
+      "verdict": "SILENT_THROTTLE"
+    },
+    {
+      "gap": 1,
+      "http": 200,
+      "elapsed": 1176,
+      "jobs": 0,
+      "verdict": "SILENT_THROTTLE"
+    }
+  ],
+  "anyThrottle": true,
+  "lowestSafeGapSeconds": 30
+}

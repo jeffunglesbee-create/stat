@@ -1,0 +1,49 @@
+{
+  "tenant": "jhhs",
+  "results": [
+    {
+      "gap": 0,
+      "http": 422,
+      "elapsed": 451,
+      "jobs": 0,
+      "verdict": "ERROR"
+    },
+    {
+      "gap": 30,
+      "http": 422,
+      "elapsed": 82,
+      "jobs": 0,
+      "verdict": "ERROR"
+    },
+    {
+      "gap": 10,
+      "http": 422,
+      "elapsed": 81,
+      "jobs": 0,
+      "verdict": "ERROR"
+    },
+    {
+      "gap": 5,
+      "http": 422,
+      "elapsed": 78,
+      "jobs": 0,
+      "verdict": "ERROR"
+    },
+    {
+      "gap": 2,
+      "http": 422,
+      "elapsed": 161,
+      "jobs": 0,
+      "verdict": "ERROR"
+    },
+    {
+      "gap": 1,
+      "http": 422,
+      "elapsed": 425,
+      "jobs": 0,
+      "verdict": "ERROR"
+    }
+  ],
+  "anyThrottle": true,
+  "lowestSafeGapSeconds": 30
+}

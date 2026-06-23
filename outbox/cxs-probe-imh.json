@@ -1,0 +1,49 @@
+{
+  "tenant": "imh",
+  "results": [
+    {
+      "gap": 0,
+      "http": 200,
+      "elapsed": 538,
+      "jobs": 4,
+      "verdict": "OK"
+    },
+    {
+      "gap": 30,
+      "http": 200,
+      "elapsed": 501,
+      "jobs": 4,
+      "verdict": "OK"
+    },
+    {
+      "gap": 10,
+      "http": 200,
+      "elapsed": 500,
+      "jobs": 4,
+      "verdict": "OK"
+    },
+    {
+      "gap": 5,
+      "http": 200,
+      "elapsed": 503,
+      "jobs": 4,
+      "verdict": "OK"
+    },
+    {
+      "gap": 2,
+      "http": 200,
+      "elapsed": 591,
+      "jobs": 4,
+      "verdict": "OK"
+    },
+    {
+      "gap": 1,
+      "http": 200,
+      "elapsed": 504,
+      "jobs": 4,
+      "verdict": "OK"
+    }
+  ],
+  "anyThrottle": false,
+  "lowestSafeGapSeconds": 0
+}
