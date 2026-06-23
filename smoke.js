@@ -149,11 +149,11 @@ assert('package.json: test:ios + test:android scripts wired',
 assert('cross-engine: ios-safari-audit workflow exists', (() => {
   try { fs.readFileSync(path.join(__dirname, '.github/workflows/ios-safari-audit.yml')); return true; } catch { return false; }
 })());
-assert('cross-engine: ios workflow is workflow_dispatch only',
+assert('cross-engine: ios workflow has workflow_dispatch trigger',
   (() => {
     try {
       const wf = fs.readFileSync(path.join(__dirname, '.github/workflows/ios-safari-audit.yml'), 'utf8');
-      return wf.includes('on: workflow_dispatch') && !wf.includes('on:\n  push');
+      return /^\s*workflow_dispatch:?$/m.test(wf) && !wf.includes('on:\n  push');
     } catch { return false; }
   })());
 assert('cross-engine: ios workflow runs tests/stat-viewport.js',
@@ -167,11 +167,11 @@ assert('cross-engine: ios workflow runs tests/stat-viewport.js',
 assert('cross-engine: android-chrome-audit workflow exists', (() => {
   try { fs.readFileSync(path.join(__dirname, '.github/workflows/android-chrome-audit.yml')); return true; } catch { return false; }
 })());
-assert('cross-engine: android workflow is workflow_dispatch only',
+assert('cross-engine: android workflow has workflow_dispatch trigger',
   (() => {
     try {
       const wf = fs.readFileSync(path.join(__dirname, '.github/workflows/android-chrome-audit.yml'), 'utf8');
-      return wf.includes('on: workflow_dispatch') && !wf.includes('on:\n  push');
+      return /^\s*workflow_dispatch:?$/m.test(wf) && !wf.includes('on:\n  push');
     } catch { return false; }
   })());
 assert('cross-engine: android workflow uses KVM-accelerated emulator runner',

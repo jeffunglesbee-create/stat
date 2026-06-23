@@ -5,10 +5,18 @@
 # minutes are expensive.
 name: iOS Safari Viewport Audit
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Deploy STAT worker"]
+    types: [completed]
+    branches: [main]
 
 jobs:
   ios-safari:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: macos-latest
     timeout-minutes: 20
     strategy:

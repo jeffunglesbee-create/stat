@@ -5,10 +5,18 @@
 # Manual dispatch only — real-device CI minutes are expensive.
 name: Android Chrome Viewport Audit
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Deploy STAT worker"]
+    types: [completed]
+    branches: [main]
 
 jobs:
   android-chrome:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
