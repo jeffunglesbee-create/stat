@@ -199,11 +199,6 @@ export async function fetchAshby(company) {
 //   &startIndex=, parsing req IDs from job links matched by _(R[A-Z0-9]+)
 //   and breaking the loop when links.length < 20. See git log for full
 //   diff against the prior implementation.
-// Clusters Workday's WAF blocks for CXS POSTs from Cloudflare Worker IPs.
-// Empirically verified by S22 probe-clusters workflow (HTTP 422 with empty
-// errorCode HTTP_422). These tenants are covered indirectly by HiringCafe's
-// wide-net scrape — no action by fetchWorkday wastes alarm-cycle CPU.
-const WORKDAY_CF_BLOCKED_CLUSTERS = new Set(['wd5', 'wd3']);
 
 export async function fetchWorkday(company, env) {
   if (!company.url) return [];
@@ -213,14 +208,10 @@ export async function fetchWorkday(company, env) {
     const host = parsed.host;
     // tenant = first DNS label (e.g. 'jhhs' from jhhs.wd5.myworkdayjobs.com)
     const tenant = host.split('.')[0];
-    // cluster = second DNS label (e.g. 'wd5'). Skip clusters Workday blocks.
+    // cluster (wd5, wd3, wd108, wd1, wd12) — no IP-level block from CF datacenter.
+    // Confirmed 2026-06-23: wd5 returns 200 OK for adobe/nvidia from CF egress IPs.
+    // Per-tenant 422s are maintenance windows. Let HTTP status decide.
     const cluster = host.split('.')[1] || '';
-    if (WORKDAY_CF_BLOCKED_CLUSTERS.has(cluster)) {
-      // Tag empty result so platform-do.js brLog records the skip.
-      const out = [];
-      out._source = `cxs-skip-${cluster}`;
-      return out;
-    }
     // slug = last path segment, ignoring locale prefixes like 'en-US'
     const pathParts = parsed.pathname.split('/').filter(Boolean);
     const slug = pathParts[pathParts.length - 1];

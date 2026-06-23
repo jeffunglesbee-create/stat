@@ -31,6 +31,10 @@ jobs:
           }
           probe jhbmc jhhs jhhs.wd5.myworkdayjobs.com JHH_External_Positions
           probe imh   imh  imh.wd108.myworkdayjobs.com IntermountainCareers
+          # 2026-06-23: adobe wd5 = ground-truth that wd5 is reachable from CF
+          # egress IPs. Should return jobs > 0 after WORKDAY_CF_BLOCKED_CLUSTERS
+          # removal. JHBMC may still 422 (tenant maintenance), which is expected.
+          probe adobe adobe adobe.wd5.myworkdayjobs.com external_experienced
       - name: Commit
         run: |
           git config user.email "ci@stat"
